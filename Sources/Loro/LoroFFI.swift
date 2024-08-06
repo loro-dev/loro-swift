@@ -537,7 +537,7 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 
 
 
-public protocol ContainerIdLike : AnyObject {
+public protocol ContainerIdLike : Any {
     
     func asContainerId(ty: ContainerType)  -> ContainerId
     
