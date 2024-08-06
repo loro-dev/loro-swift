@@ -2107,10 +2107,7 @@ public func FfiConverterTypeLoroUnknown_lower(_ value: LoroUnknown) -> UnsafeMut
     return FfiConverterTypeLoroUnknown.lower(value)
 }
 
-
-
-
-public protocol LoroValueLike : AnyObject {
+public protocol LoroValueLike : Any {
     
     func asLoroValue()  -> LoroValue
     

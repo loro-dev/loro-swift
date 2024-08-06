@@ -9,4 +9,5 @@ mv gen-swift/loroFFI.modulemap gen-swift/includes/module.modulemap
 xcodebuild -create-xcframework -library loro-rs/target/release/libloro.a -headers gen-swift/includes -output loroFFI.xcframework
 zip -r loroFFI.xcframework.zip loroFFI.xcframework
 mv gen-swift/loro.swift Sources/Loro/loroFFI.swift
+sh scripts/refine_trait.sh
 rm -rf gen-swift loroFFI.xcframework
