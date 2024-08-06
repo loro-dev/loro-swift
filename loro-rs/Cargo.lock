@@ -604,9 +604,7 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 [[package]]
 name = "loro"
 version = "0.16.2"
-source = "git+https://github.com/loro-dev/loro.git?branch=feat-ffi-loro-788#c532ec51db8c24cc2b4decb5b8f01a659d6e6572"
 dependencies = [
- "either",
  "enum-as-inner 0.6.0",
  "generic-btree",
  "loro-delta",
@@ -617,7 +615,6 @@ dependencies = [
 [[package]]
 name = "loro-common"
 version = "0.16.2"
-source = "git+https://github.com/loro-dev/loro.git?branch=feat-ffi-loro-788#c532ec51db8c24cc2b4decb5b8f01a659d6e6572"
 dependencies = [
  "arbitrary",
  "enum-as-inner 0.6.0",
@@ -633,7 +630,6 @@ dependencies = [
 [[package]]
 name = "loro-delta"
 version = "0.16.2"
-source = "git+https://github.com/loro-dev/loro.git?branch=feat-ffi-loro-788#c532ec51db8c24cc2b4decb5b8f01a659d6e6572"
 dependencies = [
  "arrayvec",
  "enum-as-inner 0.5.1",
@@ -644,17 +640,14 @@ dependencies = [
 
 [[package]]
 name = "loro-ffi"
-version = "0.1.0"
-source = "git+https://github.com/loro-dev/loro.git?branch=feat-ffi-loro-788#c532ec51db8c24cc2b4decb5b8f01a659d6e6572"
+version = "0.16.2"
 dependencies = [
- "either",
  "loro",
 ]
 
 [[package]]
 name = "loro-internal"
 version = "0.16.2"
-source = "git+https://github.com/loro-dev/loro.git?branch=feat-ffi-loro-788#c532ec51db8c24cc2b4decb5b8f01a659d6e6572"
 dependencies = [
  "append-only-bytes",
  "arref",
@@ -689,7 +682,6 @@ dependencies = [
 [[package]]
 name = "loro-rle"
 version = "0.16.2"
-source = "git+https://github.com/loro-dev/loro.git?branch=feat-ffi-loro-788#c532ec51db8c24cc2b4decb5b8f01a659d6e6572"
 dependencies = [
  "append-only-bytes",
  "arref",
@@ -716,7 +708,6 @@ checksum = "3f3d053a135388e6b1df14e8af1212af5064746e9b87a06a345a7a779ee9695a"
 [[package]]
 name = "loro_fractional_index"
 version = "0.16.2"
-source = "git+https://github.com/loro-dev/loro.git?branch=feat-ffi-loro-788#c532ec51db8c24cc2b4decb5b8f01a659d6e6572"
 dependencies = [
  "imbl",
  "rand",

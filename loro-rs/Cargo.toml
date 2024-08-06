@@ -14,7 +14,8 @@ path = "src/uniffi-bindgen.rs"
 
 
 [dependencies]
-loro-ffi = { git = "https://github.com/loro-dev/loro.git", branch = "feat-ffi-loro-788" }
+loro-ffi = { path = "../../loro/crates/loro-ffi" }
+# loro-ffi = { git = "https://github.com/loro-dev/loro.git", branch = "feat-ffi-loro-788" }
 uniffi = { version = "0.28", features = ["cli"] }
 
 [build-dependencies]

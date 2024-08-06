@@ -17,68 +17,228 @@ interface LoroValueLike{
     LoroValue as_loro_value();
 };
 
+[Trait, WithForeign]
+interface ContainerIdLike{
+    ContainerID as_container_id(ContainerType ty);
+};
+
 // ============= LORO DOC =============
 
 interface LoroDoc{
+    /// Create a new `LoroDoc` instance.
     constructor();
+
+    /// Duplicate the document with a different PeerID
+    ///
+    /// The time complexity and space complexity of this operation are both O(n),
     LoroDoc fork();
+
     // Config config();
     // [Throws=LoroError]
     // ImportBlobMetadata decode_import_blob_meta([ByRef] bytes);
+
+    /// Set whether to record the timestamp of each change. Default is `false`.
+    ///
+    /// If enabled, the Unix timestamp will be recorded for each change automatically.
+    ///
+    /// You can set each timestamp manually when committing a change.
+    ///
+    /// NOTE: Timestamps are forced to be in ascending order.
+    /// If you commit a new change with a timestamp that is less than the existing one,
+    /// the largest existing timestamp will be used instead.
     void set_record_timestamp(boolean record);
+
+    /// Set the interval of mergeable changes, in milliseconds.
+    ///
+    /// If two continuous local changes are within the interval, they will be merged into one change.
+    /// The default value is 1000 seconds.
     void set_change_merge_interval(i64 interval);
+
+    /// Set the jitter of the tree position(Fractional Index).
+    ///
+    /// The jitter is used to avoid conflicts when multiple users are creating the node at the same position.
+    /// value 0 is default, which means no jitter, any value larger than 0 will enable jitter.
+    /// Generally speaking, jitter will affect the growth rate of document size.
     void set_fractional_index_jitter(u8 jitter);
+
     // void config_text_style(StyleConfigMap text_style);
+
+    /// Attach the document state to the latest known version.
+    ///
+    /// > The document becomes detached during a `checkout` operation.
+    /// > Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
+    /// > In a detached state, the document is not editable, and any `import` operations will be
+    /// > recorded in the `OpLog` without being applied to the `DocState`.
     void attach();
+
+    /// Checkout the `DocState` to a specific version.
+    ///
+    /// > The document becomes detached during a `checkout` operation.
+    /// > Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
+    /// > In a detached state, the document is not editable, and any `import` operations will be
+    /// > recorded in the `OpLog` without being applied to the `DocState`.
+    ///
+    /// You should call `attach` to attach the `DocState` to the latest version of `OpLog`.
     [Throws=LoroError]
     void checkout([ByRef] Frontiers frontiers);
+
+    /// Checkout the `DocState` to the latest version.
+    ///
+    /// > The document becomes detached during a `checkout` operation.
+    /// > Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
+    /// > In a detached state, the document is not editable, and any `import` operations will be
+    /// > recorded in the `OpLog` without being applied to the `DocState`.
+    ///
+    /// This has the same effect as `attach`.
     void checkout_to_latest();
+
     // Ordering cmp_with_frontiers([ByRef] Frontiers other);
     // cmp_frontiers();
+
+    /// Force the document enter the detached mode.
+    ///
+    /// In this mode, when you importing new updates, the [loro_internal::DocState] will not be changed.
+    ///
+    /// Learn more at https://loro.dev/docs/advanced/doc_state_and_oplog#attacheddetached-status
     void detach();
+    
+    /// Import a batch of updates/snapshot.
+    ///
+    /// The data can be in arbitrary order. The import result will be the same.
     [Throws=LoroError]
     void import_batch([ByRef] sequence<bytes> bytes);
 
     // TODO: id type
-    LoroMovableList get_movable_list(string id);
-    LoroList get_list(string id);
-    LoroMap get_map(string id);
-    LoroText get_text(string id);
-    LoroTree get_tree(string id);
-    LoroCounter get_counter(string id);
+    /// Get a [LoroMovableList] by container id.
+    ///
+    /// If the provided id is string, it will be converted into a root container id with the name of the string.
+    LoroMovableList get_movable_list(ContainerIdLike id);
+    
+    /// Get a [LoroList] by container id.
+    ///
+    /// If the provided id is string, it will be converted into a root container id with the name of the string.
+    LoroList get_list(ContainerIdLike id);
+
+    /// Get a [LoroMap] by container id.
+    ///
+    /// If the provided id is string, it will be converted into a root container id with the name of the string.
+    LoroMap get_map(ContainerIdLike id);
+
+    /// Get a [LoroText] by container id.
+    ///
+    /// If the provided id is string, it will be converted into a root container id with the name of the string.
+    LoroText get_text(ContainerIdLike id);
+
+    /// Get a [LoroTree] by container id.
+    ///
+    /// If the provided id is string, it will be converted into a root container id with the name of the string.  
+    LoroTree get_tree(ContainerIdLike id);
+
+    /// Get a [LoroCounter] by container id.
+    ///
+    /// If the provided id is string, it will be converted into a root container id with the name of the string.
+    LoroCounter get_counter(ContainerIdLike id);
+
+    /// Commit the cumulative auto commit transaction.
+    ///
+    /// There is a transaction behind every operation.
+    /// It will automatically commit when users invoke export or import.
+    /// The event will be sent after a transaction is committed
     void commit();
+
     // void commit_with(CommitOptions options);
+
+    /// Whether the document is in detached mode, where the [loro_internal::DocState] is not
+    /// synchronized with the latest version of the [loro_internal::OpLog].
     boolean is_detached();
+    
+    /// Import updates/snapshot exported by [`LoroDoc::export_snapshot`] or [`LoroDoc::export_from`].
     [Throws=LoroError]
     void import([ByRef]bytes bytes);
+    
+    /// Import updates/snapshot exported by [`LoroDoc::export_snapshot`] or [`LoroDoc::export_from`].
+    ///
+    /// It marks the import with a custom `origin` string. It can be used to track the import source
+    /// in the generated events.
     [Throws=LoroError]
     void import_with([ByRef] bytes bytes, [ByRef] string origin);
+    
     // [Throws=LoroError]
     // void import_json_updates(JsonSchema json);
     // JsonSchema export_json_updates([ByRef]VersionVector start_vv, [ByRef]VersionVector end_vv);
+    
+    /// Export all the ops not included in the given `VersionVector`
     bytes export_from([ByRef] VersionVector vv);
+
+    /// Export the current state and history of the document.
     bytes export_snapshot();
+
+    /// Convert `Frontiers` into `VersionVector`
     VersionVector? frontiers_to_vv([ByRef] Frontiers frontiers);
+
+    /// Convert `VersionVector` into `Frontiers`
     Frontiers vv_to_frontiers([ByRef] VersionVector vv);
     // with_oplog
+
+    /// Get the `VersionVector` version of `OpLog`
     VersionVector oplog_vv();
+
+    /// Get the `VersionVector` version of `OpLog`
     VersionVector state_vv();
+
+    /// Get the total number of operations in the `OpLog`
     u64 len_ops();
+
+    /// Get the total number of changes in the `OpLog`
     u64 len_changes();
+
+    /// Get the current state of the document.
     LoroValue get_deep_value();
+
+    /// Get the `Frontiers` version of `OpLog`
     Frontiers oplog_frontiers();
+
+    /// Get the `Frontiers` version of `DocState`
+    ///
+    /// [Learn more about `Frontiers`]()
     Frontiers state_frontiers();
+
+    /// Get the PeerID
     u64 peer_id();
+
+    /// Change the PeerID
+    ///
+    /// NOTE: You need ot make sure there is no chance two peer have the same PeerID.
+    /// If it happens, the document will be corrupted.
     [Throws=LoroError]
     void set_peer_id(u64 peer);
-    // SubID subscribe([ByRef] ContainerID container_id, Subscriber callback);
-    // SubID subscribe_root(Subscriber callback);
-    void unsubscribe(SubID sub_id);
-    void log_estimate_size();
-    void check_state_correctness_slow();
-    // ValueOrContainer? get_by_path([ByRef] sequence<Index> path);
+
+    /// Subscribe the events of a container.
+    ///
+    /// The callback will be invoked when the container is changed.
+    /// Returns a subscription id that can be used to unsubscribe.
+    SubID subscribe([ByRef] ContainerID container_id, Subscriber subscriber);
     
-    // ValueOrContainer? get_by_str_path([ByRef] string);
+    /// Subscribe all the events.
+    ///
+    /// The callback will be invoked when any part of the [loro_internal::DocState] is changed.
+    /// Returns a subscription id that can be used to unsubscribe.
+    SubID subscribe_root(Subscriber subscriber);
+
+    /// Remove a subscription.
+    void unsubscribe(SubID sub_id);
+
+    // /// Estimate the size of the document states in memory.
+    // void log_estimate_size();
+
+
+    // void check_state_correctness_slow();
+
+    /// Get the handler by the path.
+    ValueOrContainer? get_by_path([ByRef] sequence<Index> path);
+    
+    /// Get the handler by the string path.
+    ValueOrContainer? get_by_str_path([ByRef] string path);
     // [Throws=LoroError]
     // PosQueryResult get_cursor_pos(Cursor cursor);
 };
@@ -563,6 +723,107 @@ interface Frontiers{
 
 };
 
+// ============= EVENTS =============
+
+[Trait]
+interface Subscriber{
+    void on_diff(DiffEvent diff);
+};
+
+dictionary DiffEvent{
+    /// How the event is triggered.
+    EventTriggerKind triggered_by;
+    /// The origin of the event.
+    string origin;
+    /// The current receiver of the event.
+    ContainerID? current_target;
+    /// The diffs of the event.
+    sequence<ContainerDiff> events;
+};
+
+/// A diff of a container.
+dictionary ContainerDiff{
+    /// The target container id of the diff.
+    ContainerID target;
+    /// The path of the diff.
+    sequence<PathItem> path;
+    /// Whether the diff is from unknown container.
+    boolean is_unknown;
+    /// The diff
+    Diff diff;
+};
+
+[Enum]
+interface Diff{
+    List(sequence<ListDiffItem> diff);
+    Text(sequence<TextDelta> diff);
+    Map(MapDelta diff);
+    Tree(TreeDiff diff);
+    Counter(double diff);
+    Unknown();
+};
+
+[Enum]
+interface TextDelta{
+    Retain(u32 retain, record<string, LoroValue>? attributes);
+    Insert(string insert, record<string, LoroValue>? attributes);
+    Delete(u32 delete);
+};
+
+[Enum]
+interface ListDiffItem{
+    /// Insert a new element into the list.
+    Insert(sequence<ValueOrContainer> insert, boolean is_move);
+    /// Delete n elements from the list at the current index.
+    Delete(u32 delete);
+    /// Retain n elements in the list.
+    ///
+    /// This is used to keep the current index unchanged.
+    Retain(u32 retain);
+};
+
+dictionary MapDelta{
+    record<string, ValueOrContainer?> updated;
+};
+
+dictionary TreeDiff{
+    sequence<TreeDiffItem> diff;
+};
+
+
+dictionary TreeDiffItem{
+    TreeID target;
+    TreeExternalDiff action;
+};
+
+[Enum]
+interface TreeExternalDiff{
+    Create(TreeID? parent, u32 index, string fractional_index);
+    Move(TreeID? parent, u32 index, string fractional_index);
+    Delete();
+};
+
+dictionary PathItem{
+    ContainerID container;
+    Index index;
+};
+
+/// The kind of the event trigger.
+enum EventTriggerKind{
+    /// The event is triggered by a local transaction.
+    "Local",
+    /// The event is triggered by importing
+    "Import",
+    /// The event is triggered by checkout
+    "Checkout",
+};
+
+[Enum]
+interface Index{
+    Key(string key);
+    Seq(u32 index);
+    Node(TreeID target);
+};
 
 // ============= TYPES =============
 dictionary TreeID{

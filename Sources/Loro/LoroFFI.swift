@@ -537,6 +537,163 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 
 
 
+public protocol ContainerIdLike : AnyObject {
+    
+    func asContainerId(ty: ContainerType)  -> ContainerId
+    
+}
+
+open class ContainerIdLikeImpl:
+    ContainerIdLike {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_fn_clone_containeridlike(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_fn_free_containeridlike(pointer, $0) }
+    }
+
+    
+
+    
+open func asContainerId(ty: ContainerType) -> ContainerId {
+    return try!  FfiConverterTypeContainerID.lift(try! rustCall() {
+    uniffi_loro_fn_method_containeridlike_as_container_id(self.uniffiClonePointer(),
+        FfiConverterTypeContainerType.lower(ty),$0
+    )
+})
+}
+    
+
+}
+// Magic number for the Rust proxy to call using the same mechanism as every other method,
+// to free the callback once it's dropped by Rust.
+private let IDX_CALLBACK_FREE: Int32 = 0
+// Callback return codes
+private let UNIFFI_CALLBACK_SUCCESS: Int32 = 0
+private let UNIFFI_CALLBACK_ERROR: Int32 = 1
+private let UNIFFI_CALLBACK_UNEXPECTED_ERROR: Int32 = 2
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfaceContainerIdLike {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfaceContainerIdLike = UniffiVTableCallbackInterfaceContainerIdLike(
+        asContainerId: { (
+            uniffiHandle: UInt64,
+            ty: RustBuffer,
+            uniffiOutReturn: UnsafeMutablePointer<RustBuffer>,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> ContainerId in
+                guard let uniffiObj = try? FfiConverterTypeContainerIdLike.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.asContainerId(
+                     ty: try FfiConverterTypeContainerType.lift(ty)
+                )
+            }
+
+            
+            let writeReturn = { uniffiOutReturn.pointee = FfiConverterTypeContainerID.lower($0) }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            let result = try? FfiConverterTypeContainerIdLike.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface ContainerIdLike: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitContainerIdLike() {
+    uniffi_loro_fn_init_callback_vtable_containeridlike(&UniffiCallbackInterfaceContainerIdLike.vtable)
+}
+
+public struct FfiConverterTypeContainerIdLike: FfiConverter {
+    fileprivate static var handleMap = UniffiHandleMap<ContainerIdLike>()
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = ContainerIdLike
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> ContainerIdLike {
+        return ContainerIdLikeImpl(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: ContainerIdLike) -> UnsafeMutableRawPointer {
+        guard let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: handleMap.insert(obj: value))) else {
+            fatalError("Cast to UnsafeMutableRawPointer failed")
+        }
+        return ptr
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ContainerIdLike {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: ContainerIdLike, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+public func FfiConverterTypeContainerIdLike_lift(_ pointer: UnsafeMutableRawPointer) throws -> ContainerIdLike {
+    return try FfiConverterTypeContainerIdLike.lift(pointer)
+}
+
+public func FfiConverterTypeContainerIdLike_lower(_ value: ContainerIdLike) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeContainerIdLike.lower(value)
+}
+
+
+
+
 public protocol CursorProtocol : AnyObject {
     
 }
@@ -992,74 +1149,262 @@ public func FfiConverterTypeLoroCounter_lower(_ value: LoroCounter) -> UnsafeMut
 
 public protocol LoroDocProtocol : AnyObject {
     
+    /**
+     * Attach the document state to the latest known version.
+     *
+     * > The document becomes detached during a `checkout` operation.
+     * > Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
+     * > In a detached state, the document is not editable, and any `import` operations will be
+     * > recorded in the `OpLog` without being applied to the `DocState`.
+     */
     func attach() 
     
-    func checkStateCorrectnessSlow() 
-    
+    /**
+     * Checkout the `DocState` to a specific version.
+     *
+     * > The document becomes detached during a `checkout` operation.
+     * > Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
+     * > In a detached state, the document is not editable, and any `import` operations will be
+     * > recorded in the `OpLog` without being applied to the `DocState`.
+     *
+     * You should call `attach` to attach the `DocState` to the latest version of `OpLog`.
+     */
     func checkout(frontiers: Frontiers) throws 
     
+    /**
+     * Checkout the `DocState` to the latest version.
+     *
+     * > The document becomes detached during a `checkout` operation.
+     * > Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
+     * > In a detached state, the document is not editable, and any `import` operations will be
+     * > recorded in the `OpLog` without being applied to the `DocState`.
+     *
+     * This has the same effect as `attach`.
+     */
     func checkoutToLatest() 
     
+    /**
+     * Commit the cumulative auto commit transaction.
+     *
+     * There is a transaction behind every operation.
+     * It will automatically commit when users invoke export or import.
+     * The event will be sent after a transaction is committed
+     */
     func commit() 
     
+    /**
+     * Force the document enter the detached mode.
+     *
+     * In this mode, when you importing new updates, the [loro_internal::DocState] will not be changed.
+     *
+     * Learn more at https://loro.dev/docs/advanced/doc_state_and_oplog#attacheddetached-status
+     */
     func detach() 
     
+    /**
+     * Export all the ops not included in the given `VersionVector`
+     */
     func exportFrom(vv: VersionVector)  -> Data
     
+    /**
+     * Export the current state and history of the document.
+     */
     func exportSnapshot()  -> Data
     
+    /**
+     * Duplicate the document with a different PeerID
+     *
+     * The time complexity and space complexity of this operation are both O(n),
+     */
     func fork()  -> LoroDoc
     
+    /**
+     * Convert `Frontiers` into `VersionVector`
+     */
     func frontiersToVv(frontiers: Frontiers)  -> VersionVector?
     
-    func getCounter(id: String)  -> LoroCounter
+    /**
+     * Get the handler by the path.
+     */
+    func getByPath(path: [Index])  -> ValueOrContainer?
     
+    /**
+     * Get the handler by the string path.
+     */
+    func getByStrPath(path: String)  -> ValueOrContainer?
+    
+    /**
+     * Get a [LoroCounter] by container id.
+     *
+     * If the provided id is string, it will be converted into a root container id with the name of the string.
+     */
+    func getCounter(id: ContainerIdLike)  -> LoroCounter
+    
+    /**
+     * Get the current state of the document.
+     */
     func getDeepValue()  -> LoroValue
     
-    func getList(id: String)  -> LoroList
+    /**
+     * Get a [LoroList] by container id.
+     *
+     * If the provided id is string, it will be converted into a root container id with the name of the string.
+     */
+    func getList(id: ContainerIdLike)  -> LoroList
     
-    func getMap(id: String)  -> LoroMap
+    /**
+     * Get a [LoroMap] by container id.
+     *
+     * If the provided id is string, it will be converted into a root container id with the name of the string.
+     */
+    func getMap(id: ContainerIdLike)  -> LoroMap
     
-    func getMovableList(id: String)  -> LoroMovableList
+    /**
+     * Get a [LoroMovableList] by container id.
+     *
+     * If the provided id is string, it will be converted into a root container id with the name of the string.
+     */
+    func getMovableList(id: ContainerIdLike)  -> LoroMovableList
     
-    func getText(id: String)  -> LoroText
+    /**
+     * Get a [LoroText] by container id.
+     *
+     * If the provided id is string, it will be converted into a root container id with the name of the string.
+     */
+    func getText(id: ContainerIdLike)  -> LoroText
     
-    func getTree(id: String)  -> LoroTree
+    /**
+     * Get a [LoroTree] by container id.
+     *
+     * If the provided id is string, it will be converted into a root container id with the name of the string.  
+     */
+    func getTree(id: ContainerIdLike)  -> LoroTree
     
+    /**
+     * Import updates/snapshot exported by [`LoroDoc::export_snapshot`] or [`LoroDoc::export_from`].
+     */
     func `import`(bytes: Data) throws 
     
+    /**
+     * Import a batch of updates/snapshot.
+     *
+     * The data can be in arbitrary order. The import result will be the same.
+     */
     func importBatch(bytes: [Data]) throws 
     
+    /**
+     * Import updates/snapshot exported by [`LoroDoc::export_snapshot`] or [`LoroDoc::export_from`].
+     *
+     * It marks the import with a custom `origin` string. It can be used to track the import source
+     * in the generated events.
+     */
     func importWith(bytes: Data, origin: String) throws 
     
+    /**
+     * Whether the document is in detached mode, where the [loro_internal::DocState] is not
+     * synchronized with the latest version of the [loro_internal::OpLog].
+     */
     func isDetached()  -> Bool
     
+    /**
+     * Get the total number of changes in the `OpLog`
+     */
     func lenChanges()  -> UInt64
     
+    /**
+     * Get the total number of operations in the `OpLog`
+     */
     func lenOps()  -> UInt64
     
-    func logEstimateSize() 
-    
+    /**
+     * Get the `Frontiers` version of `OpLog`
+     */
     func oplogFrontiers()  -> Frontiers
     
+    /**
+     * Get the `VersionVector` version of `OpLog`
+     */
     func oplogVv()  -> VersionVector
     
+    /**
+     * Get the PeerID
+     */
     func peerId()  -> UInt64
     
+    /**
+     * Set the interval of mergeable changes, in milliseconds.
+     *
+     * If two continuous local changes are within the interval, they will be merged into one change.
+     * The default value is 1000 seconds.
+     */
     func setChangeMergeInterval(interval: Int64) 
     
+    /**
+     * Set the jitter of the tree position(Fractional Index).
+     *
+     * The jitter is used to avoid conflicts when multiple users are creating the node at the same position.
+     * value 0 is default, which means no jitter, any value larger than 0 will enable jitter.
+     * Generally speaking, jitter will affect the growth rate of document size.
+     */
     func setFractionalIndexJitter(jitter: UInt8) 
     
+    /**
+     * Change the PeerID
+     *
+     * NOTE: You need ot make sure there is no chance two peer have the same PeerID.
+     * If it happens, the document will be corrupted.
+     */
     func setPeerId(peer: UInt64) throws 
     
+    /**
+     * Set whether to record the timestamp of each change. Default is `false`.
+     *
+     * If enabled, the Unix timestamp will be recorded for each change automatically.
+     *
+     * You can set each timestamp manually when committing a change.
+     *
+     * NOTE: Timestamps are forced to be in ascending order.
+     * If you commit a new change with a timestamp that is less than the existing one,
+     * the largest existing timestamp will be used instead.
+     */
     func setRecordTimestamp(record: Bool) 
     
+    /**
+     * Get the `Frontiers` version of `DocState`
+     *
+     * [Learn more about `Frontiers`]()
+     */
     func stateFrontiers()  -> Frontiers
     
+    /**
+     * Get the `VersionVector` version of `OpLog`
+     */
     func stateVv()  -> VersionVector
     
+    /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription id that can be used to unsubscribe.
+     */
+    func subscribe(containerId: ContainerId, subscriber: Subscriber)  -> SubId
+    
+    /**
+     * Subscribe all the events.
+     *
+     * The callback will be invoked when any part of the [loro_internal::DocState] is changed.
+     * Returns a subscription id that can be used to unsubscribe.
+     */
+    func subscribeRoot(subscriber: Subscriber)  -> SubId
+    
+    /**
+     * Remove a subscription.
+     */
     func unsubscribe(subId: SubId) 
     
+    /**
+     * Convert `VersionVector` into `Frontiers`
+     */
     func vvToFrontiers(vv: VersionVector)  -> Frontiers
     
 }
@@ -1092,6 +1437,9 @@ open class LoroDoc:
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_lorodoc(self.pointer, $0) }
     }
+    /**
+     * Create a new `LoroDoc` instance.
+     */
 public convenience init() {
     let pointer =
         try! rustCall() {
@@ -1112,18 +1460,30 @@ public convenience init() {
     
 
     
+    /**
+     * Attach the document state to the latest known version.
+     *
+     * > The document becomes detached during a `checkout` operation.
+     * > Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
+     * > In a detached state, the document is not editable, and any `import` operations will be
+     * > recorded in the `OpLog` without being applied to the `DocState`.
+     */
 open func attach() {try! rustCall() {
     uniffi_loro_fn_method_lorodoc_attach(self.uniffiClonePointer(),$0
     )
 }
 }
     
-open func checkStateCorrectnessSlow() {try! rustCall() {
-    uniffi_loro_fn_method_lorodoc_check_state_correctness_slow(self.uniffiClonePointer(),$0
-    )
-}
-}
-    
+    /**
+     * Checkout the `DocState` to a specific version.
+     *
+     * > The document becomes detached during a `checkout` operation.
+     * > Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
+     * > In a detached state, the document is not editable, and any `import` operations will be
+     * > recorded in the `OpLog` without being applied to the `DocState`.
+     *
+     * You should call `attach` to attach the `DocState` to the latest version of `OpLog`.
+     */
 open func checkout(frontiers: Frontiers)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
     uniffi_loro_fn_method_lorodoc_checkout(self.uniffiClonePointer(),
         FfiConverterTypeFrontiers.lower(frontiers),$0
@@ -1131,24 +1491,51 @@ open func checkout(frontiers: Frontiers)throws  {try rustCallWithError(FfiConver
 }
 }
     
+    /**
+     * Checkout the `DocState` to the latest version.
+     *
+     * > The document becomes detached during a `checkout` operation.
+     * > Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
+     * > In a detached state, the document is not editable, and any `import` operations will be
+     * > recorded in the `OpLog` without being applied to the `DocState`.
+     *
+     * This has the same effect as `attach`.
+     */
 open func checkoutToLatest() {try! rustCall() {
     uniffi_loro_fn_method_lorodoc_checkout_to_latest(self.uniffiClonePointer(),$0
     )
 }
 }
     
+    /**
+     * Commit the cumulative auto commit transaction.
+     *
+     * There is a transaction behind every operation.
+     * It will automatically commit when users invoke export or import.
+     * The event will be sent after a transaction is committed
+     */
 open func commit() {try! rustCall() {
     uniffi_loro_fn_method_lorodoc_commit(self.uniffiClonePointer(),$0
     )
 }
 }
     
+    /**
+     * Force the document enter the detached mode.
+     *
+     * In this mode, when you importing new updates, the [loro_internal::DocState] will not be changed.
+     *
+     * Learn more at https://loro.dev/docs/advanced/doc_state_and_oplog#attacheddetached-status
+     */
 open func detach() {try! rustCall() {
     uniffi_loro_fn_method_lorodoc_detach(self.uniffiClonePointer(),$0
     )
 }
 }
     
+    /**
+     * Export all the ops not included in the given `VersionVector`
+     */
 open func exportFrom(vv: VersionVector) -> Data {
     return try!  FfiConverterData.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_export_from(self.uniffiClonePointer(),
@@ -1157,6 +1544,9 @@ open func exportFrom(vv: VersionVector) -> Data {
 })
 }
     
+    /**
+     * Export the current state and history of the document.
+     */
 open func exportSnapshot() -> Data {
     return try!  FfiConverterData.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_export_snapshot(self.uniffiClonePointer(),$0
@@ -1164,6 +1554,11 @@ open func exportSnapshot() -> Data {
 })
 }
     
+    /**
+     * Duplicate the document with a different PeerID
+     *
+     * The time complexity and space complexity of this operation are both O(n),
+     */
 open func fork() -> LoroDoc {
     return try!  FfiConverterTypeLoroDoc.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_fork(self.uniffiClonePointer(),$0
@@ -1171,6 +1566,9 @@ open func fork() -> LoroDoc {
 })
 }
     
+    /**
+     * Convert `Frontiers` into `VersionVector`
+     */
 open func frontiersToVv(frontiers: Frontiers) -> VersionVector? {
     return try!  FfiConverterOptionTypeVersionVector.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_frontiers_to_vv(self.uniffiClonePointer(),
@@ -1179,14 +1577,44 @@ open func frontiersToVv(frontiers: Frontiers) -> VersionVector? {
 })
 }
     
-open func getCounter(id: String) -> LoroCounter {
-    return try!  FfiConverterTypeLoroCounter.lift(try! rustCall() {
-    uniffi_loro_fn_method_lorodoc_get_counter(self.uniffiClonePointer(),
-        FfiConverterString.lower(id),$0
+    /**
+     * Get the handler by the path.
+     */
+open func getByPath(path: [Index]) -> ValueOrContainer? {
+    return try!  FfiConverterOptionTypeValueOrContainer.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_get_by_path(self.uniffiClonePointer(),
+        FfiConverterSequenceTypeIndex.lower(path),$0
     )
 })
 }
     
+    /**
+     * Get the handler by the string path.
+     */
+open func getByStrPath(path: String) -> ValueOrContainer? {
+    return try!  FfiConverterOptionTypeValueOrContainer.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_get_by_str_path(self.uniffiClonePointer(),
+        FfiConverterString.lower(path),$0
+    )
+})
+}
+    
+    /**
+     * Get a [LoroCounter] by container id.
+     *
+     * If the provided id is string, it will be converted into a root container id with the name of the string.
+     */
+open func getCounter(id: ContainerIdLike) -> LoroCounter {
+    return try!  FfiConverterTypeLoroCounter.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_get_counter(self.uniffiClonePointer(),
+        FfiConverterTypeContainerIdLike.lower(id),$0
+    )
+})
+}
+    
+    /**
+     * Get the current state of the document.
+     */
 open func getDeepValue() -> LoroValue {
     return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_get_deep_value(self.uniffiClonePointer(),$0
@@ -1194,46 +1622,74 @@ open func getDeepValue() -> LoroValue {
 })
 }
     
-open func getList(id: String) -> LoroList {
+    /**
+     * Get a [LoroList] by container id.
+     *
+     * If the provided id is string, it will be converted into a root container id with the name of the string.
+     */
+open func getList(id: ContainerIdLike) -> LoroList {
     return try!  FfiConverterTypeLoroList.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_get_list(self.uniffiClonePointer(),
-        FfiConverterString.lower(id),$0
+        FfiConverterTypeContainerIdLike.lower(id),$0
     )
 })
 }
     
-open func getMap(id: String) -> LoroMap {
+    /**
+     * Get a [LoroMap] by container id.
+     *
+     * If the provided id is string, it will be converted into a root container id with the name of the string.
+     */
+open func getMap(id: ContainerIdLike) -> LoroMap {
     return try!  FfiConverterTypeLoroMap.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_get_map(self.uniffiClonePointer(),
-        FfiConverterString.lower(id),$0
+        FfiConverterTypeContainerIdLike.lower(id),$0
     )
 })
 }
     
-open func getMovableList(id: String) -> LoroMovableList {
+    /**
+     * Get a [LoroMovableList] by container id.
+     *
+     * If the provided id is string, it will be converted into a root container id with the name of the string.
+     */
+open func getMovableList(id: ContainerIdLike) -> LoroMovableList {
     return try!  FfiConverterTypeLoroMovableList.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_get_movable_list(self.uniffiClonePointer(),
-        FfiConverterString.lower(id),$0
+        FfiConverterTypeContainerIdLike.lower(id),$0
     )
 })
 }
     
-open func getText(id: String) -> LoroText {
+    /**
+     * Get a [LoroText] by container id.
+     *
+     * If the provided id is string, it will be converted into a root container id with the name of the string.
+     */
+open func getText(id: ContainerIdLike) -> LoroText {
     return try!  FfiConverterTypeLoroText.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_get_text(self.uniffiClonePointer(),
-        FfiConverterString.lower(id),$0
+        FfiConverterTypeContainerIdLike.lower(id),$0
     )
 })
 }
     
-open func getTree(id: String) -> LoroTree {
+    /**
+     * Get a [LoroTree] by container id.
+     *
+     * If the provided id is string, it will be converted into a root container id with the name of the string.  
+     */
+open func getTree(id: ContainerIdLike) -> LoroTree {
     return try!  FfiConverterTypeLoroTree.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_get_tree(self.uniffiClonePointer(),
-        FfiConverterString.lower(id),$0
+        FfiConverterTypeContainerIdLike.lower(id),$0
     )
 })
 }
     
+    /**
+     * Import updates/snapshot exported by [`LoroDoc::export_snapshot`] or [`LoroDoc::export_from`].
+     */
 open func `import`(bytes: Data)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
     uniffi_loro_fn_method_lorodoc_import(self.uniffiClonePointer(),
         FfiConverterData.lower(bytes),$0
@@ -1241,6 +1697,11 @@ open func `import`(bytes: Data)throws  {try rustCallWithError(FfiConverterTypeLo
 }
 }
     
+    /**
+     * Import a batch of updates/snapshot.
+     *
+     * The data can be in arbitrary order. The import result will be the same.
+     */
 open func importBatch(bytes: [Data])throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
     uniffi_loro_fn_method_lorodoc_import_batch(self.uniffiClonePointer(),
         FfiConverterSequenceData.lower(bytes),$0
@@ -1248,6 +1709,12 @@ open func importBatch(bytes: [Data])throws  {try rustCallWithError(FfiConverterT
 }
 }
     
+    /**
+     * Import updates/snapshot exported by [`LoroDoc::export_snapshot`] or [`LoroDoc::export_from`].
+     *
+     * It marks the import with a custom `origin` string. It can be used to track the import source
+     * in the generated events.
+     */
 open func importWith(bytes: Data, origin: String)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
     uniffi_loro_fn_method_lorodoc_import_with(self.uniffiClonePointer(),
         FfiConverterData.lower(bytes),
@@ -1256,6 +1723,10 @@ open func importWith(bytes: Data, origin: String)throws  {try rustCallWithError(
 }
 }
     
+    /**
+     * Whether the document is in detached mode, where the [loro_internal::DocState] is not
+     * synchronized with the latest version of the [loro_internal::OpLog].
+     */
 open func isDetached() -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_is_detached(self.uniffiClonePointer(),$0
@@ -1263,6 +1734,9 @@ open func isDetached() -> Bool {
 })
 }
     
+    /**
+     * Get the total number of changes in the `OpLog`
+     */
 open func lenChanges() -> UInt64 {
     return try!  FfiConverterUInt64.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_len_changes(self.uniffiClonePointer(),$0
@@ -1270,6 +1744,9 @@ open func lenChanges() -> UInt64 {
 })
 }
     
+    /**
+     * Get the total number of operations in the `OpLog`
+     */
 open func lenOps() -> UInt64 {
     return try!  FfiConverterUInt64.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_len_ops(self.uniffiClonePointer(),$0
@@ -1277,12 +1754,9 @@ open func lenOps() -> UInt64 {
 })
 }
     
-open func logEstimateSize() {try! rustCall() {
-    uniffi_loro_fn_method_lorodoc_log_estimate_size(self.uniffiClonePointer(),$0
-    )
-}
-}
-    
+    /**
+     * Get the `Frontiers` version of `OpLog`
+     */
 open func oplogFrontiers() -> Frontiers {
     return try!  FfiConverterTypeFrontiers.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_oplog_frontiers(self.uniffiClonePointer(),$0
@@ -1290,6 +1764,9 @@ open func oplogFrontiers() -> Frontiers {
 })
 }
     
+    /**
+     * Get the `VersionVector` version of `OpLog`
+     */
 open func oplogVv() -> VersionVector {
     return try!  FfiConverterTypeVersionVector.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_oplog_vv(self.uniffiClonePointer(),$0
@@ -1297,6 +1774,9 @@ open func oplogVv() -> VersionVector {
 })
 }
     
+    /**
+     * Get the PeerID
+     */
 open func peerId() -> UInt64 {
     return try!  FfiConverterUInt64.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_peer_id(self.uniffiClonePointer(),$0
@@ -1304,6 +1784,12 @@ open func peerId() -> UInt64 {
 })
 }
     
+    /**
+     * Set the interval of mergeable changes, in milliseconds.
+     *
+     * If two continuous local changes are within the interval, they will be merged into one change.
+     * The default value is 1000 seconds.
+     */
 open func setChangeMergeInterval(interval: Int64) {try! rustCall() {
     uniffi_loro_fn_method_lorodoc_set_change_merge_interval(self.uniffiClonePointer(),
         FfiConverterInt64.lower(interval),$0
@@ -1311,6 +1797,13 @@ open func setChangeMergeInterval(interval: Int64) {try! rustCall() {
 }
 }
     
+    /**
+     * Set the jitter of the tree position(Fractional Index).
+     *
+     * The jitter is used to avoid conflicts when multiple users are creating the node at the same position.
+     * value 0 is default, which means no jitter, any value larger than 0 will enable jitter.
+     * Generally speaking, jitter will affect the growth rate of document size.
+     */
 open func setFractionalIndexJitter(jitter: UInt8) {try! rustCall() {
     uniffi_loro_fn_method_lorodoc_set_fractional_index_jitter(self.uniffiClonePointer(),
         FfiConverterUInt8.lower(jitter),$0
@@ -1318,6 +1811,12 @@ open func setFractionalIndexJitter(jitter: UInt8) {try! rustCall() {
 }
 }
     
+    /**
+     * Change the PeerID
+     *
+     * NOTE: You need ot make sure there is no chance two peer have the same PeerID.
+     * If it happens, the document will be corrupted.
+     */
 open func setPeerId(peer: UInt64)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
     uniffi_loro_fn_method_lorodoc_set_peer_id(self.uniffiClonePointer(),
         FfiConverterUInt64.lower(peer),$0
@@ -1325,6 +1824,17 @@ open func setPeerId(peer: UInt64)throws  {try rustCallWithError(FfiConverterType
 }
 }
     
+    /**
+     * Set whether to record the timestamp of each change. Default is `false`.
+     *
+     * If enabled, the Unix timestamp will be recorded for each change automatically.
+     *
+     * You can set each timestamp manually when committing a change.
+     *
+     * NOTE: Timestamps are forced to be in ascending order.
+     * If you commit a new change with a timestamp that is less than the existing one,
+     * the largest existing timestamp will be used instead.
+     */
 open func setRecordTimestamp(record: Bool) {try! rustCall() {
     uniffi_loro_fn_method_lorodoc_set_record_timestamp(self.uniffiClonePointer(),
         FfiConverterBool.lower(record),$0
@@ -1332,6 +1842,11 @@ open func setRecordTimestamp(record: Bool) {try! rustCall() {
 }
 }
     
+    /**
+     * Get the `Frontiers` version of `DocState`
+     *
+     * [Learn more about `Frontiers`]()
+     */
 open func stateFrontiers() -> Frontiers {
     return try!  FfiConverterTypeFrontiers.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_state_frontiers(self.uniffiClonePointer(),$0
@@ -1339,6 +1854,9 @@ open func stateFrontiers() -> Frontiers {
 })
 }
     
+    /**
+     * Get the `VersionVector` version of `OpLog`
+     */
 open func stateVv() -> VersionVector {
     return try!  FfiConverterTypeVersionVector.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_state_vv(self.uniffiClonePointer(),$0
@@ -1346,6 +1864,38 @@ open func stateVv() -> VersionVector {
 })
 }
     
+    /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription id that can be used to unsubscribe.
+     */
+open func subscribe(containerId: ContainerId, subscriber: Subscriber) -> SubId {
+    return try!  FfiConverterTypeSubID.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_subscribe(self.uniffiClonePointer(),
+        FfiConverterTypeContainerID.lower(containerId),
+        FfiConverterTypeSubscriber.lower(subscriber),$0
+    )
+})
+}
+    
+    /**
+     * Subscribe all the events.
+     *
+     * The callback will be invoked when any part of the [loro_internal::DocState] is changed.
+     * Returns a subscription id that can be used to unsubscribe.
+     */
+open func subscribeRoot(subscriber: Subscriber) -> SubId {
+    return try!  FfiConverterTypeSubID.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_subscribe_root(self.uniffiClonePointer(),
+        FfiConverterTypeSubscriber.lower(subscriber),$0
+    )
+})
+}
+    
+    /**
+     * Remove a subscription.
+     */
 open func unsubscribe(subId: SubId) {try! rustCall() {
     uniffi_loro_fn_method_lorodoc_unsubscribe(self.uniffiClonePointer(),
         FfiConverterTypeSubID.lower(subId),$0
@@ -1353,6 +1903,9 @@ open func unsubscribe(subId: SubId) {try! rustCall() {
 }
 }
     
+    /**
+     * Convert `VersionVector` into `Frontiers`
+     */
 open func vvToFrontiers(vv: VersionVector) -> Frontiers {
     return try!  FfiConverterTypeFrontiers.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_vv_to_frontiers(self.uniffiClonePointer(),
@@ -3563,13 +4116,7 @@ open func asLoroValue() -> LoroValue {
     
 
 }
-// Magic number for the Rust proxy to call using the same mechanism as every other method,
-// to free the callback once it's dropped by Rust.
-private let IDX_CALLBACK_FREE: Int32 = 0
-// Callback return codes
-private let UNIFFI_CALLBACK_SUCCESS: Int32 = 0
-private let UNIFFI_CALLBACK_ERROR: Int32 = 1
-private let UNIFFI_CALLBACK_UNEXPECTED_ERROR: Int32 = 2
+
 
 // Put the implementation in a struct so we don't pollute the top-level namespace
 fileprivate struct UniffiCallbackInterfaceLoroValueLike {
@@ -3656,6 +4203,108 @@ public func FfiConverterTypeLoroValueLike_lift(_ pointer: UnsafeMutableRawPointe
 
 public func FfiConverterTypeLoroValueLike_lower(_ value: LoroValueLike) -> UnsafeMutableRawPointer {
     return FfiConverterTypeLoroValueLike.lower(value)
+}
+
+
+
+
+public protocol SubscriberProtocol : AnyObject {
+    
+    func onDiff(diff: DiffEvent) 
+    
+}
+
+open class Subscriber:
+    SubscriberProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_fn_clone_subscriber(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_fn_free_subscriber(pointer, $0) }
+    }
+
+    
+
+    
+open func onDiff(diff: DiffEvent) {try! rustCall() {
+    uniffi_loro_fn_method_subscriber_on_diff(self.uniffiClonePointer(),
+        FfiConverterTypeDiffEvent.lower(diff),$0
+    )
+}
+}
+    
+
+}
+
+public struct FfiConverterTypeSubscriber: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Subscriber
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Subscriber {
+        return Subscriber(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Subscriber) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Subscriber {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Subscriber, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+public func FfiConverterTypeSubscriber_lift(_ pointer: UnsafeMutableRawPointer) throws -> Subscriber {
+    return try FfiConverterTypeSubscriber.lift(pointer)
+}
+
+public func FfiConverterTypeSubscriber_lower(_ value: Subscriber) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeSubscriber.lower(value)
 }
 
 
@@ -3918,6 +4567,151 @@ public func FfiConverterTypeVersionVector_lower(_ value: VersionVector) -> Unsaf
 }
 
 
+/**
+ * A diff of a container.
+ */
+public struct ContainerDiff {
+    /**
+     * The target container id of the diff.
+     */
+    public var target: ContainerId
+    /**
+     * The path of the diff.
+     */
+    public var path: [PathItem]
+    /**
+     * Whether the diff is from unknown container.
+     */
+    public var isUnknown: Bool
+    /**
+     * The diff
+     */
+    public var diff: Diff
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The target container id of the diff.
+         */target: ContainerId, 
+        /**
+         * The path of the diff.
+         */path: [PathItem], 
+        /**
+         * Whether the diff is from unknown container.
+         */isUnknown: Bool, 
+        /**
+         * The diff
+         */diff: Diff) {
+        self.target = target
+        self.path = path
+        self.isUnknown = isUnknown
+        self.diff = diff
+    }
+}
+
+
+
+public struct FfiConverterTypeContainerDiff: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ContainerDiff {
+        return
+            try ContainerDiff(
+                target: FfiConverterTypeContainerID.read(from: &buf), 
+                path: FfiConverterSequenceTypePathItem.read(from: &buf), 
+                isUnknown: FfiConverterBool.read(from: &buf), 
+                diff: FfiConverterTypeDiff.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ContainerDiff, into buf: inout [UInt8]) {
+        FfiConverterTypeContainerID.write(value.target, into: &buf)
+        FfiConverterSequenceTypePathItem.write(value.path, into: &buf)
+        FfiConverterBool.write(value.isUnknown, into: &buf)
+        FfiConverterTypeDiff.write(value.diff, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeContainerDiff_lift(_ buf: RustBuffer) throws -> ContainerDiff {
+    return try FfiConverterTypeContainerDiff.lift(buf)
+}
+
+public func FfiConverterTypeContainerDiff_lower(_ value: ContainerDiff) -> RustBuffer {
+    return FfiConverterTypeContainerDiff.lower(value)
+}
+
+
+public struct DiffEvent {
+    /**
+     * How the event is triggered.
+     */
+    public var triggeredBy: EventTriggerKind
+    /**
+     * The origin of the event.
+     */
+    public var origin: String
+    /**
+     * The current receiver of the event.
+     */
+    public var currentTarget: ContainerId?
+    /**
+     * The diffs of the event.
+     */
+    public var events: [ContainerDiff]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * How the event is triggered.
+         */triggeredBy: EventTriggerKind, 
+        /**
+         * The origin of the event.
+         */origin: String, 
+        /**
+         * The current receiver of the event.
+         */currentTarget: ContainerId?, 
+        /**
+         * The diffs of the event.
+         */events: [ContainerDiff]) {
+        self.triggeredBy = triggeredBy
+        self.origin = origin
+        self.currentTarget = currentTarget
+        self.events = events
+    }
+}
+
+
+
+public struct FfiConverterTypeDiffEvent: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DiffEvent {
+        return
+            try DiffEvent(
+                triggeredBy: FfiConverterTypeEventTriggerKind.read(from: &buf), 
+                origin: FfiConverterString.read(from: &buf), 
+                currentTarget: FfiConverterOptionTypeContainerID.read(from: &buf), 
+                events: FfiConverterSequenceTypeContainerDiff.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: DiffEvent, into buf: inout [UInt8]) {
+        FfiConverterTypeEventTriggerKind.write(value.triggeredBy, into: &buf)
+        FfiConverterString.write(value.origin, into: &buf)
+        FfiConverterOptionTypeContainerID.write(value.currentTarget, into: &buf)
+        FfiConverterSequenceTypeContainerDiff.write(value.events, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeDiffEvent_lift(_ buf: RustBuffer) throws -> DiffEvent {
+    return try FfiConverterTypeDiffEvent.lift(buf)
+}
+
+public func FfiConverterTypeDiffEvent_lower(_ value: DiffEvent) -> RustBuffer {
+    return FfiConverterTypeDiffEvent.lower(value)
+}
+
+
 public struct Id {
     public var peer: UInt64
     public var counter: Int32
@@ -3972,6 +4766,204 @@ public func FfiConverterTypeID_lift(_ buf: RustBuffer) throws -> Id {
 
 public func FfiConverterTypeID_lower(_ value: Id) -> RustBuffer {
     return FfiConverterTypeID.lower(value)
+}
+
+
+public struct MapDelta {
+    public var updated: [String: ValueOrContainer?]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(updated: [String: ValueOrContainer?]) {
+        self.updated = updated
+    }
+}
+
+
+
+public struct FfiConverterTypeMapDelta: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MapDelta {
+        return
+            try MapDelta(
+                updated: FfiConverterDictionaryStringOptionTypeValueOrContainer.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: MapDelta, into buf: inout [UInt8]) {
+        FfiConverterDictionaryStringOptionTypeValueOrContainer.write(value.updated, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeMapDelta_lift(_ buf: RustBuffer) throws -> MapDelta {
+    return try FfiConverterTypeMapDelta.lift(buf)
+}
+
+public func FfiConverterTypeMapDelta_lower(_ value: MapDelta) -> RustBuffer {
+    return FfiConverterTypeMapDelta.lower(value)
+}
+
+
+public struct PathItem {
+    public var container: ContainerId
+    public var index: Index
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(container: ContainerId, index: Index) {
+        self.container = container
+        self.index = index
+    }
+}
+
+
+
+extension PathItem: Equatable, Hashable {
+    public static func ==(lhs: PathItem, rhs: PathItem) -> Bool {
+        if lhs.container != rhs.container {
+            return false
+        }
+        if lhs.index != rhs.index {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(container)
+        hasher.combine(index)
+    }
+}
+
+
+public struct FfiConverterTypePathItem: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PathItem {
+        return
+            try PathItem(
+                container: FfiConverterTypeContainerID.read(from: &buf), 
+                index: FfiConverterTypeIndex.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PathItem, into buf: inout [UInt8]) {
+        FfiConverterTypeContainerID.write(value.container, into: &buf)
+        FfiConverterTypeIndex.write(value.index, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypePathItem_lift(_ buf: RustBuffer) throws -> PathItem {
+    return try FfiConverterTypePathItem.lift(buf)
+}
+
+public func FfiConverterTypePathItem_lower(_ value: PathItem) -> RustBuffer {
+    return FfiConverterTypePathItem.lower(value)
+}
+
+
+public struct TreeDiff {
+    public var diff: [TreeDiffItem]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(diff: [TreeDiffItem]) {
+        self.diff = diff
+    }
+}
+
+
+
+extension TreeDiff: Equatable, Hashable {
+    public static func ==(lhs: TreeDiff, rhs: TreeDiff) -> Bool {
+        if lhs.diff != rhs.diff {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(diff)
+    }
+}
+
+
+public struct FfiConverterTypeTreeDiff: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TreeDiff {
+        return
+            try TreeDiff(
+                diff: FfiConverterSequenceTypeTreeDiffItem.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TreeDiff, into buf: inout [UInt8]) {
+        FfiConverterSequenceTypeTreeDiffItem.write(value.diff, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeTreeDiff_lift(_ buf: RustBuffer) throws -> TreeDiff {
+    return try FfiConverterTypeTreeDiff.lift(buf)
+}
+
+public func FfiConverterTypeTreeDiff_lower(_ value: TreeDiff) -> RustBuffer {
+    return FfiConverterTypeTreeDiff.lower(value)
+}
+
+
+public struct TreeDiffItem {
+    public var target: TreeId
+    public var action: TreeExternalDiff
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(target: TreeId, action: TreeExternalDiff) {
+        self.target = target
+        self.action = action
+    }
+}
+
+
+
+extension TreeDiffItem: Equatable, Hashable {
+    public static func ==(lhs: TreeDiffItem, rhs: TreeDiffItem) -> Bool {
+        if lhs.target != rhs.target {
+            return false
+        }
+        if lhs.action != rhs.action {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(target)
+        hasher.combine(action)
+    }
+}
+
+
+public struct FfiConverterTypeTreeDiffItem: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TreeDiffItem {
+        return
+            try TreeDiffItem(
+                target: FfiConverterTypeTreeID.read(from: &buf), 
+                action: FfiConverterTypeTreeExternalDiff.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TreeDiffItem, into buf: inout [UInt8]) {
+        FfiConverterTypeTreeID.write(value.target, into: &buf)
+        FfiConverterTypeTreeExternalDiff.write(value.action, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeTreeDiffItem_lift(_ buf: RustBuffer) throws -> TreeDiffItem {
+    return try FfiConverterTypeTreeDiffItem.lift(buf)
+}
+
+public func FfiConverterTypeTreeDiffItem_lower(_ value: TreeDiffItem) -> RustBuffer {
+    return FfiConverterTypeTreeDiffItem.lower(value)
 }
 
 
@@ -4185,6 +5177,326 @@ public func FfiConverterTypeContainerType_lower(_ value: ContainerType) -> RustB
 
 
 extension ContainerType: Equatable, Hashable {}
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum Diff {
+    
+    case list(diff: [ListDiffItem]
+    )
+    case text(diff: [TextDelta]
+    )
+    case map(diff: MapDelta
+    )
+    case tree(diff: TreeDiff
+    )
+    case counter(diff: Double
+    )
+    case unknown
+}
+
+
+public struct FfiConverterTypeDiff: FfiConverterRustBuffer {
+    typealias SwiftType = Diff
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Diff {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .list(diff: try FfiConverterSequenceTypeListDiffItem.read(from: &buf)
+        )
+        
+        case 2: return .text(diff: try FfiConverterSequenceTypeTextDelta.read(from: &buf)
+        )
+        
+        case 3: return .map(diff: try FfiConverterTypeMapDelta.read(from: &buf)
+        )
+        
+        case 4: return .tree(diff: try FfiConverterTypeTreeDiff.read(from: &buf)
+        )
+        
+        case 5: return .counter(diff: try FfiConverterDouble.read(from: &buf)
+        )
+        
+        case 6: return .unknown
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: Diff, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .list(diff):
+            writeInt(&buf, Int32(1))
+            FfiConverterSequenceTypeListDiffItem.write(diff, into: &buf)
+            
+        
+        case let .text(diff):
+            writeInt(&buf, Int32(2))
+            FfiConverterSequenceTypeTextDelta.write(diff, into: &buf)
+            
+        
+        case let .map(diff):
+            writeInt(&buf, Int32(3))
+            FfiConverterTypeMapDelta.write(diff, into: &buf)
+            
+        
+        case let .tree(diff):
+            writeInt(&buf, Int32(4))
+            FfiConverterTypeTreeDiff.write(diff, into: &buf)
+            
+        
+        case let .counter(diff):
+            writeInt(&buf, Int32(5))
+            FfiConverterDouble.write(diff, into: &buf)
+            
+        
+        case .unknown:
+            writeInt(&buf, Int32(6))
+        
+        }
+    }
+}
+
+
+public func FfiConverterTypeDiff_lift(_ buf: RustBuffer) throws -> Diff {
+    return try FfiConverterTypeDiff.lift(buf)
+}
+
+public func FfiConverterTypeDiff_lower(_ value: Diff) -> RustBuffer {
+    return FfiConverterTypeDiff.lower(value)
+}
+
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * The kind of the event trigger.
+ */
+
+public enum EventTriggerKind {
+    
+    /**
+     * The event is triggered by a local transaction.
+     */
+    case local
+    /**
+     * The event is triggered by importing
+     */
+    case `import`
+    /**
+     * The event is triggered by checkout
+     */
+    case checkout
+}
+
+
+public struct FfiConverterTypeEventTriggerKind: FfiConverterRustBuffer {
+    typealias SwiftType = EventTriggerKind
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> EventTriggerKind {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .local
+        
+        case 2: return .`import`
+        
+        case 3: return .checkout
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: EventTriggerKind, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .local:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .`import`:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .checkout:
+            writeInt(&buf, Int32(3))
+        
+        }
+    }
+}
+
+
+public func FfiConverterTypeEventTriggerKind_lift(_ buf: RustBuffer) throws -> EventTriggerKind {
+    return try FfiConverterTypeEventTriggerKind.lift(buf)
+}
+
+public func FfiConverterTypeEventTriggerKind_lower(_ value: EventTriggerKind) -> RustBuffer {
+    return FfiConverterTypeEventTriggerKind.lower(value)
+}
+
+
+
+extension EventTriggerKind: Equatable, Hashable {}
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum Index {
+    
+    case key(key: String
+    )
+    case seq(index: UInt32
+    )
+    case node(target: TreeId
+    )
+}
+
+
+public struct FfiConverterTypeIndex: FfiConverterRustBuffer {
+    typealias SwiftType = Index
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Index {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .key(key: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 2: return .seq(index: try FfiConverterUInt32.read(from: &buf)
+        )
+        
+        case 3: return .node(target: try FfiConverterTypeTreeID.read(from: &buf)
+        )
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: Index, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .key(key):
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(key, into: &buf)
+            
+        
+        case let .seq(index):
+            writeInt(&buf, Int32(2))
+            FfiConverterUInt32.write(index, into: &buf)
+            
+        
+        case let .node(target):
+            writeInt(&buf, Int32(3))
+            FfiConverterTypeTreeID.write(target, into: &buf)
+            
+        }
+    }
+}
+
+
+public func FfiConverterTypeIndex_lift(_ buf: RustBuffer) throws -> Index {
+    return try FfiConverterTypeIndex.lift(buf)
+}
+
+public func FfiConverterTypeIndex_lower(_ value: Index) -> RustBuffer {
+    return FfiConverterTypeIndex.lower(value)
+}
+
+
+
+extension Index: Equatable, Hashable {}
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum ListDiffItem {
+    
+    /**
+     * Insert a new element into the list.
+     */
+    case insert(insert: [ValueOrContainer], isMove: Bool
+    )
+    /**
+     * Delete n elements from the list at the current index.
+     */
+    case delete(delete: UInt32
+    )
+    /**
+     * Retain n elements in the list.
+     *
+     * This is used to keep the current index unchanged.
+     */
+    case retain(retain: UInt32
+    )
+}
+
+
+public struct FfiConverterTypeListDiffItem: FfiConverterRustBuffer {
+    typealias SwiftType = ListDiffItem
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ListDiffItem {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .insert(insert: try FfiConverterSequenceTypeValueOrContainer.read(from: &buf), isMove: try FfiConverterBool.read(from: &buf)
+        )
+        
+        case 2: return .delete(delete: try FfiConverterUInt32.read(from: &buf)
+        )
+        
+        case 3: return .retain(retain: try FfiConverterUInt32.read(from: &buf)
+        )
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: ListDiffItem, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .insert(insert,isMove):
+            writeInt(&buf, Int32(1))
+            FfiConverterSequenceTypeValueOrContainer.write(insert, into: &buf)
+            FfiConverterBool.write(isMove, into: &buf)
+            
+        
+        case let .delete(delete):
+            writeInt(&buf, Int32(2))
+            FfiConverterUInt32.write(delete, into: &buf)
+            
+        
+        case let .retain(retain):
+            writeInt(&buf, Int32(3))
+            FfiConverterUInt32.write(retain, into: &buf)
+            
+        }
+    }
+}
+
+
+public func FfiConverterTypeListDiffItem_lift(_ buf: RustBuffer) throws -> ListDiffItem {
+    return try FfiConverterTypeListDiffItem.lift(buf)
+}
+
+public func FfiConverterTypeListDiffItem_lower(_ value: ListDiffItem) -> RustBuffer {
+    return FfiConverterTypeListDiffItem.lower(value)
+}
+
 
 
 
@@ -4670,6 +5982,151 @@ extension Side: Equatable, Hashable {}
 
 
 
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum TextDelta {
+    
+    case retain(retain: UInt32, attributes: [String: LoroValue]?
+    )
+    case insert(insert: String, attributes: [String: LoroValue]?
+    )
+    case delete(delete: UInt32
+    )
+}
+
+
+public struct FfiConverterTypeTextDelta: FfiConverterRustBuffer {
+    typealias SwiftType = TextDelta
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TextDelta {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .retain(retain: try FfiConverterUInt32.read(from: &buf), attributes: try FfiConverterOptionDictionaryStringTypeLoroValue.read(from: &buf)
+        )
+        
+        case 2: return .insert(insert: try FfiConverterString.read(from: &buf), attributes: try FfiConverterOptionDictionaryStringTypeLoroValue.read(from: &buf)
+        )
+        
+        case 3: return .delete(delete: try FfiConverterUInt32.read(from: &buf)
+        )
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: TextDelta, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .retain(retain,attributes):
+            writeInt(&buf, Int32(1))
+            FfiConverterUInt32.write(retain, into: &buf)
+            FfiConverterOptionDictionaryStringTypeLoroValue.write(attributes, into: &buf)
+            
+        
+        case let .insert(insert,attributes):
+            writeInt(&buf, Int32(2))
+            FfiConverterString.write(insert, into: &buf)
+            FfiConverterOptionDictionaryStringTypeLoroValue.write(attributes, into: &buf)
+            
+        
+        case let .delete(delete):
+            writeInt(&buf, Int32(3))
+            FfiConverterUInt32.write(delete, into: &buf)
+            
+        }
+    }
+}
+
+
+public func FfiConverterTypeTextDelta_lift(_ buf: RustBuffer) throws -> TextDelta {
+    return try FfiConverterTypeTextDelta.lift(buf)
+}
+
+public func FfiConverterTypeTextDelta_lower(_ value: TextDelta) -> RustBuffer {
+    return FfiConverterTypeTextDelta.lower(value)
+}
+
+
+
+extension TextDelta: Equatable, Hashable {}
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum TreeExternalDiff {
+    
+    case create(parent: TreeId?, index: UInt32, fractionalIndex: String
+    )
+    case move(parent: TreeId?, index: UInt32, fractionalIndex: String
+    )
+    case delete
+}
+
+
+public struct FfiConverterTypeTreeExternalDiff: FfiConverterRustBuffer {
+    typealias SwiftType = TreeExternalDiff
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TreeExternalDiff {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .create(parent: try FfiConverterOptionTypeTreeID.read(from: &buf), index: try FfiConverterUInt32.read(from: &buf), fractionalIndex: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 2: return .move(parent: try FfiConverterOptionTypeTreeID.read(from: &buf), index: try FfiConverterUInt32.read(from: &buf), fractionalIndex: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 3: return .delete
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: TreeExternalDiff, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .create(parent,index,fractionalIndex):
+            writeInt(&buf, Int32(1))
+            FfiConverterOptionTypeTreeID.write(parent, into: &buf)
+            FfiConverterUInt32.write(index, into: &buf)
+            FfiConverterString.write(fractionalIndex, into: &buf)
+            
+        
+        case let .move(parent,index,fractionalIndex):
+            writeInt(&buf, Int32(2))
+            FfiConverterOptionTypeTreeID.write(parent, into: &buf)
+            FfiConverterUInt32.write(index, into: &buf)
+            FfiConverterString.write(fractionalIndex, into: &buf)
+            
+        
+        case .delete:
+            writeInt(&buf, Int32(3))
+        
+        }
+    }
+}
+
+
+public func FfiConverterTypeTreeExternalDiff_lift(_ buf: RustBuffer) throws -> TreeExternalDiff {
+    return try FfiConverterTypeTreeExternalDiff.lift(buf)
+}
+
+public func FfiConverterTypeTreeExternalDiff_lower(_ value: TreeExternalDiff) -> RustBuffer {
+    return FfiConverterTypeTreeExternalDiff.lower(value)
+}
+
+
+
+extension TreeExternalDiff: Equatable, Hashable {}
+
+
+
 fileprivate struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
     typealias SwiftType = UInt32?
 
@@ -4901,6 +6358,27 @@ fileprivate struct FfiConverterOptionSequenceTypeTreeID: FfiConverterRustBuffer 
     }
 }
 
+fileprivate struct FfiConverterOptionDictionaryStringTypeLoroValue: FfiConverterRustBuffer {
+    typealias SwiftType = [String: LoroValue]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterDictionaryStringTypeLoroValue.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterDictionaryStringTypeLoroValue.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 fileprivate struct FfiConverterSequenceUInt8: FfiConverterRustBuffer {
     typealias SwiftType = [UInt8]
 
@@ -4945,6 +6423,94 @@ fileprivate struct FfiConverterSequenceData: FfiConverterRustBuffer {
     }
 }
 
+fileprivate struct FfiConverterSequenceTypeValueOrContainer: FfiConverterRustBuffer {
+    typealias SwiftType = [ValueOrContainer]
+
+    public static func write(_ value: [ValueOrContainer], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeValueOrContainer.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ValueOrContainer] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ValueOrContainer]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeValueOrContainer.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+fileprivate struct FfiConverterSequenceTypeContainerDiff: FfiConverterRustBuffer {
+    typealias SwiftType = [ContainerDiff]
+
+    public static func write(_ value: [ContainerDiff], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeContainerDiff.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ContainerDiff] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ContainerDiff]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeContainerDiff.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+fileprivate struct FfiConverterSequenceTypePathItem: FfiConverterRustBuffer {
+    typealias SwiftType = [PathItem]
+
+    public static func write(_ value: [PathItem], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypePathItem.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [PathItem] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [PathItem]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypePathItem.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+fileprivate struct FfiConverterSequenceTypeTreeDiffItem: FfiConverterRustBuffer {
+    typealias SwiftType = [TreeDiffItem]
+
+    public static func write(_ value: [TreeDiffItem], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeTreeDiffItem.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [TreeDiffItem] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [TreeDiffItem]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeTreeDiffItem.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 fileprivate struct FfiConverterSequenceTypeTreeID: FfiConverterRustBuffer {
     typealias SwiftType = [TreeId]
 
@@ -4962,6 +6528,50 @@ fileprivate struct FfiConverterSequenceTypeTreeID: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterTypeTreeID.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+fileprivate struct FfiConverterSequenceTypeIndex: FfiConverterRustBuffer {
+    typealias SwiftType = [Index]
+
+    public static func write(_ value: [Index], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeIndex.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [Index] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [Index]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeIndex.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+fileprivate struct FfiConverterSequenceTypeListDiffItem: FfiConverterRustBuffer {
+    typealias SwiftType = [ListDiffItem]
+
+    public static func write(_ value: [ListDiffItem], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeListDiffItem.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ListDiffItem] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ListDiffItem]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeListDiffItem.read(from: &buf))
         }
         return seq
     }
@@ -4989,6 +6599,28 @@ fileprivate struct FfiConverterSequenceTypeLoroValue: FfiConverterRustBuffer {
     }
 }
 
+fileprivate struct FfiConverterSequenceTypeTextDelta: FfiConverterRustBuffer {
+    typealias SwiftType = [TextDelta]
+
+    public static func write(_ value: [TextDelta], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeTextDelta.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [TextDelta] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [TextDelta]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeTextDelta.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 fileprivate struct FfiConverterDictionaryStringTypeLoroValue: FfiConverterRustBuffer {
     public static func write(_ value: [String: LoroValue], into buf: inout [UInt8]) {
         let len = Int32(value.count)
@@ -5006,6 +6638,29 @@ fileprivate struct FfiConverterDictionaryStringTypeLoroValue: FfiConverterRustBu
         for _ in 0..<len {
             let key = try FfiConverterString.read(from: &buf)
             let value = try FfiConverterTypeLoroValue.read(from: &buf)
+            dict[key] = value
+        }
+        return dict
+    }
+}
+
+fileprivate struct FfiConverterDictionaryStringOptionTypeValueOrContainer: FfiConverterRustBuffer {
+    public static func write(_ value: [String: ValueOrContainer?], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for (key, value) in value {
+            FfiConverterString.write(key, into: &buf)
+            FfiConverterOptionTypeValueOrContainer.write(value, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String: ValueOrContainer?] {
+        let len: Int32 = try readInt(&buf)
+        var dict = [String: ValueOrContainer?]()
+        dict.reserveCapacity(Int(len))
+        for _ in 0..<len {
+            let key = try FfiConverterString.read(from: &buf)
+            let value = try FfiConverterOptionTypeValueOrContainer.read(from: &buf)
             dict[key] = value
         }
         return dict
@@ -5061,6 +6716,9 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
+    if (uniffi_loro_checksum_method_containeridlike_as_container_id() != 41081) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorocounter_decrement() != 53919) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -5074,9 +6732,6 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_attach() != 7252) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_loro_checksum_method_lorodoc_check_state_correctness_slow() != 43878) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_checkout() != 415) {
@@ -5103,25 +6758,31 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_frontiers_to_vv() != 11123) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_get_counter() != 45614) {
+    if (uniffi_loro_checksum_method_lorodoc_get_by_path() != 35945) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_get_by_str_path() != 6739) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_get_counter() != 12597) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_get_deep_value() != 3404) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_get_list() != 36875) {
+    if (uniffi_loro_checksum_method_lorodoc_get_list() != 9609) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_get_map() != 58175) {
+    if (uniffi_loro_checksum_method_lorodoc_get_map() != 63137) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_get_movable_list() != 56244) {
+    if (uniffi_loro_checksum_method_lorodoc_get_movable_list() != 7302) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_get_text() != 3885) {
+    if (uniffi_loro_checksum_method_lorodoc_get_text() != 56069) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_get_tree() != 41111) {
+    if (uniffi_loro_checksum_method_lorodoc_get_tree() != 54189) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_import() != 8639) {
@@ -5140,9 +6801,6 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_len_ops() != 11644) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_loro_checksum_method_lorodoc_log_estimate_size() != 19429) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_oplog_frontiers() != 49043) {
@@ -5170,6 +6828,12 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_state_vv() != 1627) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_subscribe() != 56858) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_subscribe_root() != 41210) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_unsubscribe() != 32901) {
@@ -5460,6 +7124,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorovaluelike_as_loro_value() != 23668) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_subscriber_on_diff() != 56592) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_valueorcontainer_as_container() != 61163) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -5509,6 +7176,7 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
 
+    uniffiCallbackInitContainerIdLike()
     uniffiCallbackInitLoroValueLike()
     return InitializationResult.ok
 }()
