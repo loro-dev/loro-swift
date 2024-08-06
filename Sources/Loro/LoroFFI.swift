@@ -829,6 +829,26 @@ public func FfiConverterTypeIdSpan_lower(_ value: IdSpan) -> UnsafeMutableRawPoi
 
 public protocol LoroCounterProtocol : AnyObject {
     
+    /**
+     * Decrement the counter by the given value.
+     */
+    func decrement(value: Double) throws 
+    
+    /**
+     * Get the current value of the counter.
+     */
+    func getValue()  -> Double
+    
+    /**
+     * Return container id of the Counter.
+     */
+    func id()  -> ContainerId
+    
+    /**
+     * Increment the counter by the given value.
+     */
+    func increment(value: Double) throws 
+    
 }
 
 open class LoroCounter:
@@ -859,6 +879,9 @@ open class LoroCounter:
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_lorocounter(self.pointer, $0) }
     }
+    /**
+     * Create a new Counter.
+     */
 public convenience init() {
     let pointer =
         try! rustCall() {
@@ -878,6 +901,46 @@ public convenience init() {
 
     
 
+    
+    /**
+     * Decrement the counter by the given value.
+     */
+open func decrement(value: Double)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorocounter_decrement(self.uniffiClonePointer(),
+        FfiConverterDouble.lower(value),$0
+    )
+}
+}
+    
+    /**
+     * Get the current value of the counter.
+     */
+open func getValue() -> Double {
+    return try!  FfiConverterDouble.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorocounter_get_value(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Return container id of the Counter.
+     */
+open func id() -> ContainerId {
+    return try!  FfiConverterTypeContainerID.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorocounter_id(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Increment the counter by the given value.
+     */
+open func increment(value: Double)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorocounter_increment(self.uniffiClonePointer(),
+        FfiConverterDouble.lower(value),$0
+    )
+}
+}
     
 
 }
@@ -1348,18 +1411,38 @@ public func FfiConverterTypeLoroDoc_lower(_ value: LoroDoc) -> UnsafeMutableRawP
 
 public protocol LoroListProtocol : AnyObject {
     
+    /**
+     * Delete values at the given position.
+     */
     func delete(pos: UInt32, len: UInt32) throws 
     
+    /**
+     * Get the value at the given position.
+     */
     func get(index: UInt32)  -> ValueOrContainer?
     
     func getCursor(pos: UInt32, side: Side)  -> Cursor?
     
+    /**
+     * Get the deep value of the container.
+     */
     func getDeepValue()  -> LoroValue
     
+    /**
+     * Get the shallow value of the container.
+     *
+     * This does not convert the state of sub-containers; instead, it represents them as [LoroValue::Container].
+     */
     func getValue()  -> LoroValue
     
+    /**
+     * Get the ID of the container.
+     */
     func id()  -> ContainerId
     
+    /**
+     * Insert a value at the given position.
+     */
     func insert(pos: UInt32, v: LoroValueLike) throws 
     
     func insertCounterContainer(pos: UInt32, child: LoroCounter) throws  -> LoroCounter
@@ -1374,6 +1457,21 @@ public protocol LoroListProtocol : AnyObject {
     
     func insertTreeContainer(pos: UInt32, child: LoroTree) throws  -> LoroTree
     
+    /**
+     * Whether the container is attached to a document
+     *
+     * The edits on a detached container will not be persisted.
+     * To attach the container to the document, please insert it into an attached container.
+     */
+    func isAttached()  -> Bool
+    
+    func isEmpty()  -> Bool
+    
+    func len()  -> UInt32
+    
+    /**
+     * Pop the last element of the list.
+     */
     func pop() throws  -> LoroValue?
     
     func push(v: LoroValueLike) throws 
@@ -1408,6 +1506,12 @@ open class LoroList:
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_lorolist(self.pointer, $0) }
     }
+    /**
+     * Create a new container that is detached from the document.
+     *
+     * The edits on a detached container will not be persisted.
+     * To attach the container to the document, please insert it into an attached container.
+     */
 public convenience init() {
     let pointer =
         try! rustCall() {
@@ -1428,6 +1532,9 @@ public convenience init() {
     
 
     
+    /**
+     * Delete values at the given position.
+     */
 open func delete(pos: UInt32, len: UInt32)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
     uniffi_loro_fn_method_lorolist_delete(self.uniffiClonePointer(),
         FfiConverterUInt32.lower(pos),
@@ -1436,6 +1543,9 @@ open func delete(pos: UInt32, len: UInt32)throws  {try rustCallWithError(FfiConv
 }
 }
     
+    /**
+     * Get the value at the given position.
+     */
 open func get(index: UInt32) -> ValueOrContainer? {
     return try!  FfiConverterOptionTypeValueOrContainer.lift(try! rustCall() {
     uniffi_loro_fn_method_lorolist_get(self.uniffiClonePointer(),
@@ -1453,6 +1563,9 @@ open func getCursor(pos: UInt32, side: Side) -> Cursor? {
 })
 }
     
+    /**
+     * Get the deep value of the container.
+     */
 open func getDeepValue() -> LoroValue {
     return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
     uniffi_loro_fn_method_lorolist_get_deep_value(self.uniffiClonePointer(),$0
@@ -1460,6 +1573,11 @@ open func getDeepValue() -> LoroValue {
 })
 }
     
+    /**
+     * Get the shallow value of the container.
+     *
+     * This does not convert the state of sub-containers; instead, it represents them as [LoroValue::Container].
+     */
 open func getValue() -> LoroValue {
     return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
     uniffi_loro_fn_method_lorolist_get_value(self.uniffiClonePointer(),$0
@@ -1467,6 +1585,9 @@ open func getValue() -> LoroValue {
 })
 }
     
+    /**
+     * Get the ID of the container.
+     */
 open func id() -> ContainerId {
     return try!  FfiConverterTypeContainerID.lift(try! rustCall() {
     uniffi_loro_fn_method_lorolist_id(self.uniffiClonePointer(),$0
@@ -1474,6 +1595,9 @@ open func id() -> ContainerId {
 })
 }
     
+    /**
+     * Insert a value at the given position.
+     */
 open func insert(pos: UInt32, v: LoroValueLike)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
     uniffi_loro_fn_method_lorolist_insert(self.uniffiClonePointer(),
         FfiConverterUInt32.lower(pos),
@@ -1536,6 +1660,36 @@ open func insertTreeContainer(pos: UInt32, child: LoroTree)throws  -> LoroTree {
 })
 }
     
+    /**
+     * Whether the container is attached to a document
+     *
+     * The edits on a detached container will not be persisted.
+     * To attach the container to the document, please insert it into an attached container.
+     */
+open func isAttached() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorolist_is_attached(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func isEmpty() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorolist_is_empty(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func len() -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorolist_len(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Pop the last element of the list.
+     */
 open func pop()throws  -> LoroValue? {
     return try  FfiConverterOptionTypeLoroValue.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
     uniffi_loro_fn_method_lorolist_pop(self.uniffiClonePointer(),$0
@@ -1600,6 +1754,67 @@ public func FfiConverterTypeLoroList_lower(_ value: LoroList) -> UnsafeMutableRa
 
 public protocol LoroMapProtocol : AnyObject {
     
+    /**
+     * Delete a key-value pair from the map.
+     */
+    func delete(key: String) throws 
+    
+    /**
+     * Get the value of the map with the given key.
+     */
+    func get(key: String)  -> ValueOrContainer?
+    
+    /**
+     * Get the deep value of the map.
+     *
+     * It will convert the state of sub-containers into a nested JSON value.
+     */
+    func getDeepValue()  -> LoroValue
+    
+    /**
+     * Get the shallow value of the map.
+     *
+     * It will not convert the state of sub-containers, but represent them as [LoroValue::Container].
+     */
+    func getValue()  -> LoroValue
+    
+    /**
+     * Get the ID of the map.
+     */
+    func id()  -> ContainerId
+    
+    /**
+     * Insert a key-value pair into the map.
+     */
+    func insert(key: String, v: LoroValueLike) throws 
+    
+    func insertCounterContainer(key: String, child: LoroCounter) throws  -> LoroCounter
+    
+    func insertListContainer(key: String, child: LoroList) throws  -> LoroList
+    
+    func insertMapContainer(key: String, child: LoroMap) throws  -> LoroMap
+    
+    func insertMovableListContainer(key: String, child: LoroMovableList) throws  -> LoroMovableList
+    
+    func insertTextContainer(key: String, child: LoroText) throws  -> LoroText
+    
+    func insertTreeContainer(key: String, child: LoroTree) throws  -> LoroTree
+    
+    /**
+     * Whether the container is attached to a document.
+     */
+    func isAttached()  -> Bool
+    
+    /**
+     * Whether the map is empty.
+     */
+    func isEmpty()  -> Bool
+    
+    /**
+     * Get the length of the map.
+     */
+    func len()  -> UInt32
+    
 }
 
 open class LoroMap:
@@ -1630,6 +1845,12 @@ open class LoroMap:
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_loromap(self.pointer, $0) }
     }
+    /**
+     * Create a new container that is detached from the document.
+     *
+     * The edits on a detached container will not be persisted.
+     * To attach the container to the document, please insert it into an attached container.
+     */
 public convenience init() {
     let pointer =
         try! rustCall() {
@@ -1649,6 +1870,156 @@ public convenience init() {
 
     
 
+    
+    /**
+     * Delete a key-value pair from the map.
+     */
+open func delete(key: String)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromap_delete(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),$0
+    )
+}
+}
+    
+    /**
+     * Get the value of the map with the given key.
+     */
+open func get(key: String) -> ValueOrContainer? {
+    return try!  FfiConverterOptionTypeValueOrContainer.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromap_get(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),$0
+    )
+})
+}
+    
+    /**
+     * Get the deep value of the map.
+     *
+     * It will convert the state of sub-containers into a nested JSON value.
+     */
+open func getDeepValue() -> LoroValue {
+    return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromap_get_deep_value(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the shallow value of the map.
+     *
+     * It will not convert the state of sub-containers, but represent them as [LoroValue::Container].
+     */
+open func getValue() -> LoroValue {
+    return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromap_get_value(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the ID of the map.
+     */
+open func id() -> ContainerId {
+    return try!  FfiConverterTypeContainerID.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromap_id(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Insert a key-value pair into the map.
+     */
+open func insert(key: String, v: LoroValueLike)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromap_insert(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),
+        FfiConverterTypeLoroValueLike.lower(v),$0
+    )
+}
+}
+    
+open func insertCounterContainer(key: String, child: LoroCounter)throws  -> LoroCounter {
+    return try  FfiConverterTypeLoroCounter.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromap_insert_counter_container(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),
+        FfiConverterTypeLoroCounter.lower(child),$0
+    )
+})
+}
+    
+open func insertListContainer(key: String, child: LoroList)throws  -> LoroList {
+    return try  FfiConverterTypeLoroList.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromap_insert_list_container(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),
+        FfiConverterTypeLoroList.lower(child),$0
+    )
+})
+}
+    
+open func insertMapContainer(key: String, child: LoroMap)throws  -> LoroMap {
+    return try  FfiConverterTypeLoroMap.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromap_insert_map_container(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),
+        FfiConverterTypeLoroMap.lower(child),$0
+    )
+})
+}
+    
+open func insertMovableListContainer(key: String, child: LoroMovableList)throws  -> LoroMovableList {
+    return try  FfiConverterTypeLoroMovableList.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromap_insert_movable_list_container(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),
+        FfiConverterTypeLoroMovableList.lower(child),$0
+    )
+})
+}
+    
+open func insertTextContainer(key: String, child: LoroText)throws  -> LoroText {
+    return try  FfiConverterTypeLoroText.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromap_insert_text_container(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),
+        FfiConverterTypeLoroText.lower(child),$0
+    )
+})
+}
+    
+open func insertTreeContainer(key: String, child: LoroTree)throws  -> LoroTree {
+    return try  FfiConverterTypeLoroTree.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromap_insert_tree_container(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),
+        FfiConverterTypeLoroTree.lower(child),$0
+    )
+})
+}
+    
+    /**
+     * Whether the container is attached to a document.
+     */
+open func isAttached() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromap_is_attached(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Whether the map is empty.
+     */
+open func isEmpty() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromap_is_empty(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the length of the map.
+     */
+open func len() -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromap_len(self.uniffiClonePointer(),$0
+    )
+})
+}
     
 
 }
@@ -1700,6 +2071,88 @@ public func FfiConverterTypeLoroMap_lower(_ value: LoroMap) -> UnsafeMutableRawP
 
 public protocol LoroMovableListProtocol : AnyObject {
     
+    /**
+     * Delete values at the given position.
+     */
+    func delete(pos: UInt32, len: UInt32) throws 
+    
+    /**
+     * Get the value at the given position.
+     */
+    func get(index: UInt32)  -> ValueOrContainer?
+    
+    /**
+     * Get the cursor at the given position.
+     *
+     * Using "index" to denote cursor positions can be unstable, as positions may
+     * shift with document edits. To reliably represent a position or range within
+     * a document, it is more effective to leverage the unique ID of each item/character
+     * in a List CRDT or Text CRDT.
+     *
+     * Loro optimizes State metadata by not storing the IDs of deleted elements. This
+     * approach complicates tracking cursors since they rely on these IDs. The solution
+     * recalculates position by replaying relevant history to update stable positions
+     * accurately. To minimize the performance impact of history replay, the system
+     * updates cursor info to reference only the IDs of currently present elements,
+     * thereby reducing the need for replay.
+     */
+    func getCursor(pos: UInt32, side: Side)  -> Cursor?
+    
+    /**
+     * Get the container id.
+     */
+    func id()  -> ContainerId
+    
+    /**
+     * Insert a value at the given position.
+     */
+    func insert(pos: UInt32, v: LoroValueLike) throws 
+    
+    func insertCounterContainer(pos: UInt32, child: LoroCounter) throws  -> LoroCounter
+    
+    func insertListContainer(pos: UInt32, child: LoroList) throws  -> LoroList
+    
+    func insertMapContainer(pos: UInt32, child: LoroMap) throws  -> LoroMap
+    
+    func insertMovableListContainer(pos: UInt32, child: LoroMovableList) throws  -> LoroMovableList
+    
+    func insertTextContainer(pos: UInt32, child: LoroText) throws  -> LoroText
+    
+    func insertTreeContainer(pos: UInt32, child: LoroTree) throws  -> LoroTree
+    
+    func isEmpty()  -> Bool
+    
+    func len()  -> UInt32
+    
+    /**
+     * Move the value at the given position to the given position.
+     */
+    func mov(from: UInt32, to: UInt32) throws 
+    
+    /**
+     * Pop the last element of the list.
+     */
+    func pop() throws  -> ValueOrContainer?
+    
+    func push(v: LoroValueLike) throws 
+    
+    /**
+     * Set the value at the given position.
+     */
+    func set(pos: UInt32, value: LoroValueLike) throws 
+    
+    func setCounterContainer(pos: UInt32, child: LoroCounter) throws  -> LoroCounter
+    
+    func setListContainer(pos: UInt32, child: LoroList) throws  -> LoroList
+    
+    func setMapContainer(pos: UInt32, child: LoroMap) throws  -> LoroMap
+    
+    func setMovableListContainer(pos: UInt32, child: LoroMovableList) throws  -> LoroMovableList
+    
+    func setTextContainer(pos: UInt32, child: LoroText) throws  -> LoroText
+    
+    func setTreeContainer(pos: UInt32, child: LoroTree) throws  -> LoroTree
+    
 }
 
 open class LoroMovableList:
@@ -1730,6 +2183,12 @@ open class LoroMovableList:
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_loromovablelist(self.pointer, $0) }
     }
+    /**
+     * Create a new container that is detached from the document.
+     *
+     * The edits on a detached container will not be persisted.
+     * To attach the container to the document, please insert it into an attached container.
+     */
 public convenience init() {
     let pointer =
         try! rustCall() {
@@ -1749,6 +2208,234 @@ public convenience init() {
 
     
 
+    
+    /**
+     * Delete values at the given position.
+     */
+open func delete(pos: UInt32, len: UInt32)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_delete(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterUInt32.lower(len),$0
+    )
+}
+}
+    
+    /**
+     * Get the value at the given position.
+     */
+open func get(index: UInt32) -> ValueOrContainer? {
+    return try!  FfiConverterOptionTypeValueOrContainer.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromovablelist_get(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(index),$0
+    )
+})
+}
+    
+    /**
+     * Get the cursor at the given position.
+     *
+     * Using "index" to denote cursor positions can be unstable, as positions may
+     * shift with document edits. To reliably represent a position or range within
+     * a document, it is more effective to leverage the unique ID of each item/character
+     * in a List CRDT or Text CRDT.
+     *
+     * Loro optimizes State metadata by not storing the IDs of deleted elements. This
+     * approach complicates tracking cursors since they rely on these IDs. The solution
+     * recalculates position by replaying relevant history to update stable positions
+     * accurately. To minimize the performance impact of history replay, the system
+     * updates cursor info to reference only the IDs of currently present elements,
+     * thereby reducing the need for replay.
+     */
+open func getCursor(pos: UInt32, side: Side) -> Cursor? {
+    return try!  FfiConverterOptionTypeCursor.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromovablelist_get_cursor(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeSide.lower(side),$0
+    )
+})
+}
+    
+    /**
+     * Get the container id.
+     */
+open func id() -> ContainerId {
+    return try!  FfiConverterTypeContainerID.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromovablelist_id(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Insert a value at the given position.
+     */
+open func insert(pos: UInt32, v: LoroValueLike)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_insert(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroValueLike.lower(v),$0
+    )
+}
+}
+    
+open func insertCounterContainer(pos: UInt32, child: LoroCounter)throws  -> LoroCounter {
+    return try  FfiConverterTypeLoroCounter.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_insert_counter_container(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroCounter.lower(child),$0
+    )
+})
+}
+    
+open func insertListContainer(pos: UInt32, child: LoroList)throws  -> LoroList {
+    return try  FfiConverterTypeLoroList.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_insert_list_container(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroList.lower(child),$0
+    )
+})
+}
+    
+open func insertMapContainer(pos: UInt32, child: LoroMap)throws  -> LoroMap {
+    return try  FfiConverterTypeLoroMap.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_insert_map_container(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroMap.lower(child),$0
+    )
+})
+}
+    
+open func insertMovableListContainer(pos: UInt32, child: LoroMovableList)throws  -> LoroMovableList {
+    return try  FfiConverterTypeLoroMovableList.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_insert_movable_list_container(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroMovableList.lower(child),$0
+    )
+})
+}
+    
+open func insertTextContainer(pos: UInt32, child: LoroText)throws  -> LoroText {
+    return try  FfiConverterTypeLoroText.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_insert_text_container(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroText.lower(child),$0
+    )
+})
+}
+    
+open func insertTreeContainer(pos: UInt32, child: LoroTree)throws  -> LoroTree {
+    return try  FfiConverterTypeLoroTree.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_insert_tree_container(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroTree.lower(child),$0
+    )
+})
+}
+    
+open func isEmpty() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromovablelist_is_empty(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func len() -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromovablelist_len(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Move the value at the given position to the given position.
+     */
+open func mov(from: UInt32, to: UInt32)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_mov(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(from),
+        FfiConverterUInt32.lower(to),$0
+    )
+}
+}
+    
+    /**
+     * Pop the last element of the list.
+     */
+open func pop()throws  -> ValueOrContainer? {
+    return try  FfiConverterOptionTypeValueOrContainer.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_pop(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func push(v: LoroValueLike)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_push(self.uniffiClonePointer(),
+        FfiConverterTypeLoroValueLike.lower(v),$0
+    )
+}
+}
+    
+    /**
+     * Set the value at the given position.
+     */
+open func set(pos: UInt32, value: LoroValueLike)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_set(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroValueLike.lower(value),$0
+    )
+}
+}
+    
+open func setCounterContainer(pos: UInt32, child: LoroCounter)throws  -> LoroCounter {
+    return try  FfiConverterTypeLoroCounter.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_set_counter_container(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroCounter.lower(child),$0
+    )
+})
+}
+    
+open func setListContainer(pos: UInt32, child: LoroList)throws  -> LoroList {
+    return try  FfiConverterTypeLoroList.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_set_list_container(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroList.lower(child),$0
+    )
+})
+}
+    
+open func setMapContainer(pos: UInt32, child: LoroMap)throws  -> LoroMap {
+    return try  FfiConverterTypeLoroMap.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_set_map_container(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroMap.lower(child),$0
+    )
+})
+}
+    
+open func setMovableListContainer(pos: UInt32, child: LoroMovableList)throws  -> LoroMovableList {
+    return try  FfiConverterTypeLoroMovableList.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_set_movable_list_container(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroMovableList.lower(child),$0
+    )
+})
+}
+    
+open func setTextContainer(pos: UInt32, child: LoroText)throws  -> LoroText {
+    return try  FfiConverterTypeLoroText.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_set_text_container(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroText.lower(child),$0
+    )
+})
+}
+    
+open func setTreeContainer(pos: UInt32, child: LoroTree)throws  -> LoroTree {
+    return try  FfiConverterTypeLoroTree.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_set_tree_container(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeLoroTree.lower(child),$0
+    )
+})
+}
     
 
 }
@@ -1800,9 +2487,138 @@ public func FfiConverterTypeLoroMovableList_lower(_ value: LoroMovableList) -> U
 
 public protocol LoroTextProtocol : AnyObject {
     
+    /**
+     * Delete a range of text at the given unicode position with unicode length.
+     */
+    func delete(pos: UInt32, len: UInt32) throws 
+    
+    /**
+     * Delete a range of text at the given utf-8 position with utf-8 length.
+     */
+    func deleteUtf8(pos: UInt32, len: UInt32) throws 
+    
+    /**
+     * Get the cursor at the given position.
+     *
+     * Using "index" to denote cursor positions can be unstable, as positions may
+     * shift with document edits. To reliably represent a position or range within
+     * a document, it is more effective to leverage the unique ID of each item/character
+     * in a List CRDT or Text CRDT.
+     *
+     * Loro optimizes State metadata by not storing the IDs of deleted elements. This
+     * approach complicates tracking cursors since they rely on these IDs. The solution
+     * recalculates position by replaying relevant history to update stable positions
+     * accurately. To minimize the performance impact of history replay, the system
+     * updates cursor info to reference only the IDs of currently present elements,
+     * thereby reducing the need for replay.
+     */
+    func getCursor(pos: UInt32, side: Side)  -> Cursor?
+    
+    /**
+     * Get the [ContainerID]  of the text container.
+     */
+    func id()  -> ContainerId
+    
+    /**
+     * Insert a string at the given unicode position.
+     */
     func insert(pos: UInt32, s: String) throws 
     
+    /**
+     * Insert a string at the given utf-8 position.
+     */
+    func insertUtf8(pos: UInt32, s: String) throws 
+    
+    /**
+     * Whether the container is attached to a document
+     *
+     * The edits on a detached container will not be persisted.
+     * To attach the container to the document, please insert it into an attached container.
+     */
+    func isAttached()  -> Bool
+    
+    /**
+     * Whether the text container is empty.
+     */
+    func isEmpty()  -> Bool
+    
+    /**
+     * Get the length of the text container in Unicode.
+     */
+    func lenUnicode()  -> UInt32
+    
+    /**
+     * Get the length of the text container in UTF-16.
+     */
+    func lenUtf16()  -> UInt32
+    
+    /**
+     * Get the length of the text container in UTF-8.
+     */
+    func lenUtf8()  -> UInt32
+    
+    /**
+     * Mark a range of text with a key-value pair.
+     *
+     * You can use it to create a highlight, make a range of text bold, or add a link to a range of text.
+     *
+     * You can specify the `expand` option to set the behavior when inserting text at the boundary of the range.
+     *
+     * - `after`(default): when inserting text right after the given range, the mark will be expanded to include the inserted text
+     * - `before`: when inserting text right before the given range, the mark will be expanded to include the inserted text
+     * - `none`: the mark will not be expanded to include the inserted text at the boundaries
+     * - `both`: when inserting text either right before or right after the given range, the mark will be expanded to include the inserted text
+     *
+     * *You should make sure that a key is always associated with the same expand type.*
+     *
+     * Note: this is not suitable for unmergeable annotations like comments.
+     */
+    func mark(from: UInt32, to: UInt32, key: String, value: LoroValueLike) throws 
+    
+    /**
+     * Get a string slice at the given Unicode range
+     */
+    func slice(startIndex: UInt32, endIndex: UInt32) throws  -> String
+    
+    /**
+     * Delete specified character and insert string at the same position at given unicode position.
+     */
+    func splice(pos: UInt32, len: UInt32, s: String) throws  -> String
+    
+    /**
+     * Get the text in [Delta](https://quilljs.com/docs/delta/) format.
+     */
+    func toDelta()  -> LoroValue
+    
+    /**
+     * Get the text content of the text container.
+     */
     func toString()  -> String
+    
+    /**
+     * Unmark a range of text with a key and a value.
+     *
+     * You can use it to remove highlights, bolds or links
+     *
+     * You can specify the `expand` option to set the behavior when inserting text at the boundary of the range.
+     *
+     * **Note: You should specify the same expand type as when you mark the text.**
+     *
+     * - `after`(default): when inserting text right after the given range, the mark will be expanded to include the inserted text
+     * - `before`: when inserting text right before the given range, the mark will be expanded to include the inserted text
+     * - `none`: the mark will not be expanded to include the inserted text at the boundaries
+     * - `both`: when inserting text either right before or right after the given range, the mark will be expanded to include the inserted text
+     *
+     * *You should make sure that a key is always associated with the same expand type.*
+     *
+     * Note: you cannot delete unmergeable annotations like comments by this method.
+     */
+    func unmark(from: UInt32, to: UInt32, key: String) throws 
+    
+    /**
+     * Update the current text based on the provided text.
+     */
+    func update(s: String) 
     
 }
 
@@ -1834,6 +2650,12 @@ open class LoroText:
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_lorotext(self.pointer, $0) }
     }
+    /**
+     * Create a new container that is detached from the document.
+     *
+     * The edits on a detached container will not be persisted.
+     * To attach the container to the document, please insert it into an attached container.
+     */
 public convenience init() {
     let pointer =
         try! rustCall() {
@@ -1854,6 +2676,65 @@ public convenience init() {
     
 
     
+    /**
+     * Delete a range of text at the given unicode position with unicode length.
+     */
+open func delete(pos: UInt32, len: UInt32)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotext_delete(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterUInt32.lower(len),$0
+    )
+}
+}
+    
+    /**
+     * Delete a range of text at the given utf-8 position with utf-8 length.
+     */
+open func deleteUtf8(pos: UInt32, len: UInt32)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotext_delete_utf8(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterUInt32.lower(len),$0
+    )
+}
+}
+    
+    /**
+     * Get the cursor at the given position.
+     *
+     * Using "index" to denote cursor positions can be unstable, as positions may
+     * shift with document edits. To reliably represent a position or range within
+     * a document, it is more effective to leverage the unique ID of each item/character
+     * in a List CRDT or Text CRDT.
+     *
+     * Loro optimizes State metadata by not storing the IDs of deleted elements. This
+     * approach complicates tracking cursors since they rely on these IDs. The solution
+     * recalculates position by replaying relevant history to update stable positions
+     * accurately. To minimize the performance impact of history replay, the system
+     * updates cursor info to reference only the IDs of currently present elements,
+     * thereby reducing the need for replay.
+     */
+open func getCursor(pos: UInt32, side: Side) -> Cursor? {
+    return try!  FfiConverterOptionTypeCursor.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotext_get_cursor(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterTypeSide.lower(side),$0
+    )
+})
+}
+    
+    /**
+     * Get the [ContainerID]  of the text container.
+     */
+open func id() -> ContainerId {
+    return try!  FfiConverterTypeContainerID.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotext_id(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Insert a string at the given unicode position.
+     */
 open func insert(pos: UInt32, s: String)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
     uniffi_loro_fn_method_lorotext_insert(self.uniffiClonePointer(),
         FfiConverterUInt32.lower(pos),
@@ -1862,11 +2743,176 @@ open func insert(pos: UInt32, s: String)throws  {try rustCallWithError(FfiConver
 }
 }
     
+    /**
+     * Insert a string at the given utf-8 position.
+     */
+open func insertUtf8(pos: UInt32, s: String)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotext_insert_utf8(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterString.lower(s),$0
+    )
+}
+}
+    
+    /**
+     * Whether the container is attached to a document
+     *
+     * The edits on a detached container will not be persisted.
+     * To attach the container to the document, please insert it into an attached container.
+     */
+open func isAttached() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotext_is_attached(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Whether the text container is empty.
+     */
+open func isEmpty() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotext_is_empty(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the length of the text container in Unicode.
+     */
+open func lenUnicode() -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotext_len_unicode(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the length of the text container in UTF-16.
+     */
+open func lenUtf16() -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotext_len_utf16(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the length of the text container in UTF-8.
+     */
+open func lenUtf8() -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotext_len_utf8(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Mark a range of text with a key-value pair.
+     *
+     * You can use it to create a highlight, make a range of text bold, or add a link to a range of text.
+     *
+     * You can specify the `expand` option to set the behavior when inserting text at the boundary of the range.
+     *
+     * - `after`(default): when inserting text right after the given range, the mark will be expanded to include the inserted text
+     * - `before`: when inserting text right before the given range, the mark will be expanded to include the inserted text
+     * - `none`: the mark will not be expanded to include the inserted text at the boundaries
+     * - `both`: when inserting text either right before or right after the given range, the mark will be expanded to include the inserted text
+     *
+     * *You should make sure that a key is always associated with the same expand type.*
+     *
+     * Note: this is not suitable for unmergeable annotations like comments.
+     */
+open func mark(from: UInt32, to: UInt32, key: String, value: LoroValueLike)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotext_mark(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(from),
+        FfiConverterUInt32.lower(to),
+        FfiConverterString.lower(key),
+        FfiConverterTypeLoroValueLike.lower(value),$0
+    )
+}
+}
+    
+    /**
+     * Get a string slice at the given Unicode range
+     */
+open func slice(startIndex: UInt32, endIndex: UInt32)throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotext_slice(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(startIndex),
+        FfiConverterUInt32.lower(endIndex),$0
+    )
+})
+}
+    
+    /**
+     * Delete specified character and insert string at the same position at given unicode position.
+     */
+open func splice(pos: UInt32, len: UInt32, s: String)throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotext_splice(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),
+        FfiConverterUInt32.lower(len),
+        FfiConverterString.lower(s),$0
+    )
+})
+}
+    
+    /**
+     * Get the text in [Delta](https://quilljs.com/docs/delta/) format.
+     */
+open func toDelta() -> LoroValue {
+    return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotext_to_delta(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the text content of the text container.
+     */
 open func toString() -> String {
     return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_loro_fn_method_lorotext_to_string(self.uniffiClonePointer(),$0
     )
 })
+}
+    
+    /**
+     * Unmark a range of text with a key and a value.
+     *
+     * You can use it to remove highlights, bolds or links
+     *
+     * You can specify the `expand` option to set the behavior when inserting text at the boundary of the range.
+     *
+     * **Note: You should specify the same expand type as when you mark the text.**
+     *
+     * - `after`(default): when inserting text right after the given range, the mark will be expanded to include the inserted text
+     * - `before`: when inserting text right before the given range, the mark will be expanded to include the inserted text
+     * - `none`: the mark will not be expanded to include the inserted text at the boundaries
+     * - `both`: when inserting text either right before or right after the given range, the mark will be expanded to include the inserted text
+     *
+     * *You should make sure that a key is always associated with the same expand type.*
+     *
+     * Note: you cannot delete unmergeable annotations like comments by this method.
+     */
+open func unmark(from: UInt32, to: UInt32, key: String)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotext_unmark(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(from),
+        FfiConverterUInt32.lower(to),
+        FfiConverterString.lower(key),$0
+    )
+}
+}
+    
+    /**
+     * Update the current text based on the provided text.
+     */
+open func update(s: String) {try! rustCall() {
+    uniffi_loro_fn_method_lorotext_update(self.uniffiClonePointer(),
+        FfiConverterString.lower(s),$0
+    )
+}
 }
     
 
@@ -1919,6 +2965,119 @@ public func FfiConverterTypeLoroText_lower(_ value: LoroText) -> UnsafeMutableRa
 
 public protocol LoroTreeProtocol : AnyObject {
     
+    /**
+     * Return all children of the target node.
+     *
+     * If the parent node does not exist, return `None`.
+     */
+    func children(parent: TreeId?)  -> [TreeId]?
+    
+    /**
+     * Return the number of children of the target node.
+     */
+    func childrenNum(parent: TreeId?)  -> UInt32?
+    
+    /**
+     * Return whether target node exists.
+     */
+    func contains(target: TreeId)  -> Bool
+    
+    /**
+     * Create a new tree node and return the [`TreeID`].
+     *
+     * If the `parent` is `None`, the created node is the root of a tree.
+     * Otherwise, the created node is a child of the parent tree node.
+     */
+    func create(parent: TreeId?) throws  -> TreeId
+    
+    /**
+     * Create a new tree node at the given index and return the [`TreeID`].
+     *
+     * If the `parent` is `None`, the created node is the root of a tree.
+     * If the `index` is greater than the number of children of the parent, error will be returned.
+     */
+    func createAt(parent: TreeId?, index: UInt32) throws  -> TreeId
+    
+    /**
+     * Delete a tree node.
+     *
+     * Note: If the deleted node has children, the children do not appear in the state
+     * rather than actually being deleted.
+     */
+    func delete(target: TreeId) throws 
+    
+    /**
+     * Return the fractional index of the target node with hex format.
+     */
+    func fractionalIndex(target: TreeId)  -> String?
+    
+    /**
+     * Get the associated metadata map handler of a tree node.
+     */
+    func getMeta(target: TreeId) throws  -> LoroMap
+    
+    /**
+     * Return the flat array of the forest.
+     *
+     * Note: the metadata will be not resolved. So if you don't only care about hierarchy
+     * but also the metadata, you should use `get_value_with_meta()`.
+     */
+    func getValue()  -> LoroValue
+    
+    /**
+     * Return the flat array of the forest, each node is with metadata.
+     */
+    func getValueWithMeta()  -> LoroValue
+    
+    /**
+     * Return container id of the tree.
+     */
+    func id()  -> ContainerId
+    
+    /**
+     * Whether the container is attached to a document
+     *
+     * The edits on a detached container will not be persisted.
+     * To attach the container to the document, please insert it into an attached container.
+     */
+    func isAttached()  -> Bool
+    
+    /**
+     * Move the `target` node to be a child of the `parent` node.
+     *
+     * If the `parent` is `None`, the `target` node will be a root.
+     */
+    func mov(target: TreeId, parent: TreeId?) throws 
+    
+    /**
+     * Move the `target` node to be a child after the `after` node with the same parent.
+     */
+    func movAfter(target: TreeId, after: TreeId) throws 
+    
+    /**
+     * Move the `target` node to be a child before the `before` node with the same parent.
+     */
+    func movBefore(target: TreeId, before: TreeId) throws 
+    
+    /**
+     * Move the `target` node to be a child of the `parent` node at the given index.
+     * If the `parent` is `None`, the `target` node will be a root.
+     */
+    func movTo(target: TreeId, parent: TreeId?, to: UInt32) throws 
+    
+    /**
+     * Return all nodes
+     */
+    func nodes()  -> [TreeId]
+    
+    /**
+     * Return the parent of target node.
+     *
+     * - If the target node does not exist, throws Error.
+     * - If the target node is a root node, return nil.
+     */
+    func parent(target: TreeId) throws  -> TreeId?
+    
 }
 
 open class LoroTree:
@@ -1949,6 +3108,12 @@ open class LoroTree:
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_lorotree(self.pointer, $0) }
     }
+    /**
+     * Create a new container that is detached from the document.
+     *
+     * The edits on a detached container will not be persisted.
+     * To attach the container to the document, please insert it into an attached container.
+     */
 public convenience init() {
     let pointer =
         try! rustCall() {
@@ -1968,6 +3133,223 @@ public convenience init() {
 
     
 
+    
+    /**
+     * Return all children of the target node.
+     *
+     * If the parent node does not exist, return `None`.
+     */
+open func children(parent: TreeId?) -> [TreeId]? {
+    return try!  FfiConverterOptionSequenceTypeTreeID.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotree_children(self.uniffiClonePointer(),
+        FfiConverterOptionTypeTreeID.lower(parent),$0
+    )
+})
+}
+    
+    /**
+     * Return the number of children of the target node.
+     */
+open func childrenNum(parent: TreeId?) -> UInt32? {
+    return try!  FfiConverterOptionUInt32.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotree_children_num(self.uniffiClonePointer(),
+        FfiConverterOptionTypeTreeID.lower(parent),$0
+    )
+})
+}
+    
+    /**
+     * Return whether target node exists.
+     */
+open func contains(target: TreeId) -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotree_contains(self.uniffiClonePointer(),
+        FfiConverterTypeTreeID.lower(target),$0
+    )
+})
+}
+    
+    /**
+     * Create a new tree node and return the [`TreeID`].
+     *
+     * If the `parent` is `None`, the created node is the root of a tree.
+     * Otherwise, the created node is a child of the parent tree node.
+     */
+open func create(parent: TreeId?)throws  -> TreeId {
+    return try  FfiConverterTypeTreeID.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotree_create(self.uniffiClonePointer(),
+        FfiConverterOptionTypeTreeID.lower(parent),$0
+    )
+})
+}
+    
+    /**
+     * Create a new tree node at the given index and return the [`TreeID`].
+     *
+     * If the `parent` is `None`, the created node is the root of a tree.
+     * If the `index` is greater than the number of children of the parent, error will be returned.
+     */
+open func createAt(parent: TreeId?, index: UInt32)throws  -> TreeId {
+    return try  FfiConverterTypeTreeID.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotree_create_at(self.uniffiClonePointer(),
+        FfiConverterOptionTypeTreeID.lower(parent),
+        FfiConverterUInt32.lower(index),$0
+    )
+})
+}
+    
+    /**
+     * Delete a tree node.
+     *
+     * Note: If the deleted node has children, the children do not appear in the state
+     * rather than actually being deleted.
+     */
+open func delete(target: TreeId)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotree_delete(self.uniffiClonePointer(),
+        FfiConverterTypeTreeID.lower(target),$0
+    )
+}
+}
+    
+    /**
+     * Return the fractional index of the target node with hex format.
+     */
+open func fractionalIndex(target: TreeId) -> String? {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotree_fractional_index(self.uniffiClonePointer(),
+        FfiConverterTypeTreeID.lower(target),$0
+    )
+})
+}
+    
+    /**
+     * Get the associated metadata map handler of a tree node.
+     */
+open func getMeta(target: TreeId)throws  -> LoroMap {
+    return try  FfiConverterTypeLoroMap.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotree_get_meta(self.uniffiClonePointer(),
+        FfiConverterTypeTreeID.lower(target),$0
+    )
+})
+}
+    
+    /**
+     * Return the flat array of the forest.
+     *
+     * Note: the metadata will be not resolved. So if you don't only care about hierarchy
+     * but also the metadata, you should use `get_value_with_meta()`.
+     */
+open func getValue() -> LoroValue {
+    return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotree_get_value(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Return the flat array of the forest, each node is with metadata.
+     */
+open func getValueWithMeta() -> LoroValue {
+    return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotree_get_value_with_meta(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Return container id of the tree.
+     */
+open func id() -> ContainerId {
+    return try!  FfiConverterTypeContainerID.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotree_id(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Whether the container is attached to a document
+     *
+     * The edits on a detached container will not be persisted.
+     * To attach the container to the document, please insert it into an attached container.
+     */
+open func isAttached() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotree_is_attached(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Move the `target` node to be a child of the `parent` node.
+     *
+     * If the `parent` is `None`, the `target` node will be a root.
+     */
+open func mov(target: TreeId, parent: TreeId?)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotree_mov(self.uniffiClonePointer(),
+        FfiConverterTypeTreeID.lower(target),
+        FfiConverterOptionTypeTreeID.lower(parent),$0
+    )
+}
+}
+    
+    /**
+     * Move the `target` node to be a child after the `after` node with the same parent.
+     */
+open func movAfter(target: TreeId, after: TreeId)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotree_mov_after(self.uniffiClonePointer(),
+        FfiConverterTypeTreeID.lower(target),
+        FfiConverterTypeTreeID.lower(after),$0
+    )
+}
+}
+    
+    /**
+     * Move the `target` node to be a child before the `before` node with the same parent.
+     */
+open func movBefore(target: TreeId, before: TreeId)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotree_mov_before(self.uniffiClonePointer(),
+        FfiConverterTypeTreeID.lower(target),
+        FfiConverterTypeTreeID.lower(before),$0
+    )
+}
+}
+    
+    /**
+     * Move the `target` node to be a child of the `parent` node at the given index.
+     * If the `parent` is `None`, the `target` node will be a root.
+     */
+open func movTo(target: TreeId, parent: TreeId?, to: UInt32)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotree_mov_to(self.uniffiClonePointer(),
+        FfiConverterTypeTreeID.lower(target),
+        FfiConverterOptionTypeTreeID.lower(parent),
+        FfiConverterUInt32.lower(to),$0
+    )
+}
+}
+    
+    /**
+     * Return all nodes
+     */
+open func nodes() -> [TreeId] {
+    return try!  FfiConverterSequenceTypeTreeID.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotree_nodes(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Return the parent of target node.
+     *
+     * - If the target node does not exist, throws Error.
+     * - If the target node is a root node, return nil.
+     */
+open func parent(target: TreeId)throws  -> TreeId? {
+    return try  FfiConverterOptionTypeTreeID.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotree_parent(self.uniffiClonePointer(),
+        FfiConverterTypeTreeID.lower(target),$0
+    )
+})
+}
     
 
 }
@@ -2019,6 +3401,11 @@ public func FfiConverterTypeLoroTree_lower(_ value: LoroTree) -> UnsafeMutableRa
 
 public protocol LoroUnknownProtocol : AnyObject {
     
+    /**
+     * Get the container id.
+     */
+    func id()  -> ContainerId
+    
 }
 
 open class LoroUnknown:
@@ -2061,6 +3448,16 @@ open class LoroUnknown:
 
     
 
+    
+    /**
+     * Get the container id.
+     */
+open func id() -> ContainerId {
+    return try!  FfiConverterTypeContainerID.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorounknown_id(self.uniffiClonePointer(),$0
+    )
+})
+}
     
 
 }
@@ -2106,6 +3503,9 @@ public func FfiConverterTypeLoroUnknown_lift(_ pointer: UnsafeMutableRawPointer)
 public func FfiConverterTypeLoroUnknown_lower(_ value: LoroUnknown) -> UnsafeMutableRawPointer {
     return FfiConverterTypeLoroUnknown.lower(value)
 }
+
+
+
 
 public protocol LoroValueLike : Any {
     
@@ -2572,6 +3972,63 @@ public func FfiConverterTypeID_lift(_ buf: RustBuffer) throws -> Id {
 
 public func FfiConverterTypeID_lower(_ value: Id) -> RustBuffer {
     return FfiConverterTypeID.lower(value)
+}
+
+
+public struct TreeId {
+    public var peer: UInt64
+    public var counter: Int32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(peer: UInt64, counter: Int32) {
+        self.peer = peer
+        self.counter = counter
+    }
+}
+
+
+
+extension TreeId: Equatable, Hashable {
+    public static func ==(lhs: TreeId, rhs: TreeId) -> Bool {
+        if lhs.peer != rhs.peer {
+            return false
+        }
+        if lhs.counter != rhs.counter {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(peer)
+        hasher.combine(counter)
+    }
+}
+
+
+public struct FfiConverterTypeTreeID: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TreeId {
+        return
+            try TreeId(
+                peer: FfiConverterUInt64.read(from: &buf), 
+                counter: FfiConverterInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TreeId, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.peer, into: &buf)
+        FfiConverterInt32.write(value.counter, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeTreeID_lift(_ buf: RustBuffer) throws -> TreeId {
+    return try FfiConverterTypeTreeID.lift(buf)
+}
+
+public func FfiConverterTypeTreeID_lower(_ value: TreeId) -> RustBuffer {
+    return FfiConverterTypeTreeID.lower(value)
 }
 
 // Note that we don't yet support `indirect` for enums.
@@ -3213,6 +4670,27 @@ extension Side: Equatable, Hashable {}
 
 
 
+fileprivate struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
+    typealias SwiftType = UInt32?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterUInt32.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterUInt32.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 fileprivate struct FfiConverterOptionInt32: FfiConverterRustBuffer {
     typealias SwiftType = Int32?
 
@@ -3229,6 +4707,27 @@ fileprivate struct FfiConverterOptionInt32: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterInt32.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
+    typealias SwiftType = String?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterString.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterString.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -3318,6 +4817,27 @@ fileprivate struct FfiConverterOptionTypeID: FfiConverterRustBuffer {
     }
 }
 
+fileprivate struct FfiConverterOptionTypeTreeID: FfiConverterRustBuffer {
+    typealias SwiftType = TreeId?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeTreeID.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeTreeID.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 fileprivate struct FfiConverterOptionTypeContainerID: FfiConverterRustBuffer {
     typealias SwiftType = ContainerId?
 
@@ -3355,6 +4875,27 @@ fileprivate struct FfiConverterOptionTypeLoroValue: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeLoroValue.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+fileprivate struct FfiConverterOptionSequenceTypeTreeID: FfiConverterRustBuffer {
+    typealias SwiftType = [TreeId]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterSequenceTypeTreeID.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterSequenceTypeTreeID.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -3399,6 +4940,28 @@ fileprivate struct FfiConverterSequenceData: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterData.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+fileprivate struct FfiConverterSequenceTypeTreeID: FfiConverterRustBuffer {
+    typealias SwiftType = [TreeId]
+
+    public static func write(_ value: [TreeId], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeTreeID.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [TreeId] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [TreeId]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeTreeID.read(from: &buf))
         }
         return seq
     }
@@ -3497,6 +5060,18 @@ private var initializationResult: InitializationResult = {
     let scaffolding_contract_version = ffi_loro_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
+    }
+    if (uniffi_loro_checksum_method_lorocounter_decrement() != 53919) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorocounter_get_value() != 44616) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorocounter_id() != 31148) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorocounter_increment() != 47367) {
+        return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_attach() != 7252) {
         return InitializationResult.apiChecksumMismatch
@@ -3642,16 +5217,244 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorolist_insert_tree_container() != 15665) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorolist_is_attached() != 60548) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorolist_is_empty() != 13469) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorolist_len() != 22800) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorolist_pop() != 20748) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorolist_push() != 32091) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_loromap_delete() != 54675) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_get() != 57695) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_get_deep_value() != 23748) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_get_value() != 7268) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_id() != 65486) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_insert() != 748) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_insert_counter_container() != 5567) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_insert_list_container() != 52804) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_insert_map_container() != 36523) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_insert_movable_list_container() != 21076) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_insert_text_container() != 50348) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_insert_tree_container() != 59771) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_is_attached() != 6283) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_is_empty() != 38768) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_len() != 38088) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_delete() != 51786) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_get() != 10599) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_get_cursor() != 118) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_id() != 9803) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_insert() != 28537) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_insert_counter_container() != 56222) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_insert_list_container() != 47190) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_insert_map_container() != 57810) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_insert_movable_list_container() != 6019) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_insert_text_container() != 48945) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_insert_tree_container() != 33670) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_is_empty() != 44651) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_len() != 28945) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_mov() != 8301) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_pop() != 52086) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_push() != 2828) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_set() != 27054) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_set_counter_container() != 1414) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_set_list_container() != 20393) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_set_map_container() != 20297) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_set_movable_list_container() != 52254) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_set_text_container() != 31935) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_set_tree_container() != 8298) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_delete() != 47933) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_delete_utf8() != 44384) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_get_cursor() != 57876) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_id() != 30925) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorotext_insert() != 10847) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorotext_insert_utf8() != 8484) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_is_attached() != 45378) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_is_empty() != 7961) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_len_unicode() != 46650) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_len_utf16() != 18865) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_len_utf8() != 29025) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_mark() != 42690) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_slice() != 43152) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_splice() != 30467) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_to_delta() != 57631) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorotext_to_string() != 63765) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_unmark() != 14351) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_update() != 55624) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_children() != 53501) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_children_num() != 14969) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_contains() != 62174) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_create() != 44237) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_create_at() != 42548) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_delete() != 36355) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_fractional_index() != 51036) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_get_meta() != 3068) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_get_value() != 44704) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_get_value_with_meta() != 7497) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_id() != 4862) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_is_attached() != 37303) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_mov() != 51136) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_mov_after() != 48871) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_mov_before() != 39654) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_mov_to() != 12640) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_nodes() != 31738) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_parent() != 11311) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorounknown_id() != 65156) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorovaluelike_as_loro_value() != 23668) {

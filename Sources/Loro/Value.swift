@@ -1,8 +1,13 @@
-//
-//  File.swift
-//  
-//
-//  Created by 赵亮 on 2024/8/6.
-//
 
-import Foundation
+extension LoroValue: LoroValueLike {
+    public func asLoroValue() -> LoroValue {
+        return self
+    }
+}
+
+extension String:LoroValueLike{
+    public func asLoroValue() -> LoroValue {
+        return LoroValue.string(value: self)
+    }
+}
+
