@@ -1,0 +1,21 @@
+[package]
+name = "loro-swift"
+version = "0.16.2"
+edition = "2021"
+
+[lib]
+name = "loro"
+crate-type = ["cdylib", "staticlib"]
+
+[[bin]]
+# This can be whatever name makes sense for your project, but the rest of this tutorial assumes uniffi-bindgen.
+name = "uniffi-bindgen"
+path = "src/uniffi-bindgen.rs"
+
+
+[dependencies]
+loro-ffi = { path = "../../loro/crates/loro-ffi" }
+uniffi = { version = "0.28", features = ["cli"] }
+
+[build-dependencies]
+uniffi = { version = "0.28", features = ["build"] }

@@ -1,0 +1,256 @@
+namespace loro{
+    
+};
+
+// ============= Traits =============
+
+[Trait]
+interface ValueOrContainer{
+    boolean is_value();
+    boolean is_container();
+    LoroValue? as_value();
+    ContainerID? as_container();
+};
+
+[Trait, WithForeign]
+interface LoroValueLike{
+    LoroValue as_loro_value();
+};
+
+// ============= LORO DOC =============
+
+interface LoroDoc{
+    constructor();
+    LoroDoc fork();
+    // Config config();
+    // [Throws=LoroError]
+    // ImportBlobMetadata decode_import_blob_meta([ByRef] bytes);
+    void set_record_timestamp(boolean record);
+    void set_change_merge_interval(i64 interval);
+    void set_fractional_index_jitter(u8 jitter);
+    // void config_text_style(StyleConfigMap text_style);
+    void attach();
+    [Throws=LoroError]
+    void checkout([ByRef] Frontiers frontiers);
+    void checkout_to_latest();
+    // Ordering cmp_with_frontiers([ByRef] Frontiers other);
+    // cmp_frontiers();
+    void detach();
+    [Throws=LoroError]
+    void import_batch([ByRef] sequence<bytes> bytes);
+
+    // TODO: id type
+    LoroMovableList get_movable_list(string id);
+    LoroList get_list(string id);
+    LoroMap get_map(string id);
+    LoroText get_text(string id);
+    LoroTree get_tree(string id);
+    LoroCounter get_counter(string id);
+    void commit();
+    // void commit_with(CommitOptions options);
+    boolean is_detached();
+    [Throws=LoroError]
+    void import([ByRef]bytes bytes);
+    [Throws=LoroError]
+    void import_with([ByRef] bytes bytes, [ByRef] string origin);
+    // [Throws=LoroError]
+    // void import_json_updates(JsonSchema json);
+    // JsonSchema export_json_updates([ByRef]VersionVector start_vv, [ByRef]VersionVector end_vv);
+    bytes export_from([ByRef] VersionVector vv);
+    bytes export_snapshot();
+    VersionVector? frontiers_to_vv([ByRef] Frontiers frontiers);
+    Frontiers vv_to_frontiers([ByRef] VersionVector vv);
+    // with_oplog
+    VersionVector oplog_vv();
+    VersionVector state_vv();
+    u64 len_ops();
+    u64 len_changes();
+    LoroValue get_deep_value();
+    Frontiers oplog_frontiers();
+    Frontiers state_frontiers();
+    u64 peer_id();
+    [Throws=LoroError]
+    void set_peer_id(u64 peer);
+    // SubID subscribe([ByRef] ContainerID container_id, Subscriber callback);
+    // SubID subscribe_root(Subscriber callback);
+    void unsubscribe(SubID sub_id);
+    void log_estimate_size();
+    void check_state_correctness_slow();
+    // ValueOrContainer? get_by_path([ByRef] sequence<Index> path);
+    
+    // ValueOrContainer? get_by_str_path([ByRef] string);
+    // [Throws=LoroError]
+    // PosQueryResult get_cursor_pos(Cursor cursor);
+};
+
+// ============= CONTAINERS =============
+
+interface LoroText{
+    constructor();
+    [Throws=LoroError]
+    void insert(u32 pos, [ByRef] string s);
+    string to_string();
+};
+
+interface LoroList{
+    constructor();
+    [Throws=LoroError]
+    void insert(u32 pos, LoroValueLike v);
+    [Throws=LoroError]
+    void delete(u32 pos, u32 len);
+    ValueOrContainer? get(u32 index);
+    LoroValue get_deep_value();
+    LoroValue get_value();
+    ContainerID id();
+    [Throws=LoroError]
+    LoroValue? pop();
+    [Throws=LoroError]
+    void push(LoroValueLike v);
+    // for_each
+    [Throws=LoroError]
+    LoroList insert_list_container(u32 pos, LoroList child);
+    [Throws=LoroError]
+    LoroMap insert_map_container(u32 pos, LoroMap child);
+    [Throws=LoroError]
+    LoroTree insert_tree_container(u32 pos, LoroTree child);
+    [Throws=LoroError]
+    LoroMovableList insert_movable_list_container(u32 pos, LoroMovableList child);
+    [Throws=LoroError]
+    LoroText insert_text_container(u32 pos, LoroText child);
+    [Throws=LoroError]
+    LoroCounter insert_counter_container(u32 pos, LoroCounter child);
+    Cursor? get_cursor(u32 pos, Side side);
+};
+
+interface LoroMap{
+    constructor();
+};
+
+interface LoroTree{
+    constructor();
+};
+
+interface LoroMovableList{
+    constructor();
+};
+
+interface LoroCounter{
+    constructor();
+};
+
+interface LoroUnknown{
+
+};
+
+// ============= CURSOR =============
+
+
+enum Side{
+    "Left",
+    "Middle",
+    "Right",
+};
+
+interface Cursor{
+    constructor(ID? id, ContainerID container, Side side, u32 origin_pos);
+};
+
+
+// ============= VERSIONS =============
+interface VersionVector{
+    constructor();
+    // void set_last(ID id);
+    i32? get_last(u64 peer);
+    // void set_end(ID id);
+    // boolean try_update_last(ID id);
+    // sequence<IdSpan> get_missing_span([ByRef] VersionVector target);
+    // void merge([ByRef] VersionVector other);
+    boolean includes_vv([ByRef] VersionVector other);
+    boolean includes_id(ID id);
+    // i32Span? intersect_span(IdSpan target);
+    // extend_to_include_vv();
+};
+
+interface Frontiers{
+
+};
+
+
+// ============= TYPES =============
+
+dictionary ID{
+    u64 peer;
+    i32 counter;
+};
+
+interface IdSpan{
+
+};
+
+[Custom]
+typedef u32 SubID;
+
+[Enum]
+interface ContainerType{
+    Text();
+    Map();
+    List();
+    MovableList();
+    Tree();
+    Counter();
+    Unknown(u8 kind);
+};
+
+[Enum]
+interface ContainerID{
+    Root(string name, ContainerType container_type);
+    Normal(u64 peer,i32 counter, ContainerType container_type);
+};
+
+[Enum]
+interface LoroValue{
+    Null();
+    Bool(boolean value);
+    Double(f64 value);
+    I64(i64 value);
+    Binary(sequence<u8> value);
+    String(string value);
+    List(sequence<LoroValue> value);
+    Map(record<string, LoroValue> value);
+    Container(ContainerID value);
+};
+
+[Error]
+enum LoroError {
+ "UnmatchedContext",
+    "DecodeVersionVectorError",
+    "DecodeError",
+    "DecodeDataCorruptionError",
+    "DecodeChecksumMismatchError",
+    "IncompatibleFutureEncodingError",
+    "JsError",
+    "LockError",
+    "DuplicatedTransactionError",
+    "NotFoundError",
+    "TransactionError",
+    "OutOfBound",
+    "UsedOpID",
+    "TreeError",
+    "ArgErr",
+    "AutoCommitNotStarted",
+    "StyleConfigMissing",
+    "Unknown",
+    "FrontiersNotFound",
+    "ImportWhenInTxn",
+    "MisuseDetachedContainer" ,
+    "NotImplemented",
+    "ReattachAttachedContainer",
+    "EditWhenDetached",
+    "UndoInvalidIdSpan",
+    "UndoWithDifferentPeerId",
+    "InvalidJsonSchema",
+    "UTF8InUnicodeCodePoint",
+    "UTF16InUnicodeCodePoint",
+    "EndIndexLessThanStartIndex",
+    "InvalidRootContainerName",
+};
