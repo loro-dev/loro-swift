@@ -91,10 +91,10 @@ doc.checkoutToLatest()
 
 ## Develop
 
-If you wanna build and develop this project, you need first run this script:
+If you wanna build and develop this project with MacOS, you need first run this script:
 
 ```bash
-sh ./scripts/build_swift_ffi.sh
+sh ./scripts/build_macos.sh
 ```
 
 The script will run `uniffi` and generate the `loroFFI.xcframework.zip`.
