@@ -93,6 +93,7 @@ doc.checkoutToLatest()
 If you wanna build and develop this project with MacOS, you need first run this script:
 
 ```bash
+export LOCAL_BUILD=1
 sh ./scripts/build_macos.sh
 ```
 
