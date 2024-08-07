@@ -1,4 +1,4 @@
-# Loro-swift
+<h1 align="center">loro-swift</h1>
 
 <p align="center">
   <a aria-label="X" href="https://x.com/loro_dev" target="_blank">
@@ -13,7 +13,20 @@ This repository contains experimental Swift bindings for [Loro CRDT](https://git
 
 If you have any suggestions for API, please feel free to create an issue or join our [Discord](https://discord.gg/tUsBSVfqzf) community.
 
+## TODO
+
+- [x] `LoroDoc` export and import
+- [x] `List`/`Map`/`Text`/`Tree`/`MovableList`/`Counter` Container
+- [x] Checkout
+- [x] Subscribe Event
+- [ ] UndoManager
+- [ ] Bindings for all types in Loro
+- [ ] Tests
+- [ ] Benchmarks
+
 ## Usage
+
+**Note: Loro-swift is still under development and no package has been released yet.**
 
 Add the dependency in your `Package.swift`.
 
@@ -23,7 +36,7 @@ let package = Package(
     products: [......],
     dependencies:[
         ...,
-        .package(url: "https://github.com/loro-dev/loro-swift.git", from: 0.16.2)
+        .package(url: "https://github.com/loro-dev/loro-swift.git", from: "0.16.2")
     ],
     targets:[
         .executableTarget(
