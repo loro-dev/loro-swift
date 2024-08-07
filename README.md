@@ -19,7 +19,7 @@ If you have any suggestions for API, please feel free to create an issue or join
 - [x] `List`/`Map`/`Text`/`Tree`/`MovableList`/`Counter` Container
 - [x] Checkout
 - [x] Subscribe Event
-- [ ] UndoManager
+- [x] UndoManager
 - [ ] Bindings for all types in Loro
 - [ ] Tests
 - [ ] Benchmarks
