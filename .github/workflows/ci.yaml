@@ -23,6 +23,6 @@ jobs:
           xcodebuild -version
           swift --version
       - name: build xcframework
-        run: ./scripts/build-swift-ffi.sh
+        run: ./scripts/build_swift_ffi.sh
       - name: Swift tests
         run: swift test
