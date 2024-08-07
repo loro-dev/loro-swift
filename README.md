@@ -97,3 +97,7 @@ sh ./scripts/build_macos.sh
 ```
 
 The script will run `uniffi` and generate the `loroFFI.xcframework.zip`.
+
+# Credits
+
+- [Automerge-swift](https://github.com/automerge/automerge-swift): `loro-swift` uses many of `automerge-swift`'s scripts for building and CI.
