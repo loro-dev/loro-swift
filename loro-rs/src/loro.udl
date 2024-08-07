@@ -613,6 +613,14 @@ interface LoroMovableList{
     u32 len();
     
     boolean is_empty();
+
+    /// Get the deep value of the container.
+    LoroValue get_deep_value();
+    
+    /// Get the shallow value of the container.
+    ///
+    /// This does not convert the state of sub-containers; instead, it represents them as [LoroValue::Container].
+    LoroValue get_value();
     
     /// Pop the last element of the list.
     [Throws=LoroError]

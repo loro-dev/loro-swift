@@ -2652,6 +2652,18 @@ public protocol LoroMovableListProtocol : AnyObject {
     func getCursor(pos: UInt32, side: Side)  -> Cursor?
     
     /**
+     * Get the deep value of the container.
+     */
+    func getDeepValue()  -> LoroValue
+    
+    /**
+     * Get the shallow value of the container.
+     *
+     * This does not convert the state of sub-containers; instead, it represents them as [LoroValue::Container].
+     */
+    func getValue()  -> LoroValue
+    
+    /**
      * Get the container id.
      */
     func id()  -> ContainerId
@@ -2804,6 +2816,28 @@ open func getCursor(pos: UInt32, side: Side) -> Cursor? {
     uniffi_loro_fn_method_loromovablelist_get_cursor(self.uniffiClonePointer(),
         FfiConverterUInt32.lower(pos),
         FfiConverterTypeSide.lower(side),$0
+    )
+})
+}
+    
+    /**
+     * Get the deep value of the container.
+     */
+open func getDeepValue() -> LoroValue {
+    return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromovablelist_get_deep_value(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the shallow value of the container.
+     *
+     * This does not convert the state of sub-containers; instead, it represents them as [LoroValue::Container].
+     */
+open func getValue() -> LoroValue {
+    return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromovablelist_get_value(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -7879,6 +7913,12 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_loromovablelist_get_cursor() != 118) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_get_deep_value() != 18542) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_get_value() != 50843) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_loromovablelist_id() != 9803) {
