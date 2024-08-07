@@ -72,7 +72,6 @@ let subId = doc.subscribeRoot{ diffEvent in
 doc.unsubscribe(subId: id)
 
 // export updates or snapshot
-
 let doc2 = LoroDoc()
 let snapshot = doc.exportSnapshot()
 let updates = doc.exportFrom(vv: VersionVector())

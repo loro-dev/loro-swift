@@ -44,7 +44,6 @@ final class LoroTests: XCTestCase {
     
     func testCheckout(){
         let doc = LoroDoc()
-        try! doc.setPeerId(peer: 0)
         let text = doc.getText(id: "text")
         try! text.insert(pos: 0, s: "abc")
         try! text.delete(pos: 0, len: 1)
@@ -52,5 +51,25 @@ final class LoroTests: XCTestCase {
         let startFrontiers = doc.oplogFrontiers()
         try! doc.checkout(frontiers: startFrontiers)
         doc.checkoutToLatest()
+    }
+
+    func testUndo(){
+        let doc = LoroDoc()
+        let undoManager = UndoManager(doc:doc)
+        
+        var n = 0
+        undoManager.setOnPop{ (undoOrRedo,span, item) in
+            n+=1
+        }
+        let text = doc.getText(id: "text")
+        try! text.insert(pos: 0, s: "abc")
+        doc.commit()
+        try! text.delete(pos: 0, len: 1)
+        doc.commit()
+        let s = text.toString()
+        XCTAssertEqual(s, "bc")
+        let _ = try! undoManager.undo(doc:doc)
+        XCTAssertEqual(text.toString(), "abc")
+        XCTAssertEqual(n, 1)
     }
 }

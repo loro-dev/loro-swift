@@ -4208,6 +4208,316 @@ public func FfiConverterTypeLoroValueLike_lower(_ value: LoroValueLike) -> Unsaf
 
 
 
+public protocol OnPop : AnyObject {
+    
+    func onPop(undoOrRedo: UndoOrRedo, span: CounterSpan, undoMeta: UndoItemMeta) 
+    
+}
+
+open class OnPopImpl:
+    OnPop {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_fn_clone_onpop(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_fn_free_onpop(pointer, $0) }
+    }
+
+    
+
+    
+open func onPop(undoOrRedo: UndoOrRedo, span: CounterSpan, undoMeta: UndoItemMeta) {try! rustCall() {
+    uniffi_loro_fn_method_onpop_on_pop(self.uniffiClonePointer(),
+        FfiConverterTypeUndoOrRedo.lower(undoOrRedo),
+        FfiConverterTypeCounterSpan.lower(span),
+        FfiConverterTypeUndoItemMeta.lower(undoMeta),$0
+    )
+}
+}
+    
+
+}
+
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfaceOnPop {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfaceOnPop = UniffiVTableCallbackInterfaceOnPop(
+        onPop: { (
+            uniffiHandle: UInt64,
+            undoOrRedo: RustBuffer,
+            span: RustBuffer,
+            undoMeta: RustBuffer,
+            uniffiOutReturn: UnsafeMutableRawPointer,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> () in
+                guard let uniffiObj = try? FfiConverterTypeOnPop.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.onPop(
+                     undoOrRedo: try FfiConverterTypeUndoOrRedo.lift(undoOrRedo),
+                     span: try FfiConverterTypeCounterSpan.lift(span),
+                     undoMeta: try FfiConverterTypeUndoItemMeta.lift(undoMeta)
+                )
+            }
+
+            
+            let writeReturn = { () }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            let result = try? FfiConverterTypeOnPop.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface OnPop: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitOnPop() {
+    uniffi_loro_fn_init_callback_vtable_onpop(&UniffiCallbackInterfaceOnPop.vtable)
+}
+
+public struct FfiConverterTypeOnPop: FfiConverter {
+    fileprivate static var handleMap = UniffiHandleMap<OnPop>()
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = OnPop
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> OnPop {
+        return OnPopImpl(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: OnPop) -> UnsafeMutableRawPointer {
+        guard let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: handleMap.insert(obj: value))) else {
+            fatalError("Cast to UnsafeMutableRawPointer failed")
+        }
+        return ptr
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OnPop {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: OnPop, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+public func FfiConverterTypeOnPop_lift(_ pointer: UnsafeMutableRawPointer) throws -> OnPop {
+    return try FfiConverterTypeOnPop.lift(pointer)
+}
+
+public func FfiConverterTypeOnPop_lower(_ value: OnPop) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeOnPop.lower(value)
+}
+
+
+
+
+public protocol OnPush : AnyObject {
+    
+    func onPush(undoOrRedo: UndoOrRedo, span: CounterSpan)  -> UndoItemMeta
+    
+}
+
+open class OnPushImpl:
+    OnPush {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_fn_clone_onpush(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_fn_free_onpush(pointer, $0) }
+    }
+
+    
+
+    
+open func onPush(undoOrRedo: UndoOrRedo, span: CounterSpan) -> UndoItemMeta {
+    return try!  FfiConverterTypeUndoItemMeta.lift(try! rustCall() {
+    uniffi_loro_fn_method_onpush_on_push(self.uniffiClonePointer(),
+        FfiConverterTypeUndoOrRedo.lower(undoOrRedo),
+        FfiConverterTypeCounterSpan.lower(span),$0
+    )
+})
+}
+    
+
+}
+
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfaceOnPush {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfaceOnPush = UniffiVTableCallbackInterfaceOnPush(
+        onPush: { (
+            uniffiHandle: UInt64,
+            undoOrRedo: RustBuffer,
+            span: RustBuffer,
+            uniffiOutReturn: UnsafeMutablePointer<RustBuffer>,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> UndoItemMeta in
+                guard let uniffiObj = try? FfiConverterTypeOnPush.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.onPush(
+                     undoOrRedo: try FfiConverterTypeUndoOrRedo.lift(undoOrRedo),
+                     span: try FfiConverterTypeCounterSpan.lift(span)
+                )
+            }
+
+            
+            let writeReturn = { uniffiOutReturn.pointee = FfiConverterTypeUndoItemMeta.lower($0) }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            let result = try? FfiConverterTypeOnPush.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface OnPush: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitOnPush() {
+    uniffi_loro_fn_init_callback_vtable_onpush(&UniffiCallbackInterfaceOnPush.vtable)
+}
+
+public struct FfiConverterTypeOnPush: FfiConverter {
+    fileprivate static var handleMap = UniffiHandleMap<OnPush>()
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = OnPush
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> OnPush {
+        return OnPushImpl(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: OnPush) -> UnsafeMutableRawPointer {
+        guard let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: handleMap.insert(obj: value))) else {
+            fatalError("Cast to UnsafeMutableRawPointer failed")
+        }
+        return ptr
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OnPush {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: OnPush, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+public func FfiConverterTypeOnPush_lift(_ pointer: UnsafeMutableRawPointer) throws -> OnPush {
+    return try FfiConverterTypeOnPush.lift(pointer)
+}
+
+public func FfiConverterTypeOnPush_lower(_ value: OnPush) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeOnPush.lower(value)
+}
+
+
+
+
 public protocol Subscriber : AnyObject {
     
     func onDiff(diff: DiffEvent) 
@@ -4353,6 +4663,268 @@ public func FfiConverterTypeSubscriber_lift(_ pointer: UnsafeMutableRawPointer) 
 
 public func FfiConverterTypeSubscriber_lower(_ value: Subscriber) -> UnsafeMutableRawPointer {
     return FfiConverterTypeSubscriber.lower(value)
+}
+
+
+
+
+public protocol UndoManagerProtocol : AnyObject {
+    
+    /**
+     * If a local event's origin matches the given prefix, it will not be recorded in the
+     * undo stack.
+     */
+    func addExcludeOriginPrefix(prefix: String) 
+    
+    /**
+     * Whether the undo manager can redo.
+     */
+    func canRedo()  -> Bool
+    
+    /**
+     * Whether the undo manager can undo.
+     */
+    func canUndo()  -> Bool
+    
+    /**
+     * Record a new checkpoint.
+     */
+    func recordNewCheckpoint(doc: LoroDoc) throws 
+    
+    /**
+     * Redo the last change made by the peer.
+     */
+    func redo(doc: LoroDoc) throws  -> Bool
+    
+    /**
+     * Set the maximum number of undo steps. The default value is 100.
+     */
+    func setMaxUndoSteps(size: UInt32) 
+    
+    /**
+     * Set the merge interval in ms. The default value is 0, which means no merge.
+     */
+    func setMergeInterval(interval: Int64) 
+    
+    /**
+     * Set the listener for pop events.
+     * The listener will be called when an undo/redo item is popped from the stack.
+     */
+    func setOnPop(onPop: OnPop?) 
+    
+    /**
+     * Set the listener for push events.
+     * The listener will be called when a new undo/redo item is pushed into the stack.
+     */
+    func setOnPush(onPush: OnPush?) 
+    
+    /**
+     * Undo the last change made by the peer.
+     */
+    func undo(doc: LoroDoc) throws  -> Bool
+    
+}
+
+open class UndoManager:
+    UndoManagerProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_fn_clone_undomanager(self.pointer, $0) }
+    }
+    /**
+     * Create a new UndoManager.
+     */
+public convenience init(doc: LoroDoc) {
+    let pointer =
+        try! rustCall() {
+    uniffi_loro_fn_constructor_undomanager_new(
+        FfiConverterTypeLoroDoc.lower(doc),$0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_fn_free_undomanager(pointer, $0) }
+    }
+
+    
+
+    
+    /**
+     * If a local event's origin matches the given prefix, it will not be recorded in the
+     * undo stack.
+     */
+open func addExcludeOriginPrefix(prefix: String) {try! rustCall() {
+    uniffi_loro_fn_method_undomanager_add_exclude_origin_prefix(self.uniffiClonePointer(),
+        FfiConverterString.lower(prefix),$0
+    )
+}
+}
+    
+    /**
+     * Whether the undo manager can redo.
+     */
+open func canRedo() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_undomanager_can_redo(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Whether the undo manager can undo.
+     */
+open func canUndo() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_undomanager_can_undo(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Record a new checkpoint.
+     */
+open func recordNewCheckpoint(doc: LoroDoc)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_undomanager_record_new_checkpoint(self.uniffiClonePointer(),
+        FfiConverterTypeLoroDoc.lower(doc),$0
+    )
+}
+}
+    
+    /**
+     * Redo the last change made by the peer.
+     */
+open func redo(doc: LoroDoc)throws  -> Bool {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_undomanager_redo(self.uniffiClonePointer(),
+        FfiConverterTypeLoroDoc.lower(doc),$0
+    )
+})
+}
+    
+    /**
+     * Set the maximum number of undo steps. The default value is 100.
+     */
+open func setMaxUndoSteps(size: UInt32) {try! rustCall() {
+    uniffi_loro_fn_method_undomanager_set_max_undo_steps(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(size),$0
+    )
+}
+}
+    
+    /**
+     * Set the merge interval in ms. The default value is 0, which means no merge.
+     */
+open func setMergeInterval(interval: Int64) {try! rustCall() {
+    uniffi_loro_fn_method_undomanager_set_merge_interval(self.uniffiClonePointer(),
+        FfiConverterInt64.lower(interval),$0
+    )
+}
+}
+    
+    /**
+     * Set the listener for pop events.
+     * The listener will be called when an undo/redo item is popped from the stack.
+     */
+open func setOnPop(onPop: OnPop?) {try! rustCall() {
+    uniffi_loro_fn_method_undomanager_set_on_pop(self.uniffiClonePointer(),
+        FfiConverterOptionTypeOnPop.lower(onPop),$0
+    )
+}
+}
+    
+    /**
+     * Set the listener for push events.
+     * The listener will be called when a new undo/redo item is pushed into the stack.
+     */
+open func setOnPush(onPush: OnPush?) {try! rustCall() {
+    uniffi_loro_fn_method_undomanager_set_on_push(self.uniffiClonePointer(),
+        FfiConverterOptionTypeOnPush.lower(onPush),$0
+    )
+}
+}
+    
+    /**
+     * Undo the last change made by the peer.
+     */
+open func undo(doc: LoroDoc)throws  -> Bool {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_undomanager_undo(self.uniffiClonePointer(),
+        FfiConverterTypeLoroDoc.lower(doc),$0
+    )
+})
+}
+    
+
+}
+
+public struct FfiConverterTypeUndoManager: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = UndoManager
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> UndoManager {
+        return UndoManager(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: UndoManager) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UndoManager {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: UndoManager, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+public func FfiConverterTypeUndoManager_lift(_ pointer: UnsafeMutableRawPointer) throws -> UndoManager {
+    return try FfiConverterTypeUndoManager.lift(pointer)
+}
+
+public func FfiConverterTypeUndoManager_lower(_ value: UndoManager) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeUndoManager.lower(value)
 }
 
 
@@ -4615,6 +5187,63 @@ public func FfiConverterTypeVersionVector_lower(_ value: VersionVector) -> Unsaf
 }
 
 
+public struct AbsolutePosition {
+    public var pos: UInt32
+    public var side: Side
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(pos: UInt32, side: Side) {
+        self.pos = pos
+        self.side = side
+    }
+}
+
+
+
+extension AbsolutePosition: Equatable, Hashable {
+    public static func ==(lhs: AbsolutePosition, rhs: AbsolutePosition) -> Bool {
+        if lhs.pos != rhs.pos {
+            return false
+        }
+        if lhs.side != rhs.side {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(pos)
+        hasher.combine(side)
+    }
+}
+
+
+public struct FfiConverterTypeAbsolutePosition: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AbsolutePosition {
+        return
+            try AbsolutePosition(
+                pos: FfiConverterUInt32.read(from: &buf), 
+                side: FfiConverterTypeSide.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: AbsolutePosition, into buf: inout [UInt8]) {
+        FfiConverterUInt32.write(value.pos, into: &buf)
+        FfiConverterTypeSide.write(value.side, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeAbsolutePosition_lift(_ buf: RustBuffer) throws -> AbsolutePosition {
+    return try FfiConverterTypeAbsolutePosition.lift(buf)
+}
+
+public func FfiConverterTypeAbsolutePosition_lower(_ value: AbsolutePosition) -> RustBuffer {
+    return FfiConverterTypeAbsolutePosition.lower(value)
+}
+
+
 /**
  * A diff of a container.
  */
@@ -4686,6 +5315,102 @@ public func FfiConverterTypeContainerDiff_lift(_ buf: RustBuffer) throws -> Cont
 
 public func FfiConverterTypeContainerDiff_lower(_ value: ContainerDiff) -> RustBuffer {
     return FfiConverterTypeContainerDiff.lower(value)
+}
+
+
+public struct CounterSpan {
+    public var start: Int32
+    public var end: Int32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(start: Int32, end: Int32) {
+        self.start = start
+        self.end = end
+    }
+}
+
+
+
+extension CounterSpan: Equatable, Hashable {
+    public static func ==(lhs: CounterSpan, rhs: CounterSpan) -> Bool {
+        if lhs.start != rhs.start {
+            return false
+        }
+        if lhs.end != rhs.end {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(start)
+        hasher.combine(end)
+    }
+}
+
+
+public struct FfiConverterTypeCounterSpan: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CounterSpan {
+        return
+            try CounterSpan(
+                start: FfiConverterInt32.read(from: &buf), 
+                end: FfiConverterInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: CounterSpan, into buf: inout [UInt8]) {
+        FfiConverterInt32.write(value.start, into: &buf)
+        FfiConverterInt32.write(value.end, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeCounterSpan_lift(_ buf: RustBuffer) throws -> CounterSpan {
+    return try FfiConverterTypeCounterSpan.lift(buf)
+}
+
+public func FfiConverterTypeCounterSpan_lower(_ value: CounterSpan) -> RustBuffer {
+    return FfiConverterTypeCounterSpan.lower(value)
+}
+
+
+public struct CursorWithPos {
+    public var cursor: Cursor
+    public var pos: AbsolutePosition
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(cursor: Cursor, pos: AbsolutePosition) {
+        self.cursor = cursor
+        self.pos = pos
+    }
+}
+
+
+
+public struct FfiConverterTypeCursorWithPos: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CursorWithPos {
+        return
+            try CursorWithPos(
+                cursor: FfiConverterTypeCursor.read(from: &buf), 
+                pos: FfiConverterTypeAbsolutePosition.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: CursorWithPos, into buf: inout [UInt8]) {
+        FfiConverterTypeCursor.write(value.cursor, into: &buf)
+        FfiConverterTypeAbsolutePosition.write(value.pos, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeCursorWithPos_lift(_ buf: RustBuffer) throws -> CursorWithPos {
+    return try FfiConverterTypeCursorWithPos.lift(buf)
+}
+
+public func FfiConverterTypeCursorWithPos_lower(_ value: CursorWithPos) -> RustBuffer {
+    return FfiConverterTypeCursorWithPos.lower(value)
 }
 
 
@@ -5069,6 +5794,45 @@ public func FfiConverterTypeTreeID_lift(_ buf: RustBuffer) throws -> TreeId {
 
 public func FfiConverterTypeTreeID_lower(_ value: TreeId) -> RustBuffer {
     return FfiConverterTypeTreeID.lower(value)
+}
+
+
+public struct UndoItemMeta {
+    public var value: LoroValue
+    public var cursors: [CursorWithPos]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(value: LoroValue, cursors: [CursorWithPos]) {
+        self.value = value
+        self.cursors = cursors
+    }
+}
+
+
+
+public struct FfiConverterTypeUndoItemMeta: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UndoItemMeta {
+        return
+            try UndoItemMeta(
+                value: FfiConverterTypeLoroValue.read(from: &buf), 
+                cursors: FfiConverterSequenceTypeCursorWithPos.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: UndoItemMeta, into buf: inout [UInt8]) {
+        FfiConverterTypeLoroValue.write(value.value, into: &buf)
+        FfiConverterSequenceTypeCursorWithPos.write(value.cursors, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeUndoItemMeta_lift(_ buf: RustBuffer) throws -> UndoItemMeta {
+    return try FfiConverterTypeUndoItemMeta.lift(buf)
+}
+
+public func FfiConverterTypeUndoItemMeta_lower(_ value: UndoItemMeta) -> RustBuffer {
+    return FfiConverterTypeUndoItemMeta.lower(value)
 }
 
 // Note that we don't yet support `indirect` for enums.
@@ -6175,6 +6939,61 @@ extension TreeExternalDiff: Equatable, Hashable {}
 
 
 
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum UndoOrRedo {
+    
+    case undo
+    case redo
+}
+
+
+public struct FfiConverterTypeUndoOrRedo: FfiConverterRustBuffer {
+    typealias SwiftType = UndoOrRedo
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UndoOrRedo {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .undo
+        
+        case 2: return .redo
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: UndoOrRedo, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .undo:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .redo:
+            writeInt(&buf, Int32(2))
+        
+        }
+    }
+}
+
+
+public func FfiConverterTypeUndoOrRedo_lift(_ buf: RustBuffer) throws -> UndoOrRedo {
+    return try FfiConverterTypeUndoOrRedo.lift(buf)
+}
+
+public func FfiConverterTypeUndoOrRedo_lower(_ value: UndoOrRedo) -> RustBuffer {
+    return FfiConverterTypeUndoOrRedo.lower(value)
+}
+
+
+
+extension UndoOrRedo: Equatable, Hashable {}
+
+
+
 fileprivate struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
     typealias SwiftType = UInt32?
 
@@ -6254,6 +7073,48 @@ fileprivate struct FfiConverterOptionTypeCursor: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeCursor.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+fileprivate struct FfiConverterOptionTypeOnPop: FfiConverterRustBuffer {
+    typealias SwiftType = OnPop?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeOnPop.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeOnPop.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+fileprivate struct FfiConverterOptionTypeOnPush: FfiConverterRustBuffer {
+    typealias SwiftType = OnPush?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeOnPush.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeOnPush.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -6510,6 +7371,28 @@ fileprivate struct FfiConverterSequenceTypeContainerDiff: FfiConverterRustBuffer
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterTypeContainerDiff.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+fileprivate struct FfiConverterSequenceTypeCursorWithPos: FfiConverterRustBuffer {
+    typealias SwiftType = [CursorWithPos]
+
+    public static func write(_ value: [CursorWithPos], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeCursorWithPos.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [CursorWithPos] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [CursorWithPos]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeCursorWithPos.read(from: &buf))
         }
         return seq
     }
@@ -7172,7 +8055,43 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorovaluelike_as_loro_value() != 23668) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_onpop_on_pop() != 39438) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_onpush_on_push() != 4043) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_subscriber_on_diff() != 462) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_undomanager_add_exclude_origin_prefix() != 61306) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_undomanager_can_redo() != 61543) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_undomanager_can_undo() != 51532) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_undomanager_record_new_checkpoint() != 35753) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_undomanager_redo() != 55485) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_undomanager_set_max_undo_steps() != 43243) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_undomanager_set_merge_interval() != 13688) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_undomanager_set_on_pop() != 4141) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_undomanager_set_on_push() != 31009) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_undomanager_undo() != 32659) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_valueorcontainer_as_container() != 61163) {
@@ -7220,12 +8139,17 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_constructor_lorotree_new() != 42150) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_constructor_undomanager_new() != 35328) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_constructor_versionvector_new() != 31126) {
         return InitializationResult.apiChecksumMismatch
     }
 
     uniffiCallbackInitContainerIdLike()
     uniffiCallbackInitLoroValueLike()
+    uniffiCallbackInitOnPop()
+    uniffiCallbackInitOnPush()
     uniffiCallbackInitSubscriber()
     return InitializationResult.ok
 }()

@@ -27,6 +27,16 @@ interface Subscriber{
     void on_diff(DiffEvent diff);
 };
 
+[Trait, WithForeign]
+interface OnPush{
+    UndoItemMeta on_push(UndoOrRedo undo_or_redo, CounterSpan span);
+};
+
+[Trait, WithForeign]
+interface OnPop{
+    void on_pop(UndoOrRedo undo_or_redo, CounterSpan span, UndoItemMeta undo_meta);
+};
+
 // ============= LORO DOC =============
 
 interface LoroDoc{
@@ -726,6 +736,73 @@ interface VersionVector{
 
 interface Frontiers{
 
+};
+
+// ============= UNDO MANAGER =============
+
+interface UndoManager{
+    /// Create a new UndoManager.
+    constructor([ByRef] LoroDoc doc);
+
+    /// Undo the last change made by the peer.
+    [Throws=LoroError]
+    boolean undo([ByRef] LoroDoc doc);
+
+    /// Redo the last change made by the peer.
+    [Throws=LoroError]
+    boolean redo([ByRef] LoroDoc doc);
+
+    /// Record a new checkpoint.
+    [Throws=LoroError]
+    void record_new_checkpoint([ByRef] LoroDoc doc);
+
+    /// Whether the undo manager can undo.
+    boolean can_undo();
+
+    /// Whether the undo manager can redo.
+    boolean can_redo();
+
+    /// If a local event's origin matches the given prefix, it will not be recorded in the
+    /// undo stack.
+    void add_exclude_origin_prefix([ByRef] string prefix);
+
+    /// Set the maximum number of undo steps. The default value is 100.
+    void set_max_undo_steps(u32 size);
+
+    /// Set the merge interval in ms. The default value is 0, which means no merge.
+    void set_merge_interval(i64 interval);
+
+    /// Set the listener for push events.
+    /// The listener will be called when a new undo/redo item is pushed into the stack.
+    void set_on_push(OnPush? on_push);
+
+    /// Set the listener for pop events.
+    /// The listener will be called when an undo/redo item is popped from the stack.
+    void set_on_pop(OnPop? on_pop);
+};
+
+enum UndoOrRedo{
+    "Undo", "Redo",
+};
+
+dictionary CounterSpan{
+    i32 start;
+    i32 end;
+};
+
+dictionary UndoItemMeta{
+    LoroValue value;
+    sequence<CursorWithPos> cursors;
+};
+
+dictionary CursorWithPos{
+    Cursor cursor;
+    AbsolutePosition pos;
+};
+
+dictionary AbsolutePosition{
+    u32 pos;
+    Side side;
 };
 
 // ============= EVENTS =============
