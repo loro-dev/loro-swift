@@ -66,13 +66,13 @@ echo "▸ Building for aarch64-apple-ios"
 CFLAGS_aarch64_apple_ios="-target aarch64-apple-ios" \
 $cargo_build --target aarch64-apple-ios --locked --release
 
-# echo "▸ Building for aarch64-apple-visionos-sim"
-# CFLAGS_aarch64_apple_visionos="-target aarch64-apple-visionos-sim" \
-# $cargo_build_nightly_with_std --target aarch64-apple-visionos-sim --locked --release
+echo "▸ Building for aarch64-apple-visionos-sim"
+CFLAGS_aarch64_apple_visionos="-target aarch64-apple-visionos-sim" \
+$cargo_build_nightly_with_std --target aarch64-apple-visionos-sim --locked --release
 
-# echo "▸ Building for aarch64-apple-visionos"
-# CFLAGS_aarch64_apple_visionos="-target aarch64-apple-visionos" \
-# $cargo_build_nightly_with_std --target aarch64-apple-visionos --locked --release
+echo "▸ Building for aarch64-apple-visionos"
+CFLAGS_aarch64_apple_visionos="-target aarch64-apple-visionos" \
+$cargo_build_nightly_with_std --target aarch64-apple-visionos --locked --release
 
 echo "▸ Building for aarch64-apple-darwin"
 CFLAGS_aarch64_apple_darwin="-target aarch64-apple-darwin" \
@@ -110,11 +110,11 @@ lipo -create  \
     "${BUILD_FOLDER}/aarch64-apple-ios-sim/release/${LIB_NAME}" \
     -output "${BUILD_FOLDER}/ios-simulator/release/${LIB_NAME}"
 
-# echo "▸ arm simulator static libraries into a static binary"
-# mkdir -p "${BUILD_FOLDER}/visionos-simulator/release"
-# lipo -create  \
-#     "${BUILD_FOLDER}/aarch64-apple-visionos-sim/release/${LIB_NAME}" \
-#     -output "${BUILD_FOLDER}/visionos-simulator/release/${LIB_NAME}"
+echo "▸ arm simulator static libraries into a static binary"
+mkdir -p "${BUILD_FOLDER}/visionos-simulator/release"
+lipo -create  \
+    "${BUILD_FOLDER}/aarch64-apple-visionos-sim/release/${LIB_NAME}" \
+    -output "${BUILD_FOLDER}/visionos-simulator/release/${LIB_NAME}"
 
 echo "▸ Lipo (merge) x86 and arm macOS static libraries into a fat static binary"
 mkdir -p "${BUILD_FOLDER}/apple-darwin/release"
@@ -131,11 +131,12 @@ lipo -create  \
     -output "${BUILD_FOLDER}/apple-macabi/release/${LIB_NAME}"
 
 
-    # -library "$BUILD_FOLDER/aarch64-apple-visionos/release/$LIB_NAME" \
-    # -headers "${BUILD_FOLDER}/includes" \
-    # -library "${BUILD_FOLDER}/visionos-simulator/release/${LIB_NAME}" \
-    # -headers "${BUILD_FOLDER}/includes" \
+   
 xcodebuild -create-xcframework \
+    -library "$BUILD_FOLDER/aarch64-apple-visionos/release/$LIB_NAME" \
+    -headers "${BUILD_FOLDER}/includes" \
+    -library "${BUILD_FOLDER}/visionos-simulator/release/${LIB_NAME}" \
+    -headers "${BUILD_FOLDER}/includes" \
     -library "$BUILD_FOLDER/aarch64-apple-ios/release/$LIB_NAME" \
     -headers "${BUILD_FOLDER}/includes" \
     -library "${BUILD_FOLDER}/ios-simulator/release/${LIB_NAME}" \
@@ -151,57 +152,3 @@ ditto -c -k --sequesterRsrc --keepParent "$XCFRAMEWORK_FOLDER" "$XCFRAMEWORK_FOL
 
 echo "▸ Compute checksum"
 openssl dgst -sha256 "$XCFRAMEWORK_FOLDER.zip"
-
-
-#############
-# rm -rf gen-swift
-# mkdir -p gen-swift/includes
-# cd loro-rs
-# cargo run --features=cli --bin uniffi-bindgen generate src/loro.udl --language swift --out-dir ../gen-swift
-
-# echo "Building x86_64-apple-ios"
-# CFLAGS_x86_64_apple_ios="-target x86_64-apple-ios" \
-# cargo build --target x86_64-apple-ios --locked --release
-
-# echo "Building aarch64-apple-ios-sim"
-# CFLAGS_x86_64_apple_ios="-aarch64-apple-ios-sim" \
-# cargo build --target aarch64-apple-ios-sim --locked --release
-
-# echo "Building aarch64-apple-ios"
-# CFLAGS_x86_64_apple_ios="-target aarch64-apple-ios" \
-# cargo build --target aarch64-apple-ios --locked --release
-
-# echo "Building aarch64-apple-visionos-sim"
-# CFLAGS_x86_64_apple_ios="-target aarch64-apple-visionos-sim" \
-# cargo build --target aarch64-apple-visionos-sim --locked --release
-
-# echo "Building aarch64-apple-visionos"
-# CFLAGS_x86_64_apple_ios="-target aarch64-apple-visionos" \
-# cargo build --target aarch64-apple-visionos --locked --release
-
-# echo "Building aarch64-apple-darwin"
-# CFLAGS_x86_64_apple_ios="-target aarch64-apple-darwin" \
-# cargo build --target aarch64-apple-darwin --locked --release
-
-# echo "Building x86_64-apple-darwin"
-# CFLAGS_x86_64_apple_ios="-target x86_64-apple-darwin" \
-# cargo build --target x86_64-apple-darwin --locked --release
-
-# echo "Building aarch64-apple-ios-macabi"
-# CFLAGS_x86_64_apple_ios="-target aarch64-apple-ios-macabi" \
-# cargo build --target aarch64-apple-ios-macabi --locked --release
-
-# echo "Building x86_64-apple-ios-macabi"
-# CFLAGS_x86_64_apple_ios="-target x86_64-apple-ios-macabi" \
-# cargo build --target x86_64-apple-ios-macabi --locked --release
-
-
-
-# cd ..
-# mv gen-swift/loroFFI.h gen-swift/includes/loroFFI.h
-# mv gen-swift/loroFFI.modulemap gen-swift/includes/module.modulemap
-# xcodebuild -create-xcframework -library loro-rs/target/release/libloro.a -headers gen-swift/includes -output loroFFI.xcframework
-# zip -r loroFFI.xcframework.zip loroFFI.xcframework
-# mv gen-swift/loro.swift Sources/Loro/LoroFFI.swift
-# sh scripts/refine_trait.sh
-# rm -rf gen-swift loroFFI.xcframework
