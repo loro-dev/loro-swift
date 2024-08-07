@@ -1,8 +1,17 @@
 # Loro-swift
 
+<p align="center">
+  <a aria-label="X" href="https://x.com/loro_dev" target="_blank">
+    <img alt="" src="https://img.shields.io/badge/Twitter-black?style=for-the-badge&logo=Twitter">
+  </a>
+  <a aria-label="Discord-Link" href="https://discord.gg/tUsBSVfqzf" target="_blank">
+    <img alt="" src="https://img.shields.io/badge/Discord-black?style=for-the-badge&logo=discord">
+  </a>
+</p>
+
 This repository contains experimental Swift bindings for [Loro CRDT](https://github.com/loro-dev/loro).
 
-If you have any suggestions for API, please feel free to create an issue.
+If you have any suggestions for API, please feel free to create an issue or join our [Discord](https://discord.gg/tUsBSVfqzf) community.
 
 ## Usage
 
@@ -14,7 +23,7 @@ let package = Package(
     products: [......],
     dependencies:[
         ...,
-        .package(url: "https://github.com/loro-dev/loro-swift.git")
+        .package(url: "https://github.com/loro-dev/loro-swift.git", from: 0.16.2)
     ],
     targets:[
         .executableTarget(
@@ -24,6 +33,47 @@ let package = Package(
     ]
 )
 
+```
+
+## Examples
+
+```swift
+import Loro
+
+// create a Loro document
+let doc = LoroDoc()
+
+// create Root Container by getText, getList, getMap, getTree, getMovableList, getCounter
+let text = doc.getText(id: "text")
+
+try! text.insert(pos: 0, s: "abc")
+try! text.delete(pos: 0, len: 1)
+let s = text.toString()
+// XCTAssertEqual(s, "bc")
+
+// subscribe the event
+let subId = doc.subscribeRoot{ diffEvent in
+    print(diffEvent)
+}
+// unsubscribe
+doc.unsubscribe(subId: id)
+
+// export updates or snapshot
+
+let doc2 = LoroDoc()
+let snapshot = doc.exportSnapshot()
+let updates = doc.exportFrom(vv: VersionVector())
+
+// import updates or snapshot
+try! doc2.import(snapshot)
+try! doc2.import(updates)
+// import batch of updates or snapshot
+try! doc2.importBatch(bytes: [snapshot, updates])
+
+// checkout to any version
+let startFrontiers = doc.oplogFrontiers()
+try! doc.checkout(frontiers: startFrontiers)
+doc.checkoutToLatest()
 ```
 
 ## Develop

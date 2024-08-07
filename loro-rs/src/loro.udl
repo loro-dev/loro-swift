@@ -22,6 +22,11 @@ interface ContainerIdLike{
     ContainerID as_container_id(ContainerType ty);
 };
 
+[Trait, WithForeign]
+interface Subscriber{
+    void on_diff(DiffEvent diff);
+};
+
 // ============= LORO DOC =============
 
 interface LoroDoc{
@@ -724,11 +729,6 @@ interface Frontiers{
 };
 
 // ============= EVENTS =============
-
-[Trait]
-interface Subscriber{
-    void on_diff(DiffEvent diff);
-};
 
 dictionary DiffEvent{
     /// How the event is triggered.

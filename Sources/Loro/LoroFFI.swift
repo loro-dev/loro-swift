@@ -4208,14 +4208,14 @@ public func FfiConverterTypeLoroValueLike_lower(_ value: LoroValueLike) -> Unsaf
 
 
 
-public protocol SubscriberProtocol : AnyObject {
+public protocol Subscriber : AnyObject {
     
     func onDiff(diff: DiffEvent) 
     
 }
 
-open class Subscriber:
-    SubscriberProtocol {
+open class SubscriberImpl:
+    Subscriber {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -4265,17 +4265,65 @@ open func onDiff(diff: DiffEvent) {try! rustCall() {
 
 }
 
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfaceSubscriber {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfaceSubscriber = UniffiVTableCallbackInterfaceSubscriber(
+        onDiff: { (
+            uniffiHandle: UInt64,
+            diff: RustBuffer,
+            uniffiOutReturn: UnsafeMutableRawPointer,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> () in
+                guard let uniffiObj = try? FfiConverterTypeSubscriber.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.onDiff(
+                     diff: try FfiConverterTypeDiffEvent.lift(diff)
+                )
+            }
+
+            
+            let writeReturn = { () }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            let result = try? FfiConverterTypeSubscriber.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface Subscriber: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitSubscriber() {
+    uniffi_loro_fn_init_callback_vtable_subscriber(&UniffiCallbackInterfaceSubscriber.vtable)
+}
+
 public struct FfiConverterTypeSubscriber: FfiConverter {
+    fileprivate static var handleMap = UniffiHandleMap<Subscriber>()
 
     typealias FfiType = UnsafeMutableRawPointer
     typealias SwiftType = Subscriber
 
     public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Subscriber {
-        return Subscriber(unsafeFromRawPointer: pointer)
+        return SubscriberImpl(unsafeFromRawPointer: pointer)
     }
 
     public static func lower(_ value: Subscriber) -> UnsafeMutableRawPointer {
-        return value.uniffiClonePointer()
+        guard let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: handleMap.insert(obj: value))) else {
+            fatalError("Cast to UnsafeMutableRawPointer failed")
+        }
+        return ptr
     }
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Subscriber {
@@ -6830,10 +6878,10 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_state_vv() != 1627) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_subscribe() != 56858) {
+    if (uniffi_loro_checksum_method_lorodoc_subscribe() != 28252) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_subscribe_root() != 41210) {
+    if (uniffi_loro_checksum_method_lorodoc_subscribe_root() != 7800) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_unsubscribe() != 32901) {
@@ -7124,7 +7172,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorovaluelike_as_loro_value() != 23668) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_subscriber_on_diff() != 56592) {
+    if (uniffi_loro_checksum_method_subscriber_on_diff() != 462) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_valueorcontainer_as_container() != 61163) {
@@ -7178,6 +7226,7 @@ private var initializationResult: InitializationResult = {
 
     uniffiCallbackInitContainerIdLike()
     uniffiCallbackInitLoroValueLike()
+    uniffiCallbackInitSubscriber()
     return InitializationResult.ok
 }()
 

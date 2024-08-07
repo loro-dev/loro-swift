@@ -101,7 +101,7 @@ $cargo_build --target wasm32-wasi --locked --release
 mkdir -p "${BUILD_FOLDER}/includes"
 cp "${SWIFT_FOLDER}/loroFFI.h" "${BUILD_FOLDER}/includes"
 cp "${SWIFT_FOLDER}/loroFFI.modulemap" "${BUILD_FOLDER}/includes/module.modulemap"
-cp "${SWIFT_FOLDER}/loro.swift" "${THIS_SCRIPT_DIR}/../Sources/Loro/LoroFFI.swift"
+cp -f "${SWIFT_FOLDER}/loro.swift" "${THIS_SCRIPT_DIR}/../Sources/Loro/LoroFFI.swift"
 
 echo "▸ Lipo (merge) x86 and arm simulator static libraries into a fat static binary"
 mkdir -p "${BUILD_FOLDER}/ios-simulator/release"
