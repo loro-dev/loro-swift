@@ -35,7 +35,10 @@ let package = Package(
         FFIbinaryTarget,
         .target(
             name: "Loro",
-            dependencies: ["LoroFFI"]),
+            dependencies: ["LoroFFI"],
+            path: "Sources",
+            exclude:["../loro-rs", "../scripts", "../gen-swift"]
+        ),
         .testTarget(
             name: "LoroTests",
             dependencies: ["Loro"]),
