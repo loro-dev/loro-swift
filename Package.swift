@@ -11,8 +11,8 @@ if ProcessInfo.processInfo.environment["LOCAL_BUILD"] != nil {
 }else {
    FFIbinaryTarget = .binaryTarget(
        name: "LoroFFI",
-       url: "https://github.com/loro-dev/loro-swift/releases/download/0.16.2-alpha.0/loroFFI.xcframework.zip",
-       checksum: "a98119540ba962f1896243b27cc1e9f94629db831c9477a7fec388359d438c0c"
+       url: "https://github.com/loro-dev/loro-swift/releases/download/0.16.2-alpha.1/loroFFI.xcframework.zip",
+       checksum: "7fe0b1d86d0241a8ea4f5ebf4a9f72922fd25dd0e4f195f1abfe095afe6cd786"
    )
 }
 
@@ -35,9 +35,7 @@ let package = Package(
         FFIbinaryTarget,
         .target(
             name: "Loro",
-            dependencies: ["LoroFFI"],
-            path: "Sources",
-            exclude:["../loro-rs", "../scripts", "../gen-swift"]
+            dependencies: ["LoroFFI"]
         ),
         .testTarget(
             name: "LoroTests",

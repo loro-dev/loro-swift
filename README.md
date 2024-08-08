@@ -26,8 +26,6 @@ If you have any suggestions for API, please feel free to create an issue or join
 
 ## Usage
 
-**Note: Loro-swift is still under development and no package has been released yet.**
-
 Add the dependency in your `Package.swift`.
 
 ```swift
@@ -36,7 +34,7 @@ let package = Package(
     products: [......],
     dependencies:[
         ...,
-        .package(url: "https://github.com/loro-dev/loro-swift.git", from: "0.16.2-alpha.0")
+        .package(url: "https://github.com/loro-dev/loro-swift.git", from: "0.16.2-alpha.1")
     ],
     targets:[
         .executableTarget(
