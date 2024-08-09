@@ -98,9 +98,9 @@ $cargo_build --target wasm32-wasi --locked --release
 # cp "${SWIFT_FOLDER}/automergeFFI.modulemap" "${SWIFT_FOLDER}/../Sources/_CAutomergeUniffi/include/module.modulemap"
 
 # copies the generated header into the build folder structure for local XCFramework usage
-mkdir -p "${BUILD_FOLDER}/includes"
-cp "${SWIFT_FOLDER}/loroFFI.h" "${BUILD_FOLDER}/includes"
-cp "${SWIFT_FOLDER}/loroFFI.modulemap" "${BUILD_FOLDER}/includes/module.modulemap"
+mkdir -p "${BUILD_FOLDER}/includes/loroFFI"
+cp "${SWIFT_FOLDER}/loroFFI.h" "${BUILD_FOLDER}/includes/loroFFI"
+cp "${SWIFT_FOLDER}/loroFFI.modulemap" "${BUILD_FOLDER}/includes/loroFFI/module.modulemap"
 
 echo "▸ Lipo (merge) x86 and arm simulator static libraries into a fat static binary"
 mkdir -p "${BUILD_FOLDER}/ios-simulator/release"
