@@ -44,9 +44,9 @@ CFLAGS_x86_64_apple_darwin="-target x86_64-apple-darwin" \
 $cargo_build --target x86_64-apple-darwin --locked --release
 
 # copies the generated header into the build folder structure for local XCFramework usage
-mkdir -p "${BUILD_FOLDER}/includes"
-cp "${SWIFT_FOLDER}/loroFFI.h" "${BUILD_FOLDER}/includes"
-cp "${SWIFT_FOLDER}/loroFFI.modulemap" "${BUILD_FOLDER}/includes/module.modulemap"
+mkdir -p "${BUILD_FOLDER}/includes/loroFFI"
+cp "${SWIFT_FOLDER}/loroFFI.h" "${BUILD_FOLDER}/includes/loroFFI"
+cp "${SWIFT_FOLDER}/loroFFI.modulemap" "${BUILD_FOLDER}/includes/loroFFI/module.modulemap"
 cp -f "${SWIFT_FOLDER}/loro.swift" "${THIS_SCRIPT_DIR}/../Sources/Loro/LoroFFI.swift"
 
 echo "▸ Lipo (merge) x86 and arm macOS static libraries into a fat static binary"
