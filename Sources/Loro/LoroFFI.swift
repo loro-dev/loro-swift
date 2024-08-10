@@ -537,7 +537,7 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 
 
 
-public protocol ContainerIdLike : Any {
+public protocol ContainerIdLike: Any {
     
     func asContainerId(ty: ContainerType)  -> ContainerId
     
@@ -4094,7 +4094,7 @@ public func FfiConverterTypeLoroUnknown_lower(_ value: LoroUnknown) -> UnsafeMut
 
 
 
-public protocol LoroValueLike : Any {
+public protocol LoroValueLike: Any {
     
     func asLoroValue()  -> LoroValue
     
@@ -4968,6 +4968,18 @@ public protocol ValueOrContainerProtocol : AnyObject {
     
     func asContainer()  -> ContainerId?
     
+    func asLoroCounter()  -> LoroCounter?
+    
+    func asLoroList()  -> LoroList?
+    
+    func asLoroMap()  -> LoroMap?
+    
+    func asLoroMovableList()  -> LoroMovableList?
+    
+    func asLoroText()  -> LoroText?
+    
+    func asLoroTree()  -> LoroTree?
+    
     func asValue()  -> LoroValue?
     
     func isContainer()  -> Bool
@@ -5020,6 +5032,48 @@ open class ValueOrContainer:
 open func asContainer() -> ContainerId? {
     return try!  FfiConverterOptionTypeContainerID.lift(try! rustCall() {
     uniffi_loro_fn_method_valueorcontainer_as_container(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func asLoroCounter() -> LoroCounter? {
+    return try!  FfiConverterOptionTypeLoroCounter.lift(try! rustCall() {
+    uniffi_loro_fn_method_valueorcontainer_as_loro_counter(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func asLoroList() -> LoroList? {
+    return try!  FfiConverterOptionTypeLoroList.lift(try! rustCall() {
+    uniffi_loro_fn_method_valueorcontainer_as_loro_list(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func asLoroMap() -> LoroMap? {
+    return try!  FfiConverterOptionTypeLoroMap.lift(try! rustCall() {
+    uniffi_loro_fn_method_valueorcontainer_as_loro_map(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func asLoroMovableList() -> LoroMovableList? {
+    return try!  FfiConverterOptionTypeLoroMovableList.lift(try! rustCall() {
+    uniffi_loro_fn_method_valueorcontainer_as_loro_movable_list(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func asLoroText() -> LoroText? {
+    return try!  FfiConverterOptionTypeLoroText.lift(try! rustCall() {
+    uniffi_loro_fn_method_valueorcontainer_as_loro_text(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func asLoroTree() -> LoroTree? {
+    return try!  FfiConverterOptionTypeLoroTree.lift(try! rustCall() {
+    uniffi_loro_fn_method_valueorcontainer_as_loro_tree(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -7112,6 +7166,132 @@ fileprivate struct FfiConverterOptionTypeCursor: FfiConverterRustBuffer {
     }
 }
 
+fileprivate struct FfiConverterOptionTypeLoroCounter: FfiConverterRustBuffer {
+    typealias SwiftType = LoroCounter?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeLoroCounter.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeLoroCounter.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+fileprivate struct FfiConverterOptionTypeLoroList: FfiConverterRustBuffer {
+    typealias SwiftType = LoroList?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeLoroList.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeLoroList.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+fileprivate struct FfiConverterOptionTypeLoroMap: FfiConverterRustBuffer {
+    typealias SwiftType = LoroMap?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeLoroMap.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeLoroMap.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+fileprivate struct FfiConverterOptionTypeLoroMovableList: FfiConverterRustBuffer {
+    typealias SwiftType = LoroMovableList?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeLoroMovableList.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeLoroMovableList.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+fileprivate struct FfiConverterOptionTypeLoroText: FfiConverterRustBuffer {
+    typealias SwiftType = LoroText?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeLoroText.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeLoroText.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+fileprivate struct FfiConverterOptionTypeLoroTree: FfiConverterRustBuffer {
+    typealias SwiftType = LoroTree?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeLoroTree.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeLoroTree.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 fileprivate struct FfiConverterOptionTypeOnPop: FfiConverterRustBuffer {
     typealias SwiftType = OnPop?
 
@@ -8135,6 +8315,24 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_valueorcontainer_as_container() != 61163) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_valueorcontainer_as_loro_counter() != 51072) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_valueorcontainer_as_loro_list() != 16144) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_valueorcontainer_as_loro_map() != 62391) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_valueorcontainer_as_loro_movable_list() != 49359) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_valueorcontainer_as_loro_text() != 8015) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_valueorcontainer_as_loro_tree() != 39545) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_valueorcontainer_as_value() != 9638) {

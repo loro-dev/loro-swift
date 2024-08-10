@@ -10,6 +10,12 @@ interface ValueOrContainer{
     boolean is_container();
     LoroValue? as_value();
     ContainerID? as_container();
+    LoroText? as_loro_text();
+    LoroList? as_loro_list();
+    LoroMap? as_loro_map();
+    LoroTree? as_loro_tree();
+    LoroCounter? as_loro_counter();
+    LoroMovableList? as_loro_movable_list();
 };
 
 [Trait, WithForeign]
