@@ -49,6 +49,7 @@ cargo run --manifest-path "$RUST_FOLDER/Cargo.toml"  \
     --features=cli \
     --bin uniffi-bindgen generate \
     "$RUST_FOLDER/src/loro.udl" \
+    --no-format \
     --language swift \
     --out-dir "${SWIFT_FOLDER}"
 
