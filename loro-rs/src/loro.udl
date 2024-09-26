@@ -34,6 +34,16 @@ interface Subscriber{
 };
 
 [Trait, WithForeign]
+interface LocalUpdateCallback{
+    void on_local_update(bytes update);
+};
+
+[Trait, WithForeign]
+interface Unsubscriber{
+    void on_unsubscribe();
+};
+
+[Trait, WithForeign]
 interface OnPush{
     UndoItemMeta on_push(UndoOrRedo undo_or_redo, CounterSpan span);
 };
@@ -42,6 +52,12 @@ interface OnPush{
 interface OnPop{
     void on_pop(UndoOrRedo undo_or_redo, CounterSpan span, UndoItemMeta undo_meta);
 };
+
+// [Trait, WithForeign]
+// interface JsonSchemaLike{
+//    [Throws=LoroError]
+//    JsonSchema into_json_schema();
+// };
 
 // ============= LORO DOC =============
 
@@ -54,9 +70,27 @@ interface LoroDoc{
     /// The time complexity and space complexity of this operation are both O(n),
     LoroDoc fork();
 
-    // Config config();
-    // [Throws=LoroError]
-    // ImportBlobMetadata decode_import_blob_meta([ByRef] bytes);
+    /// Get the configurations of the document.
+    Configure config();
+
+    /// Get `Change` at the given id.
+    ///
+    /// `Change` is a grouped continuous operations that share the same id, timestamp, commit message.
+    ///
+    /// - The id of the `Change` is the id of its first op.
+    /// - The second op's id is `{ peer: change.id.peer, counter: change.id.counter + 1 }`
+    ///
+    /// The same applies on `Lamport`:
+    ///
+    /// - The lamport of the `Change` is the lamport of its first op.
+    /// - The second op's lamport is `change.lamport + 1`
+    ///
+    /// The length of the `Change` is how many operations it contains
+    ChangeMeta? get_change(ID id);
+
+    /// Decodes the metadata for an imported blob from the provided bytes.
+    [Throws=LoroError]
+    ImportBlobMetadata decode_import_blob_meta([ByRef] bytes bytes);
 
     /// Set whether to record the timestamp of each change. Default is `false`.
     ///
@@ -75,14 +109,14 @@ interface LoroDoc{
     /// The default value is 1000 seconds.
     void set_change_merge_interval(i64 interval);
 
-    /// Set the jitter of the tree position(Fractional Index).
+    /// Set the rich text format configuration of the document.
     ///
-    /// The jitter is used to avoid conflicts when multiple users are creating the node at the same position.
-    /// value 0 is default, which means no jitter, any value larger than 0 will enable jitter.
-    /// Generally speaking, jitter will affect the growth rate of document size.
-    void set_fractional_index_jitter(u8 jitter);
-
-    // void config_text_style(StyleConfigMap text_style);
+    /// You need to config it if you use rich text `mark` method.
+    /// Specifically, you need to config the `expand` property of each style.
+    ///
+    /// Expand is used to specify the behavior of expanding when new text is inserted at the
+    /// beginning or end of the style.
+    void config_text_style(StyleConfigMap text_style);
 
     /// Attach the document state to the latest known version.
     ///
@@ -113,7 +147,12 @@ interface LoroDoc{
     /// This has the same effect as `attach`.
     void checkout_to_latest();
 
-    // Ordering cmp_with_frontiers([ByRef] Frontiers other);
+    /// Compare the frontiers with the current OpLog's version.
+    ///
+    /// If `other` contains any version that's not contained in the current OpLog, return [Ordering::Less].
+    Ordering cmp_with_frontiers([ByRef] Frontiers other);
+
+
     // cmp_frontiers();
 
     /// Force the document enter the detached mode.
@@ -129,7 +168,6 @@ interface LoroDoc{
     [Throws=LoroError]
     void import_batch([ByRef] sequence<bytes> bytes);
 
-    // TODO: id type
     /// Get a [LoroMovableList] by container id.
     ///
     /// If the provided id is string, it will be converted into a root container id with the name of the string.
@@ -167,7 +205,9 @@ interface LoroDoc{
     /// The event will be sent after a transaction is committed
     void commit();
 
-    // void commit_with(CommitOptions options);
+    void commit_with(CommitOptions options);
+
+    void set_next_commit_message([ByRef] string msg);
 
     /// Whether the document is in detached mode, where the [loro_internal::DocState] is not
     /// synchronized with the latest version of the [loro_internal::OpLog].
@@ -183,10 +223,12 @@ interface LoroDoc{
     /// in the generated events.
     [Throws=LoroError]
     void import_with([ByRef] bytes bytes, [ByRef] string origin);
-    
-    // [Throws=LoroError]
-    // void import_json_updates(JsonSchema json);
-    // JsonSchema export_json_updates([ByRef]VersionVector start_vv, [ByRef]VersionVector end_vv);
+
+    [Throws=LoroError]
+    void import_json_updates([ByRef]string json);
+
+    /// Export the current state with json-string format of the document.
+    string export_json_updates([ByRef]VersionVector start_vv, [ByRef]VersionVector end_vv);
     
     /// Export all the ops not included in the given `VersionVector`
     bytes export_from([ByRef] VersionVector vv);
@@ -207,14 +249,25 @@ interface LoroDoc{
     /// Get the `VersionVector` version of `OpLog`
     VersionVector state_vv();
 
+    /// Get the `VersionVector` of trimmed history
+    ///
+    /// The ops included by the trimmed history are not in the doc.
+    VersionVector trimmed_vv();
+
     /// Get the total number of operations in the `OpLog`
     u64 len_ops();
 
     /// Get the total number of changes in the `OpLog`
     u64 len_changes();
 
+    /// Get the shallow value of the document.
+    LoroValue get_value();
+
     /// Get the current state of the document.
     LoroValue get_deep_value();
+
+    /// Get the current state with container id of the doc
+    LoroValue get_deep_value_with_id();
 
     /// Get the `Frontiers` version of `OpLog`
     Frontiers oplog_frontiers();
@@ -249,19 +302,94 @@ interface LoroDoc{
     /// Remove a subscription.
     void unsubscribe(SubID sub_id);
 
-    // /// Estimate the size of the document states in memory.
-    // void log_estimate_size();
+    /// Subscribe the local update of the document.
+    Subscription subscribe_local_update(LocalUpdateCallback callback);
 
+    /// Estimate the size of the document states in memory.
+    void log_estimate_size();
 
-    // void check_state_correctness_slow();
+    /// Check the correctness of the document state by comparing it with the state
+    /// calculated by applying all the history.
+    void check_state_correctness_slow();
 
     /// Get the handler by the path.
     ValueOrContainer? get_by_path([ByRef] sequence<Index> path);
     
     /// Get the handler by the string path.
     ValueOrContainer? get_by_str_path([ByRef] string path);
-    // [Throws=LoroError]
-    // PosQueryResult get_cursor_pos(Cursor cursor);
+
+    [Throws=CannotFindRelativePosition]
+    PosQueryResult get_cursor_pos([ByRef]Cursor cursor);
+
+    boolean has_history_cache();
+
+    /// Free the history cache that is used for making checkout faster.
+    ///
+    /// If you use checkout that switching to an old/concurrent version, the history cache will be built.
+    /// You can free it by calling this method.
+    void free_history_cache();
+
+    /// Free the cached diff calculator that is used for checkout.
+    void free_diff_calculator();
+
+    /// Encoded all ops and history cache to bytes and store them in the kv store.
+    ///
+    /// The parsed ops will be dropped
+    void compact_change_store();
+
+    // /// Export the document in the given mode.
+    // bytes export(ExportMode mode);
+
+    bytes export_updates_in_range([ByRef]sequence<IdSpan> spans); 
+
+    bytes export_gc_snapshot([ByRef]Frontiers frontiers);
+
+    bytes export_state_only(Frontiers? frontiers);
+
+    // /// Analyze the container info of the doc
+    // ///
+    // /// This is used for development and debugging. It can be slow.
+    // DocAnalysis analyze();
+
+    /// Get the path from the root to the container
+    sequence<ContainerPath>? get_path_to_container([ByRef] ContainerID id);
+
+    /// Evaluate a JSONPath expression on the document and return matching values or handlers.
+    ///
+    /// This method allows querying the document structure using JSONPath syntax.
+    /// It returns a vector of `ValueOrHandler` which can represent either primitive values
+    /// or container handlers, depending on what the JSONPath expression matches.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - A string slice containing the JSONPath expression to evaluate.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing either:
+    /// - `Ok(Vec<ValueOrHandler>)`: A vector of matching values or handlers.
+    /// - `Err(String)`: An error message if the JSONPath expression is invalid or evaluation fails.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use loro::LoroDoc;
+    /// let doc = LoroDoc::new();
+    /// let map = doc.get_map("users");
+    /// map.insert("alice", 30).unwrap();
+    /// map.insert("bob", 25).unwrap();
+    ///
+    /// let result = doc.jsonpath("$.users.alice").unwrap();
+    /// assert_eq!(result.len(), 1);
+    /// assert_eq!(result[0].to_json_value(), serde_json::json!(30));
+    /// ```
+    [Throws=JsonPathError]
+    sequence<ValueOrContainer> jsonpath([ByRef] string path);
+};
+
+dictionary ContainerPath{
+    ContainerID id;
+    Index path;
 };
 
 // ============= CONTAINERS =============
@@ -519,25 +647,25 @@ interface LoroTree{
     /// If the `parent` is `None`, the created node is the root of a tree.
     /// Otherwise, the created node is a child of the parent tree node.
     [Throws=LoroError]
-    TreeID create(TreeID? parent);
+    TreeID create(TreeParentId parent);
     
     /// Create a new tree node at the given index and return the [`TreeID`].
     ///
     /// If the `parent` is `None`, the created node is the root of a tree.
     /// If the `index` is greater than the number of children of the parent, error will be returned.
     [Throws=LoroError]
-    TreeID create_at(TreeID? parent, u32 index);
+    TreeID create_at(TreeParentId parent, u32 index);
     
     /// Move the `target` node to be a child of the `parent` node.
     ///
     /// If the `parent` is `None`, the `target` node will be a root.
     [Throws=LoroError]
-    void mov(TreeID target, TreeID? parent);
+    void mov(TreeID target, TreeParentId parent);
     
     /// Move the `target` node to be a child of the `parent` node at the given index.
     /// If the `parent` is `None`, the `target` node will be a root.
     [Throws=LoroError]
-    void mov_to(TreeID target, TreeID? parent, u32 to);
+    void mov_to(TreeID target, TreeParentId parent, u32 to);
     
     /// Move the `target` node to be a child after the `after` node with the same parent.
     [Throws=LoroError]
@@ -563,10 +691,17 @@ interface LoroTree{
     /// - If the target node does not exist, throws Error.
     /// - If the target node is a root node, return nil.
     [Throws=LoroError]
-    TreeID? parent(TreeID target);
+    TreeParentId parent(TreeID target);
     
     /// Return whether target node exists.
     boolean contains(TreeID target);
+
+    /// Return whether target node is deleted.
+    ///
+    /// # Errors
+    /// - If the target node does not exist, return `LoroTreeError::TreeNodeNotExist`.
+    [Throws=LoroError]
+    boolean is_node_deleted(TreeID target);
     
     /// Return all nodes
     sequence<TreeID> nodes();
@@ -574,10 +709,10 @@ interface LoroTree{
     /// Return all children of the target node.
     ///
     /// If the parent node does not exist, return `None`.
-    sequence<TreeID>? children(TreeID? parent);
+    sequence<TreeID>? children(TreeParentId parent);
     
     /// Return the number of children of the target node.
-    u32? children_num(TreeID? parent);
+    u32? children_num(TreeParentId parent);
     
     /// Return container id of the tree.
     ContainerID id();
@@ -593,6 +728,22 @@ interface LoroTree{
     
     /// Return the flat array of the forest, each node is with metadata.
     LoroValue get_value_with_meta();
+
+    /// Whether the fractional index is enabled.
+    boolean is_fractional_index_enabled();
+
+    /// Enable fractional index for Tree Position.
+    ///
+    /// The jitter is used to avoid conflicts when multiple users are creating the node at the same position.
+    /// value 0 is default, which means no jitter, any value larger than 0 will enable jitter.
+    ///
+    /// Generally speaking, jitter will affect the growth rate of document size.
+    /// [Read more about it](https://www.loro.dev/blog/movable-tree#implementation-and-encoding-size)
+    void enable_fractional_index(u8 jitter);
+
+    /// Disable the fractional index generation for Tree Position when
+    /// you don't need the Tree's siblings to be sorted. The fractional index will be always default.
+    void disable_fractional_index();
 };
 
 interface LoroMovableList{
@@ -719,6 +870,96 @@ interface LoroUnknown{
     ContainerID id();
 };
 
+// ============= TYPES =============
+
+// TODO: https://github.com/mozilla/uniffi-rs/issues/1372
+// [Enum]
+// interface ExportMode{
+//     Snapshot();
+//     Updates(VersionVector from);
+//     UpdatesInRange(sequence<IdSpan> spans);
+//     GcSnapshot(Frontiers frontiers);
+//     StateOnly(Frontiers? frontiers);
+// };
+
+dictionary ChangeMeta{
+    /// Lamport timestamp of the Change
+    u32 lamport;
+    /// The first Op id of the Change
+    ID id;
+    /// [Unix time](https://en.wikipedia.org/wiki/Unix_time)
+    /// It is the number of seconds that have elapsed since 00:00:00 UTC on 1 January 1970.
+    i64 timestamp;
+    /// The commit message of the change
+    string? message;
+    /// The dependencies of the first op of the change
+    Frontiers deps;
+    /// The total op num inside this change
+    u32 len;
+};
+
+dictionary ImportBlobMetadata{
+    /// The partial start version vector.
+    ///
+    /// Import blob includes all the ops from `partial_start_vv` to `partial_end_vv`.
+    /// However, it does not constitute a complete version vector, as it only contains counters
+    /// from peers included within the import blob.
+    VersionVector partial_start_vv;
+    /// The partial end version vector.
+    ///
+    /// Import blob includes all the ops from `partial_start_vv` to `partial_end_vv`.
+    /// However, it does not constitute a complete version vector, as it only contains counters
+    /// from peers included within the import blob.
+    VersionVector partial_end_vv;
+    i64 start_timestamp;
+    Frontiers start_frontiers;
+    i64 end_timestamp;
+    u32 change_num;
+    boolean is_snapshot;
+};
+
+enum Ordering{
+    "Less", "Equal", "Greater"
+};
+
+
+// ============= CONFIG =============
+
+interface Configure{
+    Configure fork();
+    boolean record_timestamp();
+    void set_record_timestamp(boolean record);
+    i64 merge_interval();
+    void set_merge_interval(i64 interval);
+    StyleConfigMap text_style_config();
+};
+
+interface StyleConfigMap{
+    constructor();
+    [Name=default_rich_text_config]
+    constructor();
+    void insert([ByRef] string key, StyleConfig value);
+    StyleConfig? get([ByRef] string key);
+};
+
+dictionary StyleConfig{
+    ExpandType expand;
+};
+
+enum ExpandType{
+    "Before",
+    "After",
+    "Both",
+    "None",
+};
+
+dictionary CommitOptions{
+    string? origin;
+    boolean immediate_renew;
+    i64? timestamp;
+    string? commit_msg;
+};
+
 // ============= CURSOR =============
 
 
@@ -730,6 +971,16 @@ enum Side{
 
 interface Cursor{
     constructor(ID? id, ContainerID container, Side side, u32 origin_pos);
+};
+
+dictionary PosQueryResult{
+    Cursor? update;
+    AbsolutePosition current;
+};
+
+dictionary AbsolutePosition{
+    u32 pos;
+    Side side;
 };
 
 
@@ -889,9 +1140,9 @@ dictionary TreeDiffItem{
 
 [Enum]
 interface TreeExternalDiff{
-    Create(TreeID? parent, u32 index, string fractional_index);
-    Move(TreeID? parent, u32 index, string fractional_index);
-    Delete();
+    Create(TreeParentId parent, u32 index, string fractional_index);
+    Move(TreeParentId parent, u32 index, string fractional_index, TreeParentId old_parent, u32 old_index);
+    Delete(TreeParentId old_parent, u32 old_index);
 };
 
 dictionary PathItem{
@@ -916,10 +1167,40 @@ interface Index{
     Node(TreeID target);
 };
 
+/// A handle to a subscription created by GPUI. When dropped, the subscription
+/// is cancelled and the callback will no longer be invoked.
+interface Subscription{
+    /// Creates a new subscription with a callback that gets invoked when
+    /// this subscription is dropped.
+    constructor(Unsubscriber unsubscribe);
+
+    /// Detaches the subscription from this handle. The callback will
+    /// continue to be invoked until the views or models it has been
+    /// subscribed to are dropped
+    [Self=ByArc]
+    void detach();
+};
+
 // ============= TYPES =============
 dictionary TreeID{
     u64 peer;
     i32 counter;
+};
+
+[Enum]
+interface TreeParentId{
+    Node(TreeID id);
+    Root();
+    Deleted();
+    Unexist();
+};
+
+interface FractionalIndex{
+    [Name=from_bytes]
+    constructor(bytes bytes);
+    [Name=from_hex_string]
+    constructor([ByRef] string str);
+    string to_string();
 };
 
 
@@ -928,8 +1209,19 @@ dictionary ID{
     i32 counter;
 };
 
-interface IdSpan{
+dictionary IdLp{
+    u32 lamport;
+    u64 peer;
+};
 
+dictionary IdSpan{
+    u64 peer;
+    CounterSpan counter;
+};
+
+dictionary CounterSpan{
+    i32 start;
+    i32 end; 
 };
 
 [Custom]
@@ -958,7 +1250,7 @@ interface LoroValue{
     Bool(boolean value);
     Double(f64 value);
     I64(i64 value);
-    Binary(sequence<u8> value);
+    Binary(bytes value);
     String(string value);
     List(sequence<LoroValue> value);
     Map(record<string, LoroValue> value);
@@ -967,7 +1259,7 @@ interface LoroValue{
 
 [Error]
 enum LoroError {
- "UnmatchedContext",
+    "UnmatchedContext",
     "DecodeVersionVectorError",
     "DecodeError",
     "DecodeDataCorruptionError",
@@ -998,4 +1290,20 @@ enum LoroError {
     "UTF16InUnicodeCodePoint",
     "EndIndexLessThanStartIndex",
     "InvalidRootContainerName",
+    "ImportUpdatesThatDependsOnOutdatedVersion",
+    "SwitchToTrimmedVersion",
+    "ContainerDeleted"
+};
+
+[Error]
+enum CannotFindRelativePosition{
+    "ContainerDeleted",
+    "HistoryCleared",
+    "IdNotFound"
+};
+
+[Error]
+enum JsonPathError{
+    "InvalidJsonPath",
+    "EvaluationError"
 };
