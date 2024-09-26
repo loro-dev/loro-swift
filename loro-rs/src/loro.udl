@@ -987,20 +987,32 @@ dictionary AbsolutePosition{
 // ============= VERSIONS =============
 interface VersionVector{
     constructor();
-    // void set_last(ID id);
+    void set_last(ID id);
     i32? get_last(u64 peer);
-    // void set_end(ID id);
+    void set_end(ID id);
     // boolean try_update_last(ID id);
-    // sequence<IdSpan> get_missing_span([ByRef] VersionVector target);
-    // void merge([ByRef] VersionVector other);
+    sequence<IdSpan> get_missing_span([ByRef] VersionVector target);
+    void merge([ByRef] VersionVector other);
     boolean includes_vv([ByRef] VersionVector other);
     boolean includes_id(ID id);
-    // i32Span? intersect_span(IdSpan target);
-    // extend_to_include_vv();
+    CounterSpan? intersect_span(IdSpan target);
+    void extend_to_include_vv([ByRef]VersionVector other);
+    VersionVectorDiff diff([ByRef]VersionVector rhs);
+    bytes encode();
+    [Name=decode]
+    constructor([ByRef]bytes bytes);
+    Ordering? partial_cmp([ByRef]VersionVector other);
 };
 
 interface Frontiers{
 
+};
+
+dictionary VersionVectorDiff{
+    /// need to add these spans to move from right to left
+    record<u64, CounterSpan> left;
+    /// need to add these spans to move from left to right
+    record<u64, CounterSpan> right;
 };
 
 // ============= UNDO MANAGER =============
