@@ -1338,7 +1338,8 @@ enum LoroError {
     "InvalidRootContainerName",
     "ImportUpdatesThatDependsOnOutdatedVersion",
     "SwitchToTrimmedVersion",
-    "ContainerDeleted"
+    "ContainerDeleted",
+    "ConcurrentOpsWithSamePeerID",
 };
 
 [Error]
