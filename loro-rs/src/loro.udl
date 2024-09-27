@@ -703,9 +703,12 @@ interface LoroTree{
     [Throws=LoroError]
     boolean is_node_deleted(TreeID target);
     
-    /// Return all nodes
+    /// Return all nodes, including deleted nodes
     sequence<TreeID> nodes();
-    
+
+    /// Get the root nodes of the forest.
+    sequence<TreeID> roots();
+
     /// Return all children of the target node.
     ///
     /// If the parent node does not exist, return `None`.
@@ -999,13 +1002,22 @@ interface VersionVector{
     void extend_to_include_vv([ByRef]VersionVector other);
     VersionVectorDiff diff([ByRef]VersionVector rhs);
     bytes encode();
-    [Name=decode]
+    [Name=decode, Throws=LoroError]
     constructor([ByRef]bytes bytes);
     Ordering? partial_cmp([ByRef]VersionVector other);
+    boolean eq([ByRef]VersionVector other);
 };
 
 interface Frontiers{
-
+    constructor();
+    [Name=from_id]
+    constructor(ID id);
+    [Name=from_ids]
+    constructor(sequence<ID> ids);
+    bytes encode();
+    [Name=decode, Throws=LoroError]
+    constructor([ByRef]bytes bytes);
+    boolean eq([ByRef]Frontiers other);
 };
 
 dictionary VersionVectorDiff{
