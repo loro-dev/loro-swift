@@ -986,6 +986,28 @@ dictionary AbsolutePosition{
     Side side;
 };
 
+interface Awareness{
+    constructor(u64 peer, i64 timeout);
+    bytes encode([ByRef]sequence<u64> peers);
+    bytes encode_all();
+    AwarenessPeerUpdate apply([ByRef]bytes encoded_peers_info);
+    void set_local_state(LoroValueLike value);
+    LoroValue? get_local_state();
+    sequence<u64> remove_outdated();
+    record<u64, PeerInfo> get_all_states();
+    u64 peer();
+};
+
+dictionary AwarenessPeerUpdate{
+    sequence<u64> updated;
+    sequence<u64> added;
+};
+
+dictionary PeerInfo{
+    LoroValue state;
+    i32 counter;
+    i64 timestamp;
+};
 
 // ============= VERSIONS =============
 interface VersionVector{
