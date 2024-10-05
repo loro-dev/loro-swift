@@ -215,17 +215,17 @@ interface LoroDoc{
     
     /// Import updates/snapshot exported by [`LoroDoc::export_snapshot`] or [`LoroDoc::export_from`].
     [Throws=LoroError]
-    void import([ByRef]bytes bytes);
+    ImportStatus import([ByRef]bytes bytes);
     
     /// Import updates/snapshot exported by [`LoroDoc::export_snapshot`] or [`LoroDoc::export_from`].
     ///
     /// It marks the import with a custom `origin` string. It can be used to track the import source
     /// in the generated events.
     [Throws=LoroError]
-    void import_with([ByRef] bytes bytes, [ByRef] string origin);
+    ImportStatus import_with([ByRef] bytes bytes, [ByRef] string origin);
 
     [Throws=LoroError]
-    void import_json_updates([ByRef]string json);
+    ImportStatus import_json_updates([ByRef]string json);
 
     /// Export the current state with json-string format of the document.
     string export_json_updates([ByRef]VersionVector start_vv, [ByRef]VersionVector end_vv);
@@ -291,16 +291,13 @@ interface LoroDoc{
     ///
     /// The callback will be invoked when the container is changed.
     /// Returns a subscription id that can be used to unsubscribe.
-    SubID subscribe([ByRef] ContainerID container_id, Subscriber subscriber);
+    Subscription subscribe([ByRef] ContainerID container_id, Subscriber subscriber);
     
     /// Subscribe all the events.
     ///
     /// The callback will be invoked when any part of the [loro_internal::DocState] is changed.
     /// Returns a subscription id that can be used to unsubscribe.
-    SubID subscribe_root(Subscriber subscriber);
-
-    /// Remove a subscription.
-    void unsubscribe(SubID sub_id);
+    Subscription subscribe_root(Subscriber subscriber);
 
     /// Subscribe the local update of the document.
     Subscription subscribe_local_update(LocalUpdateCallback callback);
@@ -342,8 +339,9 @@ interface LoroDoc{
 
     bytes export_updates_in_range([ByRef]sequence<IdSpan> spans); 
 
-    bytes export_gc_snapshot([ByRef]Frontiers frontiers);
+    bytes export_trimmed_snapshot([ByRef]Frontiers frontiers);
 
+    [Throws=LoroEncodeError]
     bytes export_state_only(Frontiers? frontiers);
 
     // /// Analyze the container info of the doc
@@ -921,6 +919,11 @@ dictionary ImportBlobMetadata{
     boolean is_snapshot;
 };
 
+dictionary ImportStatus{
+    record<u64, CounterSpan> success;
+    record<u64, CounterSpan>? pending;
+};
+
 enum Ordering{
     "Less", "Equal", "Greater"
 };
@@ -1270,8 +1273,6 @@ dictionary CounterSpan{
     i32 end; 
 };
 
-[Custom]
-typedef u32 SubID;
 
 [Enum]
 interface ContainerType{
@@ -1340,6 +1341,7 @@ enum LoroError {
     "SwitchToTrimmedVersion",
     "ContainerDeleted",
     "ConcurrentOpsWithSamePeerID",
+    "InvalidPeerID",
 };
 
 [Error]
@@ -1353,4 +1355,11 @@ enum CannotFindRelativePosition{
 enum JsonPathError{
     "InvalidJsonPath",
     "EvaluationError"
+};
+
+[Error, NonExhaustive]
+enum LoroEncodeError{
+    "FrontiersNotFound",
+    "TrimmedSnapshotIncompatibleWithOldFormat",
+    "UnknownContainer",
 };
