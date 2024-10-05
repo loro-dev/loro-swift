@@ -754,6 +754,12 @@ interface LoroMovableList{
     /// To attach the container to the document, please insert it into an attached container.
     constructor();
     
+    /// Whether the container is attached to a document
+    ///
+    /// The edits on a detached container will not be persisted.
+    /// To attach the container to the document, please insert it into an attached container.
+    boolean is_attached();
+
     /// Get the container id.
     ContainerID id();
     

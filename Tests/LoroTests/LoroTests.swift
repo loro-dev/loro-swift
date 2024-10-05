@@ -22,7 +22,14 @@ final class LoroTests: XCTestCase {
         let s = text.toString()
         XCTAssertEqual(s, "bc")
     }
-    
+
+    func testMovableList(){
+        let doc = LoroDoc()
+        let movableList = doc.getMovableList(id: "movableList")
+        XCTAssertTrue(movableList.isAttached())
+        XCTAssertFalse(LoroMovableList().isAttached())
+    }
+
     func testSync(){
         let doc = LoroDoc()
         try! doc.setPeerId(peer: 0)

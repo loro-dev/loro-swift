@@ -3644,6 +3644,14 @@ public protocol LoroMovableListProtocol : AnyObject {
     
     func insertTreeContainer(pos: UInt32, child: LoroTree) throws  -> LoroTree
     
+    /**
+     * Whether the container is attached to a document
+     *
+     * The edits on a detached container will not be persisted.
+     * To attach the container to the document, please insert it into an attached container.
+     */
+    func isAttached()  -> Bool
+    
     func isEmpty()  -> Bool
     
     func len()  -> UInt32
@@ -3872,6 +3880,19 @@ open func insertTreeContainer(pos: UInt32, child: LoroTree)throws  -> LoroTree {
     uniffi_loro_fn_method_loromovablelist_insert_tree_container(self.uniffiClonePointer(),
         FfiConverterUInt32.lower(pos),
         FfiConverterTypeLoroTree.lower(child),$0
+    )
+})
+}
+    
+    /**
+     * Whether the container is attached to a document
+     *
+     * The edits on a detached container will not be persisted.
+     * To attach the container to the document, please insert it into an attached container.
+     */
+open func isAttached() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromovablelist_is_attached(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -11238,6 +11259,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_loromovablelist_insert_tree_container() != 33670) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_is_attached() != 50724) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_loromovablelist_is_empty() != 44651) {
