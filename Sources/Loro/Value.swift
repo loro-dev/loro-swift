@@ -4,6 +4,7 @@
 //
 //  Created by Leon Zhao on 2024/8/6.
 //
+import Foundation
 
 extension LoroValue: LoroValueLike {
     public func asLoroValue() -> LoroValue {
@@ -99,7 +100,7 @@ extension String:LoroValueLike{
 extension Array: LoroValueLike where Element:LoroValueLike{
     public func asLoroValue() -> LoroValue {
         if let uint8Array = self as? [UInt8] {
-            return LoroValue.binary(value: uint8Array)
+            return LoroValue.binary(value: Data(uint8Array))
         } else {
             let loroValues = self.map { $0.asLoroValue() }
             return LoroValue.list(value: loroValues)
@@ -118,5 +119,11 @@ extension Dictionary: LoroValueLike where Key == String, Value:LoroValueLike{
 extension ContainerId:LoroValueLike{
     public func asLoroValue() -> LoroValue {
         return LoroValue.container(value: self)
+    }
+}
+
+extension Data: LoroValueLike{
+    public func asLoroValue() -> LoroValue {
+        return LoroValue.binary(value: self)
     }
 }
