@@ -6,15 +6,15 @@ import PackageDescription
 
 let FFIbinaryTarget: PackageDescription.Target
 
-// if ProcessInfo.processInfo.environment["LOCAL_BUILD"] != nil {
+if ProcessInfo.processInfo.environment["LOCAL_BUILD"] != nil {
     FFIbinaryTarget = .binaryTarget(name: "LoroFFI", path: "./loroFFI.xcframework.zip")
-// }else {
-//    FFIbinaryTarget = .binaryTarget(
-//        name: "LoroFFI",
-//        url: "https://github.com/loro-dev/loro-swift/releases/download/0.16.2-alpha.2/loroFFI.xcframework.zip",
-//        checksum: "002f5343f0088f05ac90183e5dc1545e6b1f53f39b547ec7d3c2aa07d0f643c8"
-//    )
-// }
+}else {
+   FFIbinaryTarget = .binaryTarget(
+       name: "LoroFFI",
+       url: "https://github.com/loro-dev/loro-swift/releases/download/0.16.2-alpha.2/loroFFI.xcframework.zip",
+       checksum: "002f5343f0088f05ac90183e5dc1545e6b1f53f39b547ec7d3c2aa07d0f643c8"
+   )
+}
 
 let package = Package(
     name: "Loro",
