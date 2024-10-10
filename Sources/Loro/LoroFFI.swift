@@ -1802,14 +1802,14 @@ public protocol LoroDocProtocol : AnyObject {
      */
     func exportJsonUpdates(startVv: VersionVector, endVv: VersionVector)  -> String
     
+    func exportShallowSnapshot(frontiers: Frontiers)  -> Data
+    
     /**
      * Export the current state and history of the document.
      */
     func exportSnapshot()  -> Data
     
     func exportStateOnly(frontiers: Frontiers?) throws  -> Data
-    
-    func exportTrimmedSnapshot(frontiers: Frontiers)  -> Data
     
     func exportUpdatesInRange(spans: [IdSpan])  -> Data
     
@@ -2054,6 +2054,13 @@ public protocol LoroDocProtocol : AnyObject {
     func setRecordTimestamp(record: Bool) 
     
     /**
+     * Get the `VersionVector` of trimmed history
+     *
+     * The ops included by the trimmed history are not in the doc.
+     */
+    func shallowSinceVv()  -> VersionVector
+    
+    /**
      * Get the `Frontiers` version of `DocState`
      *
      * [Learn more about `Frontiers`]()
@@ -2085,13 +2092,6 @@ public protocol LoroDocProtocol : AnyObject {
      * Returns a subscription id that can be used to unsubscribe.
      */
     func subscribeRoot(subscriber: Subscriber)  -> Subscription
-    
-    /**
-     * Get the `VersionVector` of trimmed history
-     *
-     * The ops included by the trimmed history are not in the doc.
-     */
-    func trimmedVv()  -> VersionVector
     
     /**
      * Convert `VersionVector` into `Frontiers`
@@ -2325,6 +2325,14 @@ open func exportJsonUpdates(startVv: VersionVector, endVv: VersionVector) -> Str
 })
 }
     
+open func exportShallowSnapshot(frontiers: Frontiers) -> Data {
+    return try!  FfiConverterData.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_export_shallow_snapshot(self.uniffiClonePointer(),
+        FfiConverterTypeFrontiers.lower(frontiers),$0
+    )
+})
+}
+    
     /**
      * Export the current state and history of the document.
      */
@@ -2339,14 +2347,6 @@ open func exportStateOnly(frontiers: Frontiers?)throws  -> Data {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoroEncodeError.lift) {
     uniffi_loro_fn_method_lorodoc_export_state_only(self.uniffiClonePointer(),
         FfiConverterOptionTypeFrontiers.lower(frontiers),$0
-    )
-})
-}
-    
-open func exportTrimmedSnapshot(frontiers: Frontiers) -> Data {
-    return try!  FfiConverterData.lift(try! rustCall() {
-    uniffi_loro_fn_method_lorodoc_export_trimmed_snapshot(self.uniffiClonePointer(),
-        FfiConverterTypeFrontiers.lower(frontiers),$0
     )
 })
 }
@@ -2789,6 +2789,18 @@ open func setRecordTimestamp(record: Bool) {try! rustCall() {
 }
     
     /**
+     * Get the `VersionVector` of trimmed history
+     *
+     * The ops included by the trimmed history are not in the doc.
+     */
+open func shallowSinceVv() -> VersionVector {
+    return try!  FfiConverterTypeVersionVector.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_shallow_since_vv(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
      * Get the `Frontiers` version of `DocState`
      *
      * [Learn more about `Frontiers`]()
@@ -2846,18 +2858,6 @@ open func subscribeRoot(subscriber: Subscriber) -> Subscription {
     return try!  FfiConverterTypeSubscription.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_subscribe_root(self.uniffiClonePointer(),
         FfiConverterTypeSubscriber.lower(subscriber),$0
-    )
-})
-}
-    
-    /**
-     * Get the `VersionVector` of trimmed history
-     *
-     * The ops included by the trimmed history are not in the doc.
-     */
-open func trimmedVv() -> VersionVector {
-    return try!  FfiConverterTypeVersionVector.lift(try! rustCall() {
-    uniffi_loro_fn_method_lorodoc_trimmed_vv(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -8947,7 +8947,7 @@ public enum LoroEncodeError {
     
     case FrontiersNotFound(message: String)
     
-    case TrimmedSnapshotIncompatibleWithOldFormat(message: String)
+    case ShallowSnapshotIncompatibleWithOldFormat(message: String)
     
     case UnknownContainer(message: String)
     
@@ -8968,7 +8968,7 @@ public struct FfiConverterTypeLoroEncodeError: FfiConverterRustBuffer {
             message: try FfiConverterString.read(from: &buf)
         )
         
-        case 2: return .TrimmedSnapshotIncompatibleWithOldFormat(
+        case 2: return .ShallowSnapshotIncompatibleWithOldFormat(
             message: try FfiConverterString.read(from: &buf)
         )
         
@@ -8989,7 +8989,7 @@ public struct FfiConverterTypeLoroEncodeError: FfiConverterRustBuffer {
         
         case .FrontiersNotFound(_ /* message is ignored*/):
             writeInt(&buf, Int32(1))
-        case .TrimmedSnapshotIncompatibleWithOldFormat(_ /* message is ignored*/):
+        case .ShallowSnapshotIncompatibleWithOldFormat(_ /* message is ignored*/):
             writeInt(&buf, Int32(2))
         case .UnknownContainer(_ /* message is ignored*/):
             writeInt(&buf, Int32(3))
@@ -9077,7 +9077,7 @@ public enum LoroError {
     
     case ImportUpdatesThatDependsOnOutdatedVersion(message: String)
     
-    case SwitchToTrimmedVersion(message: String)
+    case SwitchToVersionBeforeShallowRoot(message: String)
     
     case ContainerDeleted(message: String)
     
@@ -9226,7 +9226,7 @@ public struct FfiConverterTypeLoroError: FfiConverterRustBuffer {
             message: try FfiConverterString.read(from: &buf)
         )
         
-        case 33: return .SwitchToTrimmedVersion(
+        case 33: return .SwitchToVersionBeforeShallowRoot(
             message: try FfiConverterString.read(from: &buf)
         )
         
@@ -9317,7 +9317,7 @@ public struct FfiConverterTypeLoroError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(31))
         case .ImportUpdatesThatDependsOnOutdatedVersion(_ /* message is ignored*/):
             writeInt(&buf, Int32(32))
-        case .SwitchToTrimmedVersion(_ /* message is ignored*/):
+        case .SwitchToVersionBeforeShallowRoot(_ /* message is ignored*/):
             writeInt(&buf, Int32(33))
         case .ContainerDeleted(_ /* message is ignored*/):
             writeInt(&buf, Int32(34))
@@ -10985,13 +10985,13 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_export_json_updates() != 15152) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorodoc_export_shallow_snapshot() != 50284) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorodoc_export_snapshot() != 8377) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_export_state_only() != 16747) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_loro_checksum_method_lorodoc_export_trimmed_snapshot() != 3451) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_export_updates_in_range() != 35227) {
@@ -11102,6 +11102,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_set_record_timestamp() != 15945) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorodoc_shallow_since_vv() != 13449) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorodoc_state_frontiers() != 17079) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11115,9 +11118,6 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_subscribe_root() != 16564) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_loro_checksum_method_lorodoc_trimmed_vv() != 26703) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_vv_to_frontiers() != 47960) {

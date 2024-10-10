@@ -5,12 +5,13 @@ final class LoroTests: XCTestCase {
     func testEvent(){
         let doc = LoroDoc()
         var num = 0
-        let _ = doc.subscribeRoot{ diffEvent in
+        let sub = doc.subscribeRoot{ diffEvent in
             num += 1
         }
         let list = doc.getList(id: "list")
         try! list.insert(pos: 0, v: 123)
         doc.commit()
+        sub.detach()
         XCTAssertEqual(num, 1)
     }
     

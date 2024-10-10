@@ -252,7 +252,7 @@ interface LoroDoc{
     /// Get the `VersionVector` of trimmed history
     ///
     /// The ops included by the trimmed history are not in the doc.
-    VersionVector trimmed_vv();
+    VersionVector shallow_since_vv();
 
     /// Get the total number of operations in the `OpLog`
     u64 len_ops();
@@ -339,7 +339,7 @@ interface LoroDoc{
 
     bytes export_updates_in_range([ByRef]sequence<IdSpan> spans); 
 
-    bytes export_trimmed_snapshot([ByRef]Frontiers frontiers);
+    bytes export_shallow_snapshot([ByRef]Frontiers frontiers);
 
     [Throws=LoroEncodeError]
     bytes export_state_only(Frontiers? frontiers);
@@ -1344,7 +1344,7 @@ enum LoroError {
     "EndIndexLessThanStartIndex",
     "InvalidRootContainerName",
     "ImportUpdatesThatDependsOnOutdatedVersion",
-    "SwitchToTrimmedVersion",
+    "SwitchToVersionBeforeShallowRoot",
     "ContainerDeleted",
     "ConcurrentOpsWithSamePeerID",
     "InvalidPeerID",
@@ -1366,6 +1366,6 @@ enum JsonPathError{
 [Error, NonExhaustive]
 enum LoroEncodeError{
     "FrontiersNotFound",
-    "TrimmedSnapshotIncompatibleWithOldFormat",
+    "ShallowSnapshotIncompatibleWithOldFormat",
     "UnknownContainer",
 };
