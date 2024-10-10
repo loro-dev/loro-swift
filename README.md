@@ -23,7 +23,7 @@ If you have any suggestions for API, please feel free to create an issue or join
 - [x] Checkout
 - [x] Subscribe Event
 - [x] UndoManager
-- [ ] Bindings for all types in Loro
+- [x] Bindings for all types in Loro
 - [ ] Tests
 - [ ] Benchmarks
 
@@ -37,7 +37,7 @@ let package = Package(
     products: [......],
     dependencies:[
         ...,
-        .package(url: "https://github.com/loro-dev/loro-swift.git", from: "0.16.2-alpha.3")
+        .package(url: "https://github.com/loro-dev/loro-swift.git", from: "1.0.0-alpha.5")
     ],
     targets:[
         .executableTarget(
@@ -66,11 +66,9 @@ let s = text.toString()
 // XCTAssertEqual(s, "bc")
 
 // subscribe the event
-let subId = doc.subscribeRoot{ diffEvent in
+let sub = doc.subscribeRoot{ diffEvent in
     print(diffEvent)
 }
-// unsubscribe
-doc.unsubscribe(subId: id)
 
 // export updates or snapshot
 let doc2 = LoroDoc()
@@ -78,8 +76,8 @@ let snapshot = doc.exportSnapshot()
 let updates = doc.exportFrom(vv: VersionVector())
 
 // import updates or snapshot
-try! doc2.import(snapshot)
-try! doc2.import(updates)
+let status = try! doc2.import(snapshot)
+let status2 = try! doc2.import(updates)
 // import batch of updates or snapshot
 try! doc2.importBatch(bytes: [snapshot, updates])
 
