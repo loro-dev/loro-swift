@@ -53,3 +53,23 @@ extension UndoManager{
         }
     }
 }
+
+
+class ChangeAncestorsTravel: ChangeAncestorsTraveler{ 
+    private let closure: (ChangeMeta)->Bool
+
+    public init(closure: @escaping (ChangeMeta)->Bool) {
+        self.closure = closure
+    }
+
+    func travel(change: ChangeMeta) -> Bool {
+        closure(change)
+    }
+}
+
+extension LoroDoc{
+    public func travelChangeAncestors(ids: [Id], f:  @escaping (ChangeMeta)->Bool) throws  {
+        let closureSubscriber = ChangeAncestorsTravel(closure: f)
+        try self.travelChangeAncestors(ids: ids, f: closureSubscriber)
+    }
+}

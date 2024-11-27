@@ -713,6 +713,163 @@ public func FfiConverterTypeAwareness_lower(_ value: Awareness) -> UnsafeMutable
 
 
 
+public protocol ChangeAncestorsTraveler : AnyObject {
+    
+    func travel(change: ChangeMeta)  -> Bool
+    
+}
+
+open class ChangeAncestorsTravelerImpl:
+    ChangeAncestorsTraveler {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_fn_clone_changeancestorstraveler(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_fn_free_changeancestorstraveler(pointer, $0) }
+    }
+
+    
+
+    
+open func travel(change: ChangeMeta) -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_changeancestorstraveler_travel(self.uniffiClonePointer(),
+        FfiConverterTypeChangeMeta.lower(change),$0
+    )
+})
+}
+    
+
+}
+// Magic number for the Rust proxy to call using the same mechanism as every other method,
+// to free the callback once it's dropped by Rust.
+private let IDX_CALLBACK_FREE: Int32 = 0
+// Callback return codes
+private let UNIFFI_CALLBACK_SUCCESS: Int32 = 0
+private let UNIFFI_CALLBACK_ERROR: Int32 = 1
+private let UNIFFI_CALLBACK_UNEXPECTED_ERROR: Int32 = 2
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfaceChangeAncestorsTraveler {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfaceChangeAncestorsTraveler = UniffiVTableCallbackInterfaceChangeAncestorsTraveler(
+        travel: { (
+            uniffiHandle: UInt64,
+            change: RustBuffer,
+            uniffiOutReturn: UnsafeMutablePointer<Int8>,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> Bool in
+                guard let uniffiObj = try? FfiConverterTypeChangeAncestorsTraveler.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.travel(
+                     change: try FfiConverterTypeChangeMeta.lift(change)
+                )
+            }
+
+            
+            let writeReturn = { uniffiOutReturn.pointee = FfiConverterBool.lower($0) }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            let result = try? FfiConverterTypeChangeAncestorsTraveler.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface ChangeAncestorsTraveler: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitChangeAncestorsTraveler() {
+    uniffi_loro_fn_init_callback_vtable_changeancestorstraveler(&UniffiCallbackInterfaceChangeAncestorsTraveler.vtable)
+}
+
+public struct FfiConverterTypeChangeAncestorsTraveler: FfiConverter {
+    fileprivate static var handleMap = UniffiHandleMap<ChangeAncestorsTraveler>()
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = ChangeAncestorsTraveler
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> ChangeAncestorsTraveler {
+        return ChangeAncestorsTravelerImpl(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: ChangeAncestorsTraveler) -> UnsafeMutableRawPointer {
+        guard let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: handleMap.insert(obj: value))) else {
+            fatalError("Cast to UnsafeMutableRawPointer failed")
+        }
+        return ptr
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ChangeAncestorsTraveler {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: ChangeAncestorsTraveler, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+public func FfiConverterTypeChangeAncestorsTraveler_lift(_ pointer: UnsafeMutableRawPointer) throws -> ChangeAncestorsTraveler {
+    return try FfiConverterTypeChangeAncestorsTraveler.lift(pointer)
+}
+
+public func FfiConverterTypeChangeAncestorsTraveler_lower(_ value: ChangeAncestorsTraveler) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeChangeAncestorsTraveler.lower(value)
+}
+
+
+
+
 public protocol ConfigureProtocol : AnyObject {
     
     func fork()  -> Configure
@@ -917,13 +1074,7 @@ open func asContainerId(ty: ContainerType) -> ContainerId {
     
 
 }
-// Magic number for the Rust proxy to call using the same mechanism as every other method,
-// to free the callback once it's dropped by Rust.
-private let IDX_CALLBACK_FREE: Int32 = 0
-// Callback return codes
-private let UNIFFI_CALLBACK_SUCCESS: Int32 = 0
-private let UNIFFI_CALLBACK_ERROR: Int32 = 1
-private let UNIFFI_CALLBACK_UNEXPECTED_ERROR: Int32 = 2
+
 
 // Put the implementation in a struct so we don't pollute the top-level namespace
 fileprivate struct UniffiCallbackInterfaceContainerIdLike {
@@ -1554,6 +1705,11 @@ public protocol LoroCounterProtocol : AnyObject {
      */
     func increment(value: Double) throws 
     
+    /**
+     * Whether the container is deleted.
+     */
+    func isDeleted()  -> Bool
+    
 }
 
 open class LoroCounter:
@@ -1647,6 +1803,16 @@ open func increment(value: Double)throws  {try rustCallWithError(FfiConverterTyp
 }
 }
     
+    /**
+     * Whether the container is deleted.
+     */
+open func isDeleted() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorocounter_is_deleted(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 
 }
 
@@ -1716,10 +1882,10 @@ public protocol LoroDocProtocol : AnyObject {
     /**
      * Checkout the `DocState` to a specific version.
      *
-     * > The document becomes detached during a `checkout` operation.
-     * > Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
-     * > In a detached state, the document is not editable, and any `import` operations will be
-     * > recorded in the `OpLog` without being applied to the `DocState`.
+     * The document becomes detached during a `checkout` operation.
+     * Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
+     * In a detached state, the document is not editable, and any `import` operations will be
+     * recorded in the `OpLog` without being applied to the `DocState`.
      *
      * You should call `attach` to attach the `DocState` to the latest version of `OpLog`.
      */
@@ -1748,8 +1914,12 @@ public protocol LoroDocProtocol : AnyObject {
      * Commit the cumulative auto commit transaction.
      *
      * There is a transaction behind every operation.
-     * It will automatically commit when users invoke export or import.
-     * The event will be sent after a transaction is committed
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
      */
     func commit() 
     
@@ -1777,11 +1947,6 @@ public protocol LoroDocProtocol : AnyObject {
      * beginning or end of the style.
      */
     func configTextStyle(textStyle: StyleConfigMap) 
-    
-    /**
-     * Decodes the metadata for an imported blob from the provided bytes.
-     */
-    func decodeImportBlobMeta(bytes: Data) throws  -> ImportBlobMetadata
     
     /**
      * Force the document enter the detached mode.
@@ -1817,8 +1982,18 @@ public protocol LoroDocProtocol : AnyObject {
      * Duplicate the document with a different PeerID
      *
      * The time complexity and space complexity of this operation are both O(n),
+     *
+     * When called in detached mode, it will fork at the current state frontiers.
+     * It will have the same effect as `fork_at(&self.state_frontiers())`.
      */
     func fork()  -> LoroDoc
+    
+    /**
+     * Fork the document at the given frontiers.
+     *
+     * The created doc will only contain the history before the specified frontiers.
+     */
+    func forkAt(frontiers: Frontiers)  -> LoroDoc
     
     /**
      * Free the cached diff calculator that is used for checkout.
@@ -1866,6 +2041,21 @@ public protocol LoroDocProtocol : AnyObject {
     func getChange(id: Id)  -> ChangeMeta?
     
     /**
+     * Gets container IDs modified in the given ID range.
+     *
+     * **NOTE:** This method will implicitly commit.
+     *
+     * This method can be used in conjunction with `doc.travel_change_ancestors()` to traverse
+     * the history and identify all changes that affected specific containers.
+     *
+     * # Arguments
+     *
+     * * `id` - The starting ID of the change range
+     * * `len` - The length of the change range to check
+     */
+    func getChangedContainersIn(id: Id, len: UInt32)  -> [ContainerId]
+    
+    /**
      * Get a [LoroCounter] by container id.
      *
      * If the provided id is string, it will be converted into a root container id with the name of the string.
@@ -1875,12 +2065,12 @@ public protocol LoroDocProtocol : AnyObject {
     func getCursorPos(cursor: Cursor) throws  -> PosQueryResult
     
     /**
-     * Get the current state of the document.
+     * Get the entire state of the current DocState
      */
     func getDeepValue()  -> LoroValue
     
     /**
-     * Get the current state with container id of the doc
+     * Get the entire state of the current DocState with container id
      */
     func getDeepValueWithId()  -> LoroValue
     
@@ -1909,6 +2099,14 @@ public protocol LoroDocProtocol : AnyObject {
      * Get the path from the root to the container
      */
     func getPathToContainer(id: ContainerId)  -> [ContainerPath]?
+    
+    /**
+     * Get the number of operations in the pending transaction.
+     *
+     * The pending transaction is the one that is not committed yet. It will be committed
+     * after calling `doc.commit()`, `doc.export(mode)` or `doc.checkout(version)`.
+     */
+    func getPendingTxnLen()  -> UInt32
     
     /**
      * Get a [LoroText] by container id.
@@ -1960,6 +2158,11 @@ public protocol LoroDocProtocol : AnyObject {
     func isDetached()  -> Bool
     
     /**
+     * Check if the doc contains the full history.
+     */
+    func isShallow()  -> Bool
+    
+    /**
      * Evaluate a JSONPath expression on the document and return matching values or handlers.
      *
      * This method allows querying the document structure using JSONPath syntax.
@@ -2008,6 +2211,11 @@ public protocol LoroDocProtocol : AnyObject {
     func logEstimateSize() 
     
     /**
+     * Minimize the frontiers by removing the unnecessary entries.
+     */
+    func minimizeFrontiers(frontiers: Frontiers)  -> FrontiersOrId
+    
+    /**
      * Get the `Frontiers` version of `OpLog`
      */
     func oplogFrontiers()  -> Frontiers
@@ -2023,7 +2231,7 @@ public protocol LoroDocProtocol : AnyObject {
     func peerId()  -> UInt64
     
     /**
-     * Set the interval of mergeable changes, in milliseconds.
+     * Set the interval of mergeable changes, in seconds.
      *
      * If two continuous local changes are within the interval, they will be merged into one change.
      * The default value is 1000 seconds.
@@ -2035,7 +2243,7 @@ public protocol LoroDocProtocol : AnyObject {
     /**
      * Change the PeerID
      *
-     * NOTE: You need ot make sure there is no chance two peer have the same PeerID.
+     * NOTE: You need to make sure there is no chance two peer have the same PeerID.
      * If it happens, the document will be corrupted.
      */
     func setPeerId(peer: UInt64) throws 
@@ -2063,12 +2271,12 @@ public protocol LoroDocProtocol : AnyObject {
     /**
      * Get the `Frontiers` version of `DocState`
      *
-     * [Learn more about `Frontiers`]()
+     * Learn more about [`Frontiers`](https://loro.dev/docs/advanced/version_deep_dive)
      */
     func stateFrontiers()  -> Frontiers
     
     /**
-     * Get the `VersionVector` version of `OpLog`
+     * Get the `VersionVector` version of `DocState`
      */
     func stateVv()  -> VersionVector
     
@@ -2076,7 +2284,14 @@ public protocol LoroDocProtocol : AnyObject {
      * Subscribe the events of a container.
      *
      * The callback will be invoked when the container is changed.
-     * Returns a subscription id that can be used to unsubscribe.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
      */
     func subscribe(containerId: ContainerId, subscriber: Subscriber)  -> Subscription
     
@@ -2089,9 +2304,22 @@ public protocol LoroDocProtocol : AnyObject {
      * Subscribe all the events.
      *
      * The callback will be invoked when any part of the [loro_internal::DocState] is changed.
-     * Returns a subscription id that can be used to unsubscribe.
+     * Returns a subscription that can be used to unsubscribe.
      */
     func subscribeRoot(subscriber: Subscriber)  -> Subscription
+    
+    /**
+     * Traverses the ancestors of the Change containing the given ID, including itself.
+     *
+     * This method visits all ancestors in causal order, from the latest to the oldest,
+     * based on their Lamport timestamps.
+     *
+     * # Arguments
+     *
+     * * `ids` - The IDs of the Change to start the traversal from.
+     * * `f` - A mutable function that is called for each ancestor. It can return `ControlFlow::Break(())` to stop the traversal.
+     */
+    func travelChangeAncestors(ids: [Id], f: ChangeAncestorsTraveler) throws 
     
     /**
      * Convert `VersionVector` into `Frontiers`
@@ -2178,10 +2406,10 @@ open func checkStateCorrectnessSlow() {try! rustCall() {
     /**
      * Checkout the `DocState` to a specific version.
      *
-     * > The document becomes detached during a `checkout` operation.
-     * > Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
-     * > In a detached state, the document is not editable, and any `import` operations will be
-     * > recorded in the `OpLog` without being applied to the `DocState`.
+     * The document becomes detached during a `checkout` operation.
+     * Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
+     * In a detached state, the document is not editable, and any `import` operations will be
+     * recorded in the `OpLog` without being applied to the `DocState`.
      *
      * You should call `attach` to attach the `DocState` to the latest version of `OpLog`.
      */
@@ -2225,8 +2453,12 @@ open func cmpWithFrontiers(other: Frontiers) -> Ordering {
      * Commit the cumulative auto commit transaction.
      *
      * There is a transaction behind every operation.
-     * It will automatically commit when users invoke export or import.
-     * The event will be sent after a transaction is committed
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
      */
 open func commit() {try! rustCall() {
     uniffi_loro_fn_method_lorodoc_commit(self.uniffiClonePointer(),$0
@@ -2276,17 +2508,6 @@ open func configTextStyle(textStyle: StyleConfigMap) {try! rustCall() {
         FfiConverterTypeStyleConfigMap.lower(textStyle),$0
     )
 }
-}
-    
-    /**
-     * Decodes the metadata for an imported blob from the provided bytes.
-     */
-open func decodeImportBlobMeta(bytes: Data)throws  -> ImportBlobMetadata {
-    return try  FfiConverterTypeImportBlobMetadata.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
-    uniffi_loro_fn_method_lorodoc_decode_import_blob_meta(self.uniffiClonePointer(),
-        FfiConverterData.lower(bytes),$0
-    )
-})
 }
     
     /**
@@ -2363,10 +2584,26 @@ open func exportUpdatesInRange(spans: [IdSpan]) -> Data {
      * Duplicate the document with a different PeerID
      *
      * The time complexity and space complexity of this operation are both O(n),
+     *
+     * When called in detached mode, it will fork at the current state frontiers.
+     * It will have the same effect as `fork_at(&self.state_frontiers())`.
      */
 open func fork() -> LoroDoc {
     return try!  FfiConverterTypeLoroDoc.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_fork(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Fork the document at the given frontiers.
+     *
+     * The created doc will only contain the history before the specified frontiers.
+     */
+open func forkAt(frontiers: Frontiers) -> LoroDoc {
+    return try!  FfiConverterTypeLoroDoc.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_fork_at(self.uniffiClonePointer(),
+        FfiConverterTypeFrontiers.lower(frontiers),$0
     )
 })
 }
@@ -2449,6 +2686,28 @@ open func getChange(id: Id) -> ChangeMeta? {
 }
     
     /**
+     * Gets container IDs modified in the given ID range.
+     *
+     * **NOTE:** This method will implicitly commit.
+     *
+     * This method can be used in conjunction with `doc.travel_change_ancestors()` to traverse
+     * the history and identify all changes that affected specific containers.
+     *
+     * # Arguments
+     *
+     * * `id` - The starting ID of the change range
+     * * `len` - The length of the change range to check
+     */
+open func getChangedContainersIn(id: Id, len: UInt32) -> [ContainerId] {
+    return try!  FfiConverterSequenceTypeContainerID.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_get_changed_containers_in(self.uniffiClonePointer(),
+        FfiConverterTypeID.lower(id),
+        FfiConverterUInt32.lower(len),$0
+    )
+})
+}
+    
+    /**
      * Get a [LoroCounter] by container id.
      *
      * If the provided id is string, it will be converted into a root container id with the name of the string.
@@ -2470,7 +2729,7 @@ open func getCursorPos(cursor: Cursor)throws  -> PosQueryResult {
 }
     
     /**
-     * Get the current state of the document.
+     * Get the entire state of the current DocState
      */
 open func getDeepValue() -> LoroValue {
     return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
@@ -2480,7 +2739,7 @@ open func getDeepValue() -> LoroValue {
 }
     
     /**
-     * Get the current state with container id of the doc
+     * Get the entire state of the current DocState with container id
      */
 open func getDeepValueWithId() -> LoroValue {
     return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
@@ -2535,6 +2794,19 @@ open func getPathToContainer(id: ContainerId) -> [ContainerPath]? {
     return try!  FfiConverterOptionSequenceTypeContainerPath.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_get_path_to_container(self.uniffiClonePointer(),
         FfiConverterTypeContainerID.lower(id),$0
+    )
+})
+}
+    
+    /**
+     * Get the number of operations in the pending transaction.
+     *
+     * The pending transaction is the one that is not committed yet. It will be committed
+     * after calling `doc.commit()`, `doc.export(mode)` or `doc.checkout(version)`.
+     */
+open func getPendingTxnLen() -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_get_pending_txn_len(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -2640,6 +2912,16 @@ open func isDetached() -> Bool {
 }
     
     /**
+     * Check if the doc contains the full history.
+     */
+open func isShallow() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_is_shallow(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
      * Evaluate a JSONPath expression on the document and return matching values or handlers.
      *
      * This method allows querying the document structure using JSONPath syntax.
@@ -2708,6 +2990,17 @@ open func logEstimateSize() {try! rustCall() {
 }
     
     /**
+     * Minimize the frontiers by removing the unnecessary entries.
+     */
+open func minimizeFrontiers(frontiers: Frontiers) -> FrontiersOrId {
+    return try!  FfiConverterTypeFrontiersOrID.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_minimize_frontiers(self.uniffiClonePointer(),
+        FfiConverterTypeFrontiers.lower(frontiers),$0
+    )
+})
+}
+    
+    /**
      * Get the `Frontiers` version of `OpLog`
      */
 open func oplogFrontiers() -> Frontiers {
@@ -2738,7 +3031,7 @@ open func peerId() -> UInt64 {
 }
     
     /**
-     * Set the interval of mergeable changes, in milliseconds.
+     * Set the interval of mergeable changes, in seconds.
      *
      * If two continuous local changes are within the interval, they will be merged into one change.
      * The default value is 1000 seconds.
@@ -2760,7 +3053,7 @@ open func setNextCommitMessage(msg: String) {try! rustCall() {
     /**
      * Change the PeerID
      *
-     * NOTE: You need ot make sure there is no chance two peer have the same PeerID.
+     * NOTE: You need to make sure there is no chance two peer have the same PeerID.
      * If it happens, the document will be corrupted.
      */
 open func setPeerId(peer: UInt64)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
@@ -2803,7 +3096,7 @@ open func shallowSinceVv() -> VersionVector {
     /**
      * Get the `Frontiers` version of `DocState`
      *
-     * [Learn more about `Frontiers`]()
+     * Learn more about [`Frontiers`](https://loro.dev/docs/advanced/version_deep_dive)
      */
 open func stateFrontiers() -> Frontiers {
     return try!  FfiConverterTypeFrontiers.lift(try! rustCall() {
@@ -2813,7 +3106,7 @@ open func stateFrontiers() -> Frontiers {
 }
     
     /**
-     * Get the `VersionVector` version of `OpLog`
+     * Get the `VersionVector` version of `DocState`
      */
 open func stateVv() -> VersionVector {
     return try!  FfiConverterTypeVersionVector.lift(try! rustCall() {
@@ -2826,7 +3119,14 @@ open func stateVv() -> VersionVector {
      * Subscribe the events of a container.
      *
      * The callback will be invoked when the container is changed.
-     * Returns a subscription id that can be used to unsubscribe.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
      */
 open func subscribe(containerId: ContainerId, subscriber: Subscriber) -> Subscription {
     return try!  FfiConverterTypeSubscription.lift(try! rustCall() {
@@ -2852,7 +3152,7 @@ open func subscribeLocalUpdate(callback: LocalUpdateCallback) -> Subscription {
      * Subscribe all the events.
      *
      * The callback will be invoked when any part of the [loro_internal::DocState] is changed.
-     * Returns a subscription id that can be used to unsubscribe.
+     * Returns a subscription that can be used to unsubscribe.
      */
 open func subscribeRoot(subscriber: Subscriber) -> Subscription {
     return try!  FfiConverterTypeSubscription.lift(try! rustCall() {
@@ -2860,6 +3160,25 @@ open func subscribeRoot(subscriber: Subscriber) -> Subscription {
         FfiConverterTypeSubscriber.lower(subscriber),$0
     )
 })
+}
+    
+    /**
+     * Traverses the ancestors of the Change containing the given ID, including itself.
+     *
+     * This method visits all ancestors in causal order, from the latest to the oldest,
+     * based on their Lamport timestamps.
+     *
+     * # Arguments
+     *
+     * * `ids` - The IDs of the Change to start the traversal from.
+     * * `f` - A mutable function that is called for each ancestor. It can return `ControlFlow::Break(())` to stop the traversal.
+     */
+open func travelChangeAncestors(ids: [Id], f: ChangeAncestorsTraveler)throws  {try rustCallWithError(FfiConverterTypeChangeTravelError.lift) {
+    uniffi_loro_fn_method_lorodoc_travel_change_ancestors(self.uniffiClonePointer(),
+        FfiConverterSequenceTypeID.lower(ids),
+        FfiConverterTypeChangeAncestorsTraveler.lower(f),$0
+    )
+}
 }
     
     /**
@@ -2924,6 +3243,11 @@ public func FfiConverterTypeLoroDoc_lower(_ value: LoroDoc) -> UnsafeMutableRawP
 public protocol LoroListProtocol : AnyObject {
     
     /**
+     * Delete all elements in the list.
+     */
+    func clear() throws 
+    
+    /**
      * Delete values at the given position.
      */
     func delete(pos: UInt32, len: UInt32) throws 
@@ -2939,6 +3263,11 @@ public protocol LoroListProtocol : AnyObject {
      * Get the deep value of the container.
      */
     func getDeepValue()  -> LoroValue
+    
+    /**
+     * Get the ID of the list item at the given position.
+     */
+    func getIdAt(pos: UInt32)  -> Id?
     
     /**
      * Get the shallow value of the container.
@@ -2977,6 +3306,11 @@ public protocol LoroListProtocol : AnyObject {
      */
     func isAttached()  -> Bool
     
+    /**
+     * Whether the container is deleted.
+     */
+    func isDeleted()  -> Bool
+    
     func isEmpty()  -> Bool
     
     func len()  -> UInt32
@@ -2987,6 +3321,14 @@ public protocol LoroListProtocol : AnyObject {
     func pop() throws  -> LoroValue?
     
     func push(v: LoroValueLike) throws 
+    
+    /**
+     * Converts the LoroList to a Vec of LoroValue.
+     *
+     * This method unwraps the internal Arc and clones the data if necessary,
+     * returning a Vec containing all the elements of the LoroList as LoroValue.
+     */
+    func toVec()  -> [LoroValue]
     
 }
 
@@ -3045,6 +3387,15 @@ public convenience init() {
 
     
     /**
+     * Delete all elements in the list.
+     */
+open func clear()throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorolist_clear(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+    /**
      * Delete values at the given position.
      */
 open func delete(pos: UInt32, len: UInt32)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
@@ -3081,6 +3432,17 @@ open func getCursor(pos: UInt32, side: Side) -> Cursor? {
 open func getDeepValue() -> LoroValue {
     return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
     uniffi_loro_fn_method_lorolist_get_deep_value(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the ID of the list item at the given position.
+     */
+open func getIdAt(pos: UInt32) -> Id? {
+    return try!  FfiConverterOptionTypeID.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorolist_get_id_at(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),$0
     )
 })
 }
@@ -3185,6 +3547,16 @@ open func isAttached() -> Bool {
 })
 }
     
+    /**
+     * Whether the container is deleted.
+     */
+open func isDeleted() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorolist_is_deleted(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 open func isEmpty() -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_loro_fn_method_lorolist_is_empty(self.uniffiClonePointer(),$0
@@ -3214,6 +3586,19 @@ open func push(v: LoroValueLike)throws  {try rustCallWithError(FfiConverterTypeL
         FfiConverterTypeLoroValueLike.lower(v),$0
     )
 }
+}
+    
+    /**
+     * Converts the LoroList to a Vec of LoroValue.
+     *
+     * This method unwraps the internal Arc and clones the data if necessary,
+     * returning a Vec containing all the elements of the LoroList as LoroValue.
+     */
+open func toVec() -> [LoroValue] {
+    return try!  FfiConverterSequenceTypeLoroValue.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorolist_to_vec(self.uniffiClonePointer(),$0
+    )
+})
 }
     
 
@@ -3267,6 +3652,11 @@ public func FfiConverterTypeLoroList_lower(_ value: LoroList) -> UnsafeMutableRa
 public protocol LoroMapProtocol : AnyObject {
     
     /**
+     * Delete all key-value pairs in the map.
+     */
+    func clear() throws 
+    
+    /**
      * Delete a key-value pair from the map.
      */
     func delete(key: String) throws 
@@ -3282,6 +3672,11 @@ public protocol LoroMapProtocol : AnyObject {
      * It will convert the state of sub-containers into a nested JSON value.
      */
     func getDeepValue()  -> LoroValue
+    
+    /**
+     * Get the peer id of the last editor on the given entry
+     */
+    func getLastEditor(key: String)  -> UInt64?
     
     /**
      * Get the shallow value of the map.
@@ -3318,14 +3713,29 @@ public protocol LoroMapProtocol : AnyObject {
     func isAttached()  -> Bool
     
     /**
+     * Whether the container is deleted.
+     */
+    func isDeleted()  -> Bool
+    
+    /**
      * Whether the map is empty.
      */
     func isEmpty()  -> Bool
     
     /**
+     * Get the keys of the map.
+     */
+    func keys()  -> [String]
+    
+    /**
      * Get the length of the map.
      */
     func len()  -> UInt32
+    
+    /**
+     * Get the values of the map.
+     */
+    func values()  -> [ValueOrContainer]
     
 }
 
@@ -3384,6 +3794,15 @@ public convenience init() {
 
     
     /**
+     * Delete all key-value pairs in the map.
+     */
+open func clear()throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromap_clear(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+    /**
      * Delete a key-value pair from the map.
      */
 open func delete(key: String)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
@@ -3412,6 +3831,17 @@ open func get(key: String) -> ValueOrContainer? {
 open func getDeepValue() -> LoroValue {
     return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
     uniffi_loro_fn_method_loromap_get_deep_value(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the peer id of the last editor on the given entry
+     */
+open func getLastEditor(key: String) -> UInt64? {
+    return try!  FfiConverterOptionUInt64.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromap_get_last_editor(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),$0
     )
 })
 }
@@ -3514,6 +3944,16 @@ open func isAttached() -> Bool {
 }
     
     /**
+     * Whether the container is deleted.
+     */
+open func isDeleted() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromap_is_deleted(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
      * Whether the map is empty.
      */
 open func isEmpty() -> Bool {
@@ -3524,11 +3964,31 @@ open func isEmpty() -> Bool {
 }
     
     /**
+     * Get the keys of the map.
+     */
+open func keys() -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromap_keys(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
      * Get the length of the map.
      */
 open func len() -> UInt32 {
     return try!  FfiConverterUInt32.lift(try! rustCall() {
     uniffi_loro_fn_method_loromap_len(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the values of the map.
+     */
+open func values() -> [ValueOrContainer] {
+    return try!  FfiConverterSequenceTypeValueOrContainer.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromap_values(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -3584,6 +4044,11 @@ public func FfiConverterTypeLoroMap_lower(_ value: LoroMap) -> UnsafeMutableRawP
 public protocol LoroMovableListProtocol : AnyObject {
     
     /**
+     * Delete all elements in the list.
+     */
+    func clear() throws 
+    
+    /**
      * Delete values at the given position.
      */
     func delete(pos: UInt32, len: UInt32) throws 
@@ -3592,6 +4057,8 @@ public protocol LoroMovableListProtocol : AnyObject {
      * Get the value at the given position.
      */
     func get(index: UInt32)  -> ValueOrContainer?
+    
+    func getCreatorAt(pos: UInt32)  -> UInt64?
     
     /**
      * Get the cursor at the given position.
@@ -3614,6 +4081,16 @@ public protocol LoroMovableListProtocol : AnyObject {
      * Get the deep value of the container.
      */
     func getDeepValue()  -> LoroValue
+    
+    /**
+     * Get the last editor of the list item at the given position.
+     */
+    func getLastEditorAt(pos: UInt32)  -> UInt64?
+    
+    /**
+     * Get the last mover of the list item at the given position.
+     */
+    func getLastMoverAt(pos: UInt32)  -> UInt64?
     
     /**
      * Get the shallow value of the container.
@@ -3652,6 +4129,11 @@ public protocol LoroMovableListProtocol : AnyObject {
      */
     func isAttached()  -> Bool
     
+    /**
+     * Whether the container is deleted.
+     */
+    func isDeleted()  -> Bool
+    
     func isEmpty()  -> Bool
     
     func len()  -> UInt32
@@ -3684,6 +4166,15 @@ public protocol LoroMovableListProtocol : AnyObject {
     func setTextContainer(pos: UInt32, child: LoroText) throws  -> LoroText
     
     func setTreeContainer(pos: UInt32, child: LoroTree) throws  -> LoroTree
+    
+    /**
+     * Get the elements of the list as a vector of LoroValues.
+     *
+     * This method returns a vector containing all the elements in the list as LoroValues.
+     * It provides a convenient way to access the entire contents of the LoroMovableList
+     * as a standard Rust vector.
+     */
+    func toVec()  -> [LoroValue]
     
 }
 
@@ -3742,6 +4233,15 @@ public convenience init() {
 
     
     /**
+     * Delete all elements in the list.
+     */
+open func clear()throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_loromovablelist_clear(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+    /**
      * Delete values at the given position.
      */
 open func delete(pos: UInt32, len: UInt32)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
@@ -3759,6 +4259,14 @@ open func get(index: UInt32) -> ValueOrContainer? {
     return try!  FfiConverterOptionTypeValueOrContainer.lift(try! rustCall() {
     uniffi_loro_fn_method_loromovablelist_get(self.uniffiClonePointer(),
         FfiConverterUInt32.lower(index),$0
+    )
+})
+}
+    
+open func getCreatorAt(pos: UInt32) -> UInt64? {
+    return try!  FfiConverterOptionUInt64.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromovablelist_get_creator_at(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),$0
     )
 })
 }
@@ -3793,6 +4301,28 @@ open func getCursor(pos: UInt32, side: Side) -> Cursor? {
 open func getDeepValue() -> LoroValue {
     return try!  FfiConverterTypeLoroValue.lift(try! rustCall() {
     uniffi_loro_fn_method_loromovablelist_get_deep_value(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the last editor of the list item at the given position.
+     */
+open func getLastEditorAt(pos: UInt32) -> UInt64? {
+    return try!  FfiConverterOptionUInt64.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromovablelist_get_last_editor_at(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),$0
+    )
+})
+}
+    
+    /**
+     * Get the last mover of the list item at the given position.
+     */
+open func getLastMoverAt(pos: UInt32) -> UInt64? {
+    return try!  FfiConverterOptionUInt64.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromovablelist_get_last_mover_at(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),$0
     )
 })
 }
@@ -3893,6 +4423,16 @@ open func insertTreeContainer(pos: UInt32, child: LoroTree)throws  -> LoroTree {
 open func isAttached() -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_loro_fn_method_loromovablelist_is_attached(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Whether the container is deleted.
+     */
+open func isDeleted() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromovablelist_is_deleted(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -4004,6 +4544,20 @@ open func setTreeContainer(pos: UInt32, child: LoroTree)throws  -> LoroTree {
 })
 }
     
+    /**
+     * Get the elements of the list as a vector of LoroValues.
+     *
+     * This method returns a vector containing all the elements in the list as LoroValues.
+     * It provides a convenient way to access the entire contents of the LoroMovableList
+     * as a standard Rust vector.
+     */
+open func toVec() -> [LoroValue] {
+    return try!  FfiConverterSequenceTypeLoroValue.lift(try! rustCall() {
+    uniffi_loro_fn_method_loromovablelist_to_vec(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 
 }
 
@@ -4065,7 +4619,7 @@ public protocol LoroTextProtocol : AnyObject {
     func deleteUtf8(pos: UInt32, len: UInt32) throws 
     
     /**
-     * Get the cursor at the given position.
+     * Get the cursor at the given position in the given Unicode position..
      *
      * Using "index" to denote cursor positions can be unstable, as positions may
      * shift with document edits. To reliably represent a position or range within
@@ -4080,6 +4634,11 @@ public protocol LoroTextProtocol : AnyObject {
      * thereby reducing the need for replay.
      */
     func getCursor(pos: UInt32, side: Side)  -> Cursor?
+    
+    /**
+     * Get the editor of the text at the given position.
+     */
+    func getEditorAtUnicodePos(pos: UInt32)  -> UInt64?
     
     /**
      * Get the [ContainerID]  of the text container.
@@ -4103,6 +4662,11 @@ public protocol LoroTextProtocol : AnyObject {
      * To attach the container to the document, please insert it into an attached container.
      */
     func isAttached()  -> Bool
+    
+    /**
+     * Whether the container is deleted.
+     */
+    func isDeleted()  -> Bool
     
     /**
      * Whether the text container is empty.
@@ -4141,6 +4705,11 @@ public protocol LoroTextProtocol : AnyObject {
      * Note: this is not suitable for unmergeable annotations like comments.
      */
     func mark(from: UInt32, to: UInt32, key: String, value: LoroValueLike) throws 
+    
+    /**
+     * Push a string to the end of the text container.
+     */
+    func pushStr(s: String) throws 
     
     /**
      * Get a string slice at the given Unicode range
@@ -4184,8 +4753,21 @@ public protocol LoroTextProtocol : AnyObject {
     
     /**
      * Update the current text based on the provided text.
+     *
+     * It will calculate the minimal difference and apply it to the current text.
+     * It uses Myers' diff algorithm to compute the optimal difference.
+     *
+     * This could take a long time for large texts (e.g. > 50_000 characters).
+     * In that case, you should use `updateByLine` instead.
      */
-    func update(s: String) 
+    func update(s: String, options: UpdateOptions) throws 
+    
+    /**
+     * Update the current text based on the provided text.
+     *
+     * This update calculation is line-based, which will be more efficient but less precise.
+     */
+    func updateByLine(s: String, options: UpdateOptions) throws 
     
 }
 
@@ -4266,7 +4848,7 @@ open func deleteUtf8(pos: UInt32, len: UInt32)throws  {try rustCallWithError(Ffi
 }
     
     /**
-     * Get the cursor at the given position.
+     * Get the cursor at the given position in the given Unicode position..
      *
      * Using "index" to denote cursor positions can be unstable, as positions may
      * shift with document edits. To reliably represent a position or range within
@@ -4285,6 +4867,17 @@ open func getCursor(pos: UInt32, side: Side) -> Cursor? {
     uniffi_loro_fn_method_lorotext_get_cursor(self.uniffiClonePointer(),
         FfiConverterUInt32.lower(pos),
         FfiConverterTypeSide.lower(side),$0
+    )
+})
+}
+    
+    /**
+     * Get the editor of the text at the given position.
+     */
+open func getEditorAtUnicodePos(pos: UInt32) -> UInt64? {
+    return try!  FfiConverterOptionUInt64.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotext_get_editor_at_unicode_pos(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),$0
     )
 })
 }
@@ -4330,6 +4923,16 @@ open func insertUtf8(pos: UInt32, s: String)throws  {try rustCallWithError(FfiCo
 open func isAttached() -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_loro_fn_method_lorotext_is_attached(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Whether the container is deleted.
+     */
+open func isDeleted() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotext_is_deleted(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -4396,6 +4999,16 @@ open func mark(from: UInt32, to: UInt32, key: String, value: LoroValueLike)throw
         FfiConverterUInt32.lower(to),
         FfiConverterString.lower(key),
         FfiConverterTypeLoroValueLike.lower(value),$0
+    )
+}
+}
+    
+    /**
+     * Push a string to the end of the text container.
+     */
+open func pushStr(s: String)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotext_push_str(self.uniffiClonePointer(),
+        FfiConverterString.lower(s),$0
     )
 }
 }
@@ -4474,10 +5087,30 @@ open func unmark(from: UInt32, to: UInt32, key: String)throws  {try rustCallWith
     
     /**
      * Update the current text based on the provided text.
+     *
+     * It will calculate the minimal difference and apply it to the current text.
+     * It uses Myers' diff algorithm to compute the optimal difference.
+     *
+     * This could take a long time for large texts (e.g. > 50_000 characters).
+     * In that case, you should use `updateByLine` instead.
      */
-open func update(s: String) {try! rustCall() {
+open func update(s: String, options: UpdateOptions)throws  {try rustCallWithError(FfiConverterTypeUpdateTimeoutError.lift) {
     uniffi_loro_fn_method_lorotext_update(self.uniffiClonePointer(),
-        FfiConverterString.lower(s),$0
+        FfiConverterString.lower(s),
+        FfiConverterTypeUpdateOptions.lower(options),$0
+    )
+}
+}
+    
+    /**
+     * Update the current text based on the provided text.
+     *
+     * This update calculation is line-based, which will be more efficient but less precise.
+     */
+open func updateByLine(s: String, options: UpdateOptions)throws  {try rustCallWithError(FfiConverterTypeUpdateTimeoutError.lift) {
+    uniffi_loro_fn_method_lorotext_update_by_line(self.uniffiClonePointer(),
+        FfiConverterString.lower(s),
+        FfiConverterTypeUpdateOptions.lower(options),$0
     )
 }
 }
@@ -4574,8 +5207,11 @@ public protocol LoroTreeProtocol : AnyObject {
     func delete(target: TreeId) throws 
     
     /**
-     * Disable the fractional index generation for Tree Position when
-     * you don't need the Tree's siblings to be sorted. The fractional index will be always default.
+     * Disable the fractional index generation when you don't need the Tree's siblings to be sorted.
+     * The fractional index will always be set to the same default value 0.
+     *
+     * After calling this, you cannot use `tree.moveTo()`, `tree.moveBefore()`, `tree.moveAfter()`,
+     * and `tree.createAt()`.
      */
     func disableFractionalIndex() 
     
@@ -4594,6 +5230,11 @@ public protocol LoroTreeProtocol : AnyObject {
      * Return the fractional index of the target node with hex format.
      */
     func fractionalIndex(target: TreeId)  -> String?
+    
+    /**
+     * Get the last move id of the target node.
+     */
+    func getLastMoveId(target: TreeId)  -> Id?
     
     /**
      * Get the associated metadata map handler of a tree node.
@@ -4625,6 +5266,11 @@ public protocol LoroTreeProtocol : AnyObject {
      * To attach the container to the document, please insert it into an attached container.
      */
     func isAttached()  -> Bool
+    
+    /**
+     * Whether the container is deleted.
+     */
+    func isDeleted()  -> Bool
     
     /**
      * Whether the fractional index is enabled.
@@ -4814,8 +5460,11 @@ open func delete(target: TreeId)throws  {try rustCallWithError(FfiConverterTypeL
 }
     
     /**
-     * Disable the fractional index generation for Tree Position when
-     * you don't need the Tree's siblings to be sorted. The fractional index will be always default.
+     * Disable the fractional index generation when you don't need the Tree's siblings to be sorted.
+     * The fractional index will always be set to the same default value 0.
+     *
+     * After calling this, you cannot use `tree.moveTo()`, `tree.moveBefore()`, `tree.moveAfter()`,
+     * and `tree.createAt()`.
      */
 open func disableFractionalIndex() {try! rustCall() {
     uniffi_loro_fn_method_lorotree_disable_fractional_index(self.uniffiClonePointer(),$0
@@ -4845,6 +5494,17 @@ open func enableFractionalIndex(jitter: UInt8) {try! rustCall() {
 open func fractionalIndex(target: TreeId) -> String? {
     return try!  FfiConverterOptionString.lift(try! rustCall() {
     uniffi_loro_fn_method_lorotree_fractional_index(self.uniffiClonePointer(),
+        FfiConverterTypeTreeID.lower(target),$0
+    )
+})
+}
+    
+    /**
+     * Get the last move id of the target node.
+     */
+open func getLastMoveId(target: TreeId) -> Id? {
+    return try!  FfiConverterOptionTypeID.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotree_get_last_move_id(self.uniffiClonePointer(),
         FfiConverterTypeTreeID.lower(target),$0
     )
 })
@@ -4903,6 +5563,16 @@ open func id() -> ContainerId {
 open func isAttached() -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_loro_fn_method_lorotree_is_attached(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Whether the container is deleted.
+     */
+open func isDeleted() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorotree_is_deleted(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -5951,19 +6621,7 @@ open class Subscription:
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_subscription(self.pointer, $0) }
     }
-    /**
-     * Creates a new subscription with a callback that gets invoked when
-     * this subscription is dropped.
-     */
-public convenience init(unsubscribe: Unsubscriber) {
-    let pointer =
-        try! rustCall() {
-    uniffi_loro_fn_constructor_subscription_new(
-        FfiConverterTypeUnsubscriber.lower(unsubscribe),$0
-    )
-}
-    self.init(unsafeFromRawPointer: pointer)
-}
+    // No primary constructor declared for this class.
 
     deinit {
         guard let pointer = pointer else {
@@ -7436,6 +8094,45 @@ public func FfiConverterTypeDiffEvent_lower(_ value: DiffEvent) -> RustBuffer {
 }
 
 
+public struct FrontiersOrId {
+    public var frontiers: Frontiers?
+    public var id: Id?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(frontiers: Frontiers?, id: Id?) {
+        self.frontiers = frontiers
+        self.id = id
+    }
+}
+
+
+
+public struct FfiConverterTypeFrontiersOrID: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FrontiersOrId {
+        return
+            try FrontiersOrId(
+                frontiers: FfiConverterOptionTypeFrontiers.read(from: &buf), 
+                id: FfiConverterOptionTypeID.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FrontiersOrId, into buf: inout [UInt8]) {
+        FfiConverterOptionTypeFrontiers.write(value.frontiers, into: &buf)
+        FfiConverterOptionTypeID.write(value.id, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeFrontiersOrID_lift(_ buf: RustBuffer) throws -> FrontiersOrId {
+    return try FfiConverterTypeFrontiersOrID.lift(buf)
+}
+
+public func FfiConverterTypeFrontiersOrID_lower(_ value: FrontiersOrId) -> RustBuffer {
+    return FfiConverterTypeFrontiersOrID.lower(value)
+}
+
+
 public struct Id {
     public var peer: UInt64
     public var counter: Int32
@@ -7628,7 +8325,7 @@ public struct ImportBlobMetadata {
     public var startFrontiers: Frontiers
     public var endTimestamp: Int64
     public var changeNum: UInt32
-    public var isSnapshot: Bool
+    public var mode: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -7646,14 +8343,14 @@ public struct ImportBlobMetadata {
          * Import blob includes all the ops from `partial_start_vv` to `partial_end_vv`.
          * However, it does not constitute a complete version vector, as it only contains counters
          * from peers included within the import blob.
-         */partialEndVv: VersionVector, startTimestamp: Int64, startFrontiers: Frontiers, endTimestamp: Int64, changeNum: UInt32, isSnapshot: Bool) {
+         */partialEndVv: VersionVector, startTimestamp: Int64, startFrontiers: Frontiers, endTimestamp: Int64, changeNum: UInt32, mode: String) {
         self.partialStartVv = partialStartVv
         self.partialEndVv = partialEndVv
         self.startTimestamp = startTimestamp
         self.startFrontiers = startFrontiers
         self.endTimestamp = endTimestamp
         self.changeNum = changeNum
-        self.isSnapshot = isSnapshot
+        self.mode = mode
     }
 }
 
@@ -7669,7 +8366,7 @@ public struct FfiConverterTypeImportBlobMetadata: FfiConverterRustBuffer {
                 startFrontiers: FfiConverterTypeFrontiers.read(from: &buf), 
                 endTimestamp: FfiConverterInt64.read(from: &buf), 
                 changeNum: FfiConverterUInt32.read(from: &buf), 
-                isSnapshot: FfiConverterBool.read(from: &buf)
+                mode: FfiConverterString.read(from: &buf)
         )
     }
 
@@ -7680,7 +8377,7 @@ public struct FfiConverterTypeImportBlobMetadata: FfiConverterRustBuffer {
         FfiConverterTypeFrontiers.write(value.startFrontiers, into: &buf)
         FfiConverterInt64.write(value.endTimestamp, into: &buf)
         FfiConverterUInt32.write(value.changeNum, into: &buf)
-        FfiConverterBool.write(value.isSnapshot, into: &buf)
+        FfiConverterString.write(value.mode, into: &buf)
     }
 }
 
@@ -8198,6 +8895,63 @@ public func FfiConverterTypeUndoItemMeta_lower(_ value: UndoItemMeta) -> RustBuf
 }
 
 
+public struct UpdateOptions {
+    public var timeoutMs: Double?
+    public var useRefinedDiff: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(timeoutMs: Double?, useRefinedDiff: Bool) {
+        self.timeoutMs = timeoutMs
+        self.useRefinedDiff = useRefinedDiff
+    }
+}
+
+
+
+extension UpdateOptions: Equatable, Hashable {
+    public static func ==(lhs: UpdateOptions, rhs: UpdateOptions) -> Bool {
+        if lhs.timeoutMs != rhs.timeoutMs {
+            return false
+        }
+        if lhs.useRefinedDiff != rhs.useRefinedDiff {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(timeoutMs)
+        hasher.combine(useRefinedDiff)
+    }
+}
+
+
+public struct FfiConverterTypeUpdateOptions: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UpdateOptions {
+        return
+            try UpdateOptions(
+                timeoutMs: FfiConverterOptionDouble.read(from: &buf), 
+                useRefinedDiff: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: UpdateOptions, into buf: inout [UInt8]) {
+        FfiConverterOptionDouble.write(value.timeoutMs, into: &buf)
+        FfiConverterBool.write(value.useRefinedDiff, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeUpdateOptions_lift(_ buf: RustBuffer) throws -> UpdateOptions {
+    return try FfiConverterTypeUpdateOptions.lift(buf)
+}
+
+public func FfiConverterTypeUpdateOptions_lower(_ value: UpdateOptions) -> RustBuffer {
+    return FfiConverterTypeUpdateOptions.lower(value)
+}
+
+
 public struct VersionVectorDiff {
     /**
      * need to add these spans to move from right to left
@@ -8329,6 +9083,66 @@ public struct FfiConverterTypeCannotFindRelativePosition: FfiConverterRustBuffer
 extension CannotFindRelativePosition: Equatable, Hashable {}
 
 extension CannotFindRelativePosition: Foundation.LocalizedError {
+    public var errorDescription: String? {
+        String(reflecting: self)
+    }
+}
+
+
+public enum ChangeTravelError {
+
+    
+    
+    case TargetIdNotFound(message: String)
+    
+    case TargetVersionNotIncluded(message: String)
+    
+}
+
+
+public struct FfiConverterTypeChangeTravelError: FfiConverterRustBuffer {
+    typealias SwiftType = ChangeTravelError
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ChangeTravelError {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+
+        
+
+        
+        case 1: return .TargetIdNotFound(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 2: return .TargetVersionNotIncluded(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: ChangeTravelError, into buf: inout [UInt8]) {
+        switch value {
+
+        
+
+        
+        case .TargetIdNotFound(_ /* message is ignored*/):
+            writeInt(&buf, Int32(1))
+        case .TargetVersionNotIncluded(_ /* message is ignored*/):
+            writeInt(&buf, Int32(2))
+
+        
+        }
+    }
+}
+
+
+extension ChangeTravelError: Equatable, Hashable {}
+
+extension ChangeTravelError: Foundation.LocalizedError {
     public var errorDescription: String? {
         String(reflecting: self)
     }
@@ -9870,6 +10684,58 @@ extension UndoOrRedo: Equatable, Hashable {}
 
 
 
+
+public enum UpdateTimeoutError {
+
+    
+    
+    case Timeout(message: String)
+    
+}
+
+
+public struct FfiConverterTypeUpdateTimeoutError: FfiConverterRustBuffer {
+    typealias SwiftType = UpdateTimeoutError
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UpdateTimeoutError {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+
+        
+
+        
+        case 1: return .Timeout(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: UpdateTimeoutError, into buf: inout [UInt8]) {
+        switch value {
+
+        
+
+        
+        case .Timeout(_ /* message is ignored*/):
+            writeInt(&buf, Int32(1))
+
+        
+        }
+    }
+}
+
+
+extension UpdateTimeoutError: Equatable, Hashable {}
+
+extension UpdateTimeoutError: Foundation.LocalizedError {
+    public var errorDescription: String? {
+        String(reflecting: self)
+    }
+}
+
 fileprivate struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
     typealias SwiftType = UInt32?
 
@@ -9912,6 +10778,27 @@ fileprivate struct FfiConverterOptionInt32: FfiConverterRustBuffer {
     }
 }
 
+fileprivate struct FfiConverterOptionUInt64: FfiConverterRustBuffer {
+    typealias SwiftType = UInt64?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterUInt64.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterUInt64.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     typealias SwiftType = Int64?
 
@@ -9928,6 +10815,27 @@ fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterInt64.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+fileprivate struct FfiConverterOptionDouble: FfiConverterRustBuffer {
+    typealias SwiftType = Double?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterDouble.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterDouble.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -10459,6 +11367,28 @@ fileprivate struct FfiConverterSequenceUInt64: FfiConverterRustBuffer {
     }
 }
 
+fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
+    typealias SwiftType = [String]
+
+    public static func write(_ value: [String], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterString.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [String]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterString.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 fileprivate struct FfiConverterSequenceData: FfiConverterRustBuffer {
     typealias SwiftType = [Data]
 
@@ -10679,6 +11609,28 @@ fileprivate struct FfiConverterSequenceTypeTreeID: FfiConverterRustBuffer {
     }
 }
 
+fileprivate struct FfiConverterSequenceTypeContainerID: FfiConverterRustBuffer {
+    typealias SwiftType = [ContainerId]
+
+    public static func write(_ value: [ContainerId], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeContainerID.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ContainerId] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ContainerId]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeContainerID.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 fileprivate struct FfiConverterSequenceTypeIndex: FfiConverterRustBuffer {
     typealias SwiftType = [Index]
 
@@ -10858,6 +11810,17 @@ fileprivate struct FfiConverterDictionaryStringOptionTypeValueOrContainer: FfiCo
         return dict
     }
 }
+/**
+ * Decodes the metadata for an imported blob from the provided bytes.
+ */
+public func decodeImportBlobMeta(bytes: Data, checkChecksum: Bool)throws  -> ImportBlobMetadata {
+    return try  FfiConverterTypeImportBlobMetadata.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_func_decode_import_blob_meta(
+        FfiConverterData.lower(bytes),
+        FfiConverterBool.lower(checkChecksum),$0
+    )
+})
+}
 
 private enum InitializationResult {
     case ok
@@ -10873,6 +11836,9 @@ private var initializationResult: InitializationResult = {
     let scaffolding_contract_version = ffi_loro_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
+    }
+    if (uniffi_loro_checksum_func_decode_import_blob_meta() != 2769) {
+        return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_awareness_apply() != 41900) {
         return InitializationResult.apiChecksumMismatch
@@ -10896,6 +11862,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_awareness_set_local_state() != 517) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_changeancestorstraveler_travel() != 17239) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_configure_fork() != 57176) {
@@ -10943,6 +11912,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorocounter_increment() != 47367) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorocounter_is_deleted() != 12079) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorodoc_attach() != 7252) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -10973,9 +11945,6 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_config_text_style() != 52393) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_decode_import_blob_meta() != 12658) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_loro_checksum_method_lorodoc_detach() != 61399) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11000,6 +11969,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_fork() != 45665) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorodoc_fork_at() != 40377) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorodoc_free_diff_calculator() != 32937) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11016,6 +11988,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_get_change() != 17896) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_get_changed_containers_in() != 52454) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_get_counter() != 12597) {
@@ -11040,6 +12015,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_get_path_to_container() != 62623) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_get_pending_txn_len() != 15050) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_get_text() != 56069) {
@@ -11069,6 +12047,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_is_detached() != 30909) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorodoc_is_shallow() != 53044) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorodoc_jsonpath() != 15996) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11079,6 +12060,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_log_estimate_size() != 19429) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_minimize_frontiers() != 39579) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_oplog_frontiers() != 49043) {
@@ -11120,7 +12104,13 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_subscribe_root() != 16564) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorodoc_travel_change_ancestors() != 39918) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorodoc_vv_to_frontiers() != 47960) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorolist_clear() != 61243) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorolist_delete() != 40414) {
@@ -11133,6 +12123,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorolist_get_deep_value() != 9355) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorolist_get_id_at() != 63640) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorolist_get_value() != 14384) {
@@ -11165,6 +12158,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorolist_is_attached() != 60548) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorolist_is_deleted() != 44383) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorolist_is_empty() != 13469) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11177,6 +12173,12 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorolist_push() != 32091) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorolist_to_vec() != 34199) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_clear() != 22445) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_loromap_delete() != 54675) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11184,6 +12186,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_loromap_get_deep_value() != 23748) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_get_last_editor() != 54864) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_loromap_get_value() != 7268) {
@@ -11216,10 +12221,22 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_loromap_is_attached() != 6283) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_loromap_is_deleted() != 20980) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_loromap_is_empty() != 38768) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_loromap_keys() != 11621) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_loromap_len() != 38088) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromap_values() != 46629) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_clear() != 17252) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_loromovablelist_delete() != 51786) {
@@ -11228,10 +12245,19 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_loromovablelist_get() != 10599) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_loromovablelist_get_creator_at() != 21542) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_loromovablelist_get_cursor() != 118) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_loromovablelist_get_deep_value() != 18542) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_get_last_editor_at() != 8998) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_get_last_mover_at() != 26603) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_loromovablelist_get_value() != 50843) {
@@ -11262,6 +12288,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_loromovablelist_is_attached() != 50724) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_loromovablelist_is_deleted() != 37438) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_loromovablelist_is_empty() != 44651) {
@@ -11300,6 +12329,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_loromovablelist_set_tree_container() != 8298) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_loromovablelist_to_vec() != 28826) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorotext_delete() != 47933) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11307,6 +12339,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorotext_get_cursor() != 57876) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_get_editor_at_unicode_pos() != 24596) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorotext_id() != 30925) {
@@ -11319,6 +12354,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorotext_is_attached() != 45378) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_is_deleted() != 31871) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorotext_is_empty() != 7961) {
@@ -11336,6 +12374,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorotext_mark() != 42690) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorotext_push_str() != 2374) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorotext_slice() != 43152) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11351,7 +12392,10 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorotext_unmark() != 14351) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorotext_update() != 55624) {
+    if (uniffi_loro_checksum_method_lorotext_update() != 16538) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_update_by_line() != 29301) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorotree_children() != 4750) {
@@ -11381,6 +12425,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorotree_fractional_index() != 51036) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorotree_get_last_move_id() != 12557) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorotree_get_meta() != 3068) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11394,6 +12441,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorotree_is_attached() != 37303) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotree_is_deleted() != 8644) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorotree_is_fractional_index_enabled() != 19364) {
@@ -11600,9 +12650,6 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_constructor_styleconfigmap_new() != 23831) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_constructor_subscription_new() != 51704) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_loro_checksum_constructor_undomanager_new() != 35328) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11613,6 +12660,7 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
 
+    uniffiCallbackInitChangeAncestorsTraveler()
     uniffiCallbackInitContainerIdLike()
     uniffiCallbackInitLocalUpdateCallback()
     uniffiCallbackInitLoroValueLike()

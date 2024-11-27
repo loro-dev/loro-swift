@@ -1,5 +1,7 @@
 namespace loro{
-    
+    /// Decodes the metadata for an imported blob from the provided bytes.
+    [Throws=LoroError]
+    ImportBlobMetadata decode_import_blob_meta([ByRef] bytes bytes, boolean check_checksum);
 };
 
 // ============= Traits =============
@@ -59,6 +61,11 @@ interface OnPop{
 //    JsonSchema into_json_schema();
 // };
 
+[Trait, WithForeign]
+interface ChangeAncestorsTraveler{
+    boolean travel(ChangeMeta change);
+};
+
 // ============= LORO DOC =============
 
 interface LoroDoc{
@@ -68,7 +75,15 @@ interface LoroDoc{
     /// Duplicate the document with a different PeerID
     ///
     /// The time complexity and space complexity of this operation are both O(n),
+    ///
+    /// When called in detached mode, it will fork at the current state frontiers.
+    /// It will have the same effect as `fork_at(&self.state_frontiers())`.
     LoroDoc fork();
+
+    /// Fork the document at the given frontiers.
+    ///
+    /// The created doc will only contain the history before the specified frontiers.
+    LoroDoc fork_at([ByRef] Frontiers frontiers);
 
     /// Get the configurations of the document.
     Configure config();
@@ -88,10 +103,6 @@ interface LoroDoc{
     /// The length of the `Change` is how many operations it contains
     ChangeMeta? get_change(ID id);
 
-    /// Decodes the metadata for an imported blob from the provided bytes.
-    [Throws=LoroError]
-    ImportBlobMetadata decode_import_blob_meta([ByRef] bytes bytes);
-
     /// Set whether to record the timestamp of each change. Default is `false`.
     ///
     /// If enabled, the Unix timestamp will be recorded for each change automatically.
@@ -103,7 +114,7 @@ interface LoroDoc{
     /// the largest existing timestamp will be used instead.
     void set_record_timestamp(boolean record);
 
-    /// Set the interval of mergeable changes, in milliseconds.
+    /// Set the interval of mergeable changes, in seconds.
     ///
     /// If two continuous local changes are within the interval, they will be merged into one change.
     /// The default value is 1000 seconds.
@@ -128,10 +139,10 @@ interface LoroDoc{
 
     /// Checkout the `DocState` to a specific version.
     ///
-    /// > The document becomes detached during a `checkout` operation.
-    /// > Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
-    /// > In a detached state, the document is not editable, and any `import` operations will be
-    /// > recorded in the `OpLog` without being applied to the `DocState`.
+    /// The document becomes detached during a `checkout` operation.
+    /// Being `detached` implies that the `DocState` is not synchronized with the latest version of the `OpLog`.
+    /// In a detached state, the document is not editable, and any `import` operations will be
+    /// recorded in the `OpLog` without being applied to the `DocState`.
     ///
     /// You should call `attach` to attach the `DocState` to the latest version of `OpLog`.
     [Throws=LoroError]
@@ -201,8 +212,12 @@ interface LoroDoc{
     /// Commit the cumulative auto commit transaction.
     ///
     /// There is a transaction behind every operation.
-    /// It will automatically commit when users invoke export or import.
-    /// The event will be sent after a transaction is committed
+    /// The events will be emitted after a transaction is committed. A transaction is committed when:
+    ///
+    /// - `doc.commit()` is called.
+    /// - `doc.export(mode)` is called.
+    /// - `doc.import(data)` is called.
+    /// - `doc.checkout(version)` is called.
     void commit();
 
     void commit_with(CommitOptions options);
@@ -239,6 +254,10 @@ interface LoroDoc{
     /// Convert `Frontiers` into `VersionVector`
     VersionVector? frontiers_to_vv([ByRef] Frontiers frontiers);
 
+    /// Minimize the frontiers by removing the unnecessary entries.
+    // TODO:
+    FrontiersOrID minimize_frontiers([ByRef] Frontiers frontiers);
+
     /// Convert `VersionVector` into `Frontiers`
     Frontiers vv_to_frontiers([ByRef] VersionVector vv);
     // with_oplog
@@ -246,7 +265,7 @@ interface LoroDoc{
     /// Get the `VersionVector` version of `OpLog`
     VersionVector oplog_vv();
 
-    /// Get the `VersionVector` version of `OpLog`
+    /// Get the `VersionVector` version of `DocState`
     VersionVector state_vv();
 
     /// Get the `VersionVector` of trimmed history
@@ -263,10 +282,10 @@ interface LoroDoc{
     /// Get the shallow value of the document.
     LoroValue get_value();
 
-    /// Get the current state of the document.
+    /// Get the entire state of the current DocState
     LoroValue get_deep_value();
 
-    /// Get the current state with container id of the doc
+    /// Get the entire state of the current DocState with container id
     LoroValue get_deep_value_with_id();
 
     /// Get the `Frontiers` version of `OpLog`
@@ -274,7 +293,7 @@ interface LoroDoc{
 
     /// Get the `Frontiers` version of `DocState`
     ///
-    /// [Learn more about `Frontiers`]()
+    /// Learn more about [`Frontiers`](https://loro.dev/docs/advanced/version_deep_dive)
     Frontiers state_frontiers();
 
     /// Get the PeerID
@@ -282,7 +301,7 @@ interface LoroDoc{
 
     /// Change the PeerID
     ///
-    /// NOTE: You need ot make sure there is no chance two peer have the same PeerID.
+    /// NOTE: You need to make sure there is no chance two peer have the same PeerID.
     /// If it happens, the document will be corrupted.
     [Throws=LoroError]
     void set_peer_id(u64 peer);
@@ -290,13 +309,20 @@ interface LoroDoc{
     /// Subscribe the events of a container.
     ///
     /// The callback will be invoked when the container is changed.
-    /// Returns a subscription id that can be used to unsubscribe.
+    /// Returns a subscription that can be used to unsubscribe.
+    ///
+    /// The events will be emitted after a transaction is committed. A transaction is committed when:
+    ///
+    /// - `doc.commit()` is called.
+    /// - `doc.export(mode)` is called.
+    /// - `doc.import(data)` is called.
+    /// - `doc.checkout(version)` is called.
     Subscription subscribe([ByRef] ContainerID container_id, Subscriber subscriber);
     
     /// Subscribe all the events.
     ///
     /// The callback will be invoked when any part of the [loro_internal::DocState] is changed.
-    /// Returns a subscription id that can be used to unsubscribe.
+    /// Returns a subscription that can be used to unsubscribe.
     Subscription subscribe_root(Subscriber subscriber);
 
     /// Subscribe the local update of the document.
@@ -383,6 +409,41 @@ interface LoroDoc{
     /// ```
     [Throws=JsonPathError]
     sequence<ValueOrContainer> jsonpath([ByRef] string path);
+
+    /// Traverses the ancestors of the Change containing the given ID, including itself.
+    ///
+    /// This method visits all ancestors in causal order, from the latest to the oldest,
+    /// based on their Lamport timestamps.
+    ///
+    /// # Arguments
+    ///
+    /// * `ids` - The IDs of the Change to start the traversal from.
+    /// * `f` - A mutable function that is called for each ancestor. It can return `ControlFlow::Break(())` to stop the traversal.
+    [Throws=ChangeTravelError]
+    void travel_change_ancestors([ByRef] sequence<ID> ids, ChangeAncestorsTraveler f);
+
+    /// Gets container IDs modified in the given ID range.
+    ///
+    /// **NOTE:** This method will implicitly commit.
+    ///
+    /// This method can be used in conjunction with `doc.travel_change_ancestors()` to traverse
+    /// the history and identify all changes that affected specific containers.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The starting ID of the change range
+    /// * `len` - The length of the change range to check
+    // TODO: 
+    sequence<ContainerID> get_changed_containers_in(ID id, u32 len);
+
+    /// Check if the doc contains the full history.
+    boolean is_shallow();
+
+    /// Get the number of operations in the pending transaction.
+    ///
+    /// The pending transaction is the one that is not committed yet. It will be committed
+    /// after calling `doc.commit()`, `doc.export(mode)` or `doc.checkout(version)`.
+    u32 get_pending_txn_len();
 };
 
 dictionary ContainerPath{
@@ -445,7 +506,21 @@ interface LoroText{
     u32 len_utf16();
     
     /// Update the current text based on the provided text.
-    void update([ByRef] string s);
+    ///
+    /// It will calculate the minimal difference and apply it to the current text.
+    /// It uses Myers' diff algorithm to compute the optimal difference.
+    ///
+    /// This could take a long time for large texts (e.g. > 50_000 characters).
+    /// In that case, you should use `updateByLine` instead.
+    // TODO:
+    [Throws=UpdateTimeoutError]
+    void update([ByRef] string s, UpdateOptions options);
+
+    /// Update the current text based on the provided text.
+    ///
+    /// This update calculation is line-based, which will be more efficient but less precise.
+    [Throws=UpdateTimeoutError]
+    void update_by_line([ByRef] string s, UpdateOptions options);
     
     /// Mark a range of text with a key-value pair.
     ///
@@ -489,7 +564,7 @@ interface LoroText{
     /// Get the text content of the text container.
     string to_string();
     
-    /// Get the cursor at the given position.
+    /// Get the cursor at the given position in the given Unicode position..
     ///
     /// Using "index" to denote cursor positions can be unstable, as positions may
     /// shift with document edits. To reliably represent a position or range within
@@ -503,6 +578,16 @@ interface LoroText{
     /// updates cursor info to reference only the IDs of currently present elements,
     /// thereby reducing the need for replay.
     Cursor? get_cursor(u32 pos, Side side);
+
+    /// Whether the container is deleted.
+    boolean is_deleted();
+
+    /// Push a string to the end of the text container.
+    [Throws=LoroError]
+    void push_str([ByRef] string s);
+
+    /// Get the editor of the text at the given position.
+    u64? get_editor_at_unicode_pos(u32 pos);
 };
 
 interface LoroList{
@@ -571,6 +656,22 @@ interface LoroList{
     LoroCounter insert_counter_container(u32 pos, LoroCounter child);
     
     Cursor? get_cursor(u32 pos, Side side);
+
+    /// Converts the LoroList to a Vec of LoroValue.
+    ///
+    /// This method unwraps the internal Arc and clones the data if necessary,
+    /// returning a Vec containing all the elements of the LoroList as LoroValue.
+    sequence<LoroValue> to_vec();
+
+    /// Delete all elements in the list.
+    [Throws=LoroError]
+    void clear();
+
+    /// Get the ID of the list item at the given position.
+    ID? get_id_at(u32 pos);
+
+    /// Whether the container is deleted.
+    boolean is_deleted();
 };
 
 interface LoroMap{
@@ -625,6 +726,23 @@ interface LoroMap{
     ///
     /// It will convert the state of sub-containers into a nested JSON value.
     LoroValue get_deep_value();
+
+    /// Whether the container is deleted.
+    boolean is_deleted();
+
+    /// Get the peer id of the last editor on the given entry
+    u64? get_last_editor([ByRef] string key);
+
+    /// Delete all key-value pairs in the map.
+    [Throws=LoroError]
+    void clear();
+
+    // TODO: iter?
+    /// Get the keys of the map.
+    sequence<string> keys();
+
+    /// Get the values of the map.
+    sequence<ValueOrContainer> values();
 };
 
 interface LoroTree{
@@ -742,9 +860,18 @@ interface LoroTree{
     /// [Read more about it](https://www.loro.dev/blog/movable-tree#implementation-and-encoding-size)
     void enable_fractional_index(u8 jitter);
 
-    /// Disable the fractional index generation for Tree Position when
-    /// you don't need the Tree's siblings to be sorted. The fractional index will be always default.
+    /// Disable the fractional index generation when you don't need the Tree's siblings to be sorted.
+    /// The fractional index will always be set to the same default value 0.
+    ///
+    /// After calling this, you cannot use `tree.moveTo()`, `tree.moveBefore()`, `tree.moveAfter()`,
+    /// and `tree.createAt()`.
     void disable_fractional_index();
+
+    /// Get the last move id of the target node.
+    ID? get_last_move_id([ByRef] TreeID target);
+
+    /// Whether the container is deleted.
+    boolean is_deleted();
 };
 
 interface LoroMovableList{
@@ -851,6 +978,30 @@ interface LoroMovableList{
     /// Move the value at the given position to the given position.
     [Throws=LoroError]
     void mov(u32 from, u32 to);
+
+    /// Get the elements of the list as a vector of LoroValues.
+    ///
+    /// This method returns a vector containing all the elements in the list as LoroValues.
+    /// It provides a convenient way to access the entire contents of the LoroMovableList
+    /// as a standard Rust vector.
+    sequence<LoroValue> to_vec();
+
+    /// Delete all elements in the list.
+    [Throws=LoroError]
+    void clear();
+
+
+    /// Whether the container is deleted.
+    boolean is_deleted();
+
+    // TODO: for each
+    u64? get_creator_at(u32 pos);
+
+    /// Get the last mover of the list item at the given position.
+    u64? get_last_mover_at(u32 pos);
+
+    /// Get the last editor of the list item at the given position.
+    u64? get_last_editor_at(u32 pos);
 };
 
 interface LoroCounter{
@@ -870,6 +1021,9 @@ interface LoroCounter{
     
     /// Get the current value of the counter.
     f64 get_value();
+
+    /// Whether the container is deleted.
+    boolean is_deleted();
 };
 
 interface LoroUnknown{
@@ -922,7 +1076,7 @@ dictionary ImportBlobMetadata{
     Frontiers start_frontiers;
     i64 end_timestamp;
     u32 change_num;
-    boolean is_snapshot;
+    string mode;
 };
 
 dictionary ImportStatus{
@@ -1225,10 +1379,6 @@ interface Index{
 /// A handle to a subscription created by GPUI. When dropped, the subscription
 /// is cancelled and the callback will no longer be invoked.
 interface Subscription{
-    /// Creates a new subscription with a callback that gets invoked when
-    /// this subscription is dropped.
-    constructor(Unsubscriber unsubscribe);
-
     /// Detaches the subscription from this handle. The callback will
     /// continue to be invoked until the views or models it has been
     /// subscribed to are dropped
@@ -1248,6 +1398,11 @@ interface TreeParentId{
     Root();
     Deleted();
     Unexist();
+};
+
+dictionary UpdateOptions{
+   f64? timeout_ms;
+   boolean use_refined_diff;
 };
 
 interface FractionalIndex{
@@ -1295,6 +1450,11 @@ interface ContainerType{
 interface ContainerID{
     Root(string name, ContainerType container_type);
     Normal(u64 peer,i32 counter, ContainerType container_type);
+};
+
+dictionary FrontiersOrID{
+    Frontiers? frontiers;
+    ID? id;
 };
 
 [Enum]
@@ -1368,4 +1528,15 @@ enum LoroEncodeError{
     "FrontiersNotFound",
     "ShallowSnapshotIncompatibleWithOldFormat",
     "UnknownContainer",
+};
+
+[Error]
+enum ChangeTravelError{
+    "TargetIdNotFound",
+    "TargetVersionNotIncluded"
+};
+
+[Error]
+enum UpdateTimeoutError{
+    "Timeout"
 };
