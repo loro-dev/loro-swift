@@ -5,14 +5,14 @@ final class LoroTests: XCTestCase {
     func testEvent(){
         let doc = LoroDoc()
         var num = 0
-        let id = doc.subscribeRoot{ diffEvent in
+        let sub = doc.subscribeRoot{ diffEvent in
             num += 1
         }
         let list = doc.getList(id: "list")
         try! list.insert(pos: 0, v: 123)
         doc.commit()
+        sub.detach()
         XCTAssertEqual(num, 1)
-        doc.unsubscribe(subId: id)
     }
     
     func testText(){
@@ -44,7 +44,7 @@ final class LoroTests: XCTestCase {
         try! doc2.setPeerId(peer: 1)
         let text2 = doc2.getText(id: "text")
         try! text2.insert(pos: 0, s:"123")
-        try! doc2.import(bytes: doc.exportSnapshot())
+        let _ = try! doc2.import(bytes: doc.exportSnapshot())
         try! doc2.importBatch(bytes: [doc.exportSnapshot(), doc.exportFrom(vv: VersionVector())])
         XCTAssertEqual(text2.toString(), "bc123")
     }
