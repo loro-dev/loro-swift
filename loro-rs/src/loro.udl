@@ -246,9 +246,11 @@ interface LoroDoc{
     string export_json_updates([ByRef]VersionVector start_vv, [ByRef]VersionVector end_vv);
     
     /// Export all the ops not included in the given `VersionVector`
-    bytes export_from([ByRef] VersionVector vv);
+    [Throws=LoroEncodeError]
+    bytes export_updates([ByRef] VersionVector vv);
 
     /// Export the current state and history of the document.
+    [Throws=LoroEncodeError]
     bytes export_snapshot();
 
     /// Convert `Frontiers` into `VersionVector`
@@ -363,9 +365,14 @@ interface LoroDoc{
     // /// Export the document in the given mode.
     // bytes export(ExportMode mode);
 
+    [Throws=LoroEncodeError]
     bytes export_updates_in_range([ByRef]sequence<IdSpan> spans); 
 
+    [Throws=LoroEncodeError]
     bytes export_shallow_snapshot([ByRef]Frontiers frontiers);
+
+    [Throws=LoroEncodeError]
+    bytes export_snapshot_at([ByRef]Frontiers frontiers);
 
     [Throws=LoroEncodeError]
     bytes export_state_only(Frontiers? frontiers);

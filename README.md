@@ -12,9 +12,11 @@
   </a>
 </p>
 
-This repository contains experimental Swift bindings for [Loro CRDT](https://github.com/loro-dev/loro).
+This repository contains experimental Swift bindings for
+[Loro CRDT](https://github.com/loro-dev/loro).
 
-If you have any suggestions for API, please feel free to create an issue or join our [Discord](https://discord.gg/tUsBSVfqzf) community.
+If you have any suggestions for API, please feel free to create an issue or join
+our [Discord](https://discord.gg/tUsBSVfqzf) community.
 
 ## TODO
 
@@ -37,7 +39,7 @@ let package = Package(
     products: [......],
     dependencies:[
         ...,
-        .package(url: "https://github.com/loro-dev/loro-swift.git", from: "1.0.0-alpha.5")
+        .package(url: "https://github.com/loro-dev/loro-swift.git", from: "1.1.3")
     ],
     targets:[
         .executableTarget(
@@ -46,7 +48,6 @@ let package = Package(
         )
     ]
 )
-
 ```
 
 ## Examples
@@ -72,8 +73,8 @@ let sub = doc.subscribeRoot{ diffEvent in
 
 // export updates or snapshot
 let doc2 = LoroDoc()
-let snapshot = doc.exportSnapshot()
-let updates = doc.exportFrom(vv: VersionVector())
+let snapshot = doc.export(mode: ExportMode.snapshot)
+let updates = doc.export(mode: ExportMode.updates(from: VersionVector()))
 
 // import updates or snapshot
 let status = try! doc2.import(snapshot)
@@ -89,7 +90,8 @@ doc.checkoutToLatest()
 
 ## Develop
 
-If you wanna build and develop this project with MacOS, you need first run this script:
+If you wanna build and develop this project with MacOS, you need first run this
+script:
 
 ```bash
 export LOCAL_BUILD=1
@@ -100,4 +102,5 @@ The script will run `uniffi` and generate the `loroFFI.xcframework.zip`.
 
 # Credits
 
-- [Automerge-swift](https://github.com/automerge/automerge-swift): `loro-swift` uses many of `automerge-swift`'s scripts for building and CI.
+- [Automerge-swift](https://github.com/automerge/automerge-swift): `loro-swift`
+  uses many of `automerge-swift`'s scripts for building and CI.

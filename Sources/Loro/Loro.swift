@@ -9,6 +9,39 @@
 
 import Foundation
 
+public enum ExportMode {
+    case snapshot
+    case updates(from: VersionVector)
+    case updatesInRange(spans: [IdSpan])
+    case shallowSnapshot(Frontiers)
+    case stateOnly(Frontiers?)
+    case snapshotAt(version: Frontiers)
+}
+
+extension LoroDoc{
+    public func export(mode: ExportMode) throws -> Data{
+        switch mode {
+        case .snapshot:
+            return try self.exportSnapshot()
+        case .updates(let from):
+            return try self.exportUpdates(vv: from)
+        case .updatesInRange(let spans):
+            return try self.exportUpdatesInRange(spans: spans)
+        case .shallowSnapshot(let frontiers):
+            return try self.exportShallowSnapshot(frontiers: frontiers)
+        case .stateOnly(let frontiers):
+            return try self.exportStateOnly(frontiers: frontiers)
+        case .snapshotAt(let frontiers):
+            return try self.exportSnapshotAt(frontiers: frontiers)
+        }
+    }
+
+    public func travelChangeAncestors(ids: [Id], f:  @escaping (ChangeMeta)->Bool) throws  {
+        let closureSubscriber = ChangeAncestorsTravel(closure: f)
+        try self.travelChangeAncestors(ids: ids, f: closureSubscriber)
+    }
+}
+
 
 class ClosureOnPush: OnPush {
     private let closure: (UndoOrRedo, CounterSpan) ->UndoItemMeta
@@ -67,9 +100,3 @@ class ChangeAncestorsTravel: ChangeAncestorsTraveler{
     }
 }
 
-extension LoroDoc{
-    public func travelChangeAncestors(ids: [Id], f:  @escaping (ChangeMeta)->Bool) throws  {
-        let closureSubscriber = ChangeAncestorsTravel(closure: f)
-        try self.travelChangeAncestors(ids: ids, f: closureSubscriber)
-    }
-}

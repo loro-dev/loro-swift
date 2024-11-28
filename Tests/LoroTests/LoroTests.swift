@@ -44,8 +44,8 @@ final class LoroTests: XCTestCase {
         try! doc2.setPeerId(peer: 1)
         let text2 = doc2.getText(id: "text")
         try! text2.insert(pos: 0, s:"123")
-        let _ = try! doc2.import(bytes: doc.exportSnapshot())
-        try! doc2.importBatch(bytes: [doc.exportSnapshot(), doc.exportFrom(vv: VersionVector())])
+        let _ = try! doc2.import(bytes: doc.export(mode:ExportMode.snapshot))
+        try! doc2.importBatch(bytes: [doc.exportSnapshot(), doc.export(mode: ExportMode.updates(from: VersionVector()))])
         XCTAssertEqual(text2.toString(), "bc123")
     }
     

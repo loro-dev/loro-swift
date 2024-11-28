@@ -9,11 +9,11 @@ let FFIbinaryTarget: PackageDescription.Target
 if ProcessInfo.processInfo.environment["LOCAL_BUILD"] != nil {
     FFIbinaryTarget = .binaryTarget(name: "LoroFFI", path: "./loroFFI.xcframework.zip")
 }else {
-   FFIbinaryTarget = .binaryTarget(
-       name: "LoroFFI",
-       url: "https://github.com/loro-dev/loro-swift/releases/download/1.0.0-alpha.5/loroFFI.xcframework.zip",
-       checksum: "2b9c11aecf4f90ead28e12c8487b072e3fc406885e91ab2d1999b8c83040bd6c"
-   )
+  FFIbinaryTarget = .binaryTarget(
+      name: "LoroFFI",
+      url: "https://github.com/loro-dev/loro-swift/releases/download/1.1.3/loroFFI.xcframework.zip",
+      checksum: "354ece5ad8825e1c74d88ea59429d8508576b8eca1e4b9ab3d2f7506f7541846"
+  )
 }
 
 let package = Package(

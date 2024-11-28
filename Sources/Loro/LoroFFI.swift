@@ -50,9 +50,11 @@ fileprivate extension ForeignBytes {
 
 fileprivate extension Data {
     init(rustBuffer: RustBuffer) {
-        // TODO: This copies the buffer. Can we read directly from a
-        // Rust buffer?
-        self.init(bytes: rustBuffer.data!, count: Int(rustBuffer.len))
+        self.init(
+            bytesNoCopy: rustBuffer.data!,
+            count: Int(rustBuffer.len),
+            deallocator: .none
+        )
     }
 }
 
@@ -168,10 +170,16 @@ fileprivate protocol FfiConverter {
 fileprivate protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType { }
 
 extension FfiConverterPrimitive {
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lift(_ value: FfiType) throws -> SwiftType {
         return value
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lower(_ value: SwiftType) -> FfiType {
         return value
     }
@@ -182,6 +190,9 @@ extension FfiConverterPrimitive {
 fileprivate protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
 extension FfiConverterRustBuffer {
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lift(_ buf: RustBuffer) throws -> SwiftType {
         var reader = createReader(data: Data(rustBuffer: buf))
         let value = try read(from: &reader)
@@ -192,6 +203,9 @@ extension FfiConverterRustBuffer {
         return value
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lower(_ value: SwiftType) -> RustBuffer {
           var writer = createWriter()
           write(value, into: &writer)
@@ -382,6 +396,9 @@ fileprivate class UniffiHandleMap<T> {
 // Public interface members begin here.
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterUInt8: FfiConverterPrimitive {
     typealias FfiType = UInt8
     typealias SwiftType = UInt8
@@ -395,6 +412,9 @@ fileprivate struct FfiConverterUInt8: FfiConverterPrimitive {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
     typealias FfiType = UInt32
     typealias SwiftType = UInt32
@@ -408,6 +428,9 @@ fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterInt32: FfiConverterPrimitive {
     typealias FfiType = Int32
     typealias SwiftType = Int32
@@ -421,6 +444,9 @@ fileprivate struct FfiConverterInt32: FfiConverterPrimitive {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
     typealias FfiType = UInt64
     typealias SwiftType = UInt64
@@ -434,6 +460,9 @@ fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
     typealias FfiType = Int64
     typealias SwiftType = Int64
@@ -447,6 +476,9 @@ fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterDouble: FfiConverterPrimitive {
     typealias FfiType = Double
     typealias SwiftType = Double
@@ -460,6 +492,9 @@ fileprivate struct FfiConverterDouble: FfiConverterPrimitive {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterBool : FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
@@ -481,6 +516,9 @@ fileprivate struct FfiConverterBool : FfiConverter {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
@@ -519,6 +557,9 @@ fileprivate struct FfiConverterString: FfiConverter {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterData: FfiConverterRustBuffer {
     typealias SwiftType = Data
 
@@ -562,6 +603,9 @@ open class Awareness:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -573,15 +617,21 @@ open class Awareness:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_awareness(self.pointer, $0) }
     }
@@ -668,6 +718,9 @@ open func setLocalState(value: LoroValueLike) {try! rustCall() {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeAwareness: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -702,10 +755,16 @@ public struct FfiConverterTypeAwareness: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAwareness_lift(_ pointer: UnsafeMutableRawPointer) throws -> Awareness {
     return try FfiConverterTypeAwareness.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAwareness_lower(_ value: Awareness) -> UnsafeMutableRawPointer {
     return FfiConverterTypeAwareness.lower(value)
 }
@@ -724,6 +783,9 @@ open class ChangeAncestorsTravelerImpl:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -735,15 +797,21 @@ open class ChangeAncestorsTravelerImpl:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_changeancestorstraveler(self.pointer, $0) }
     }
@@ -821,6 +889,9 @@ private func uniffiCallbackInitChangeAncestorsTraveler() {
     uniffi_loro_fn_init_callback_vtable_changeancestorstraveler(&UniffiCallbackInterfaceChangeAncestorsTraveler.vtable)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeChangeAncestorsTraveler: FfiConverter {
     fileprivate static var handleMap = UniffiHandleMap<ChangeAncestorsTraveler>()
 
@@ -859,10 +930,16 @@ public struct FfiConverterTypeChangeAncestorsTraveler: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeChangeAncestorsTraveler_lift(_ pointer: UnsafeMutableRawPointer) throws -> ChangeAncestorsTraveler {
     return try FfiConverterTypeChangeAncestorsTraveler.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeChangeAncestorsTraveler_lower(_ value: ChangeAncestorsTraveler) -> UnsafeMutableRawPointer {
     return FfiConverterTypeChangeAncestorsTraveler.lower(value)
 }
@@ -891,6 +968,9 @@ open class Configure:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -902,15 +982,21 @@ open class Configure:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_configure(self.pointer, $0) }
     }
@@ -972,6 +1058,9 @@ open func textStyleConfig() -> StyleConfigMap {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeConfigure: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -1006,10 +1095,16 @@ public struct FfiConverterTypeConfigure: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeConfigure_lift(_ pointer: UnsafeMutableRawPointer) throws -> Configure {
     return try FfiConverterTypeConfigure.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeConfigure_lower(_ value: Configure) -> UnsafeMutableRawPointer {
     return FfiConverterTypeConfigure.lower(value)
 }
@@ -1028,6 +1123,9 @@ open class ContainerIdLikeImpl:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -1039,15 +1137,21 @@ open class ContainerIdLikeImpl:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_containeridlike(self.pointer, $0) }
     }
@@ -1119,6 +1223,9 @@ private func uniffiCallbackInitContainerIdLike() {
     uniffi_loro_fn_init_callback_vtable_containeridlike(&UniffiCallbackInterfaceContainerIdLike.vtable)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeContainerIdLike: FfiConverter {
     fileprivate static var handleMap = UniffiHandleMap<ContainerIdLike>()
 
@@ -1157,10 +1264,16 @@ public struct FfiConverterTypeContainerIdLike: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeContainerIdLike_lift(_ pointer: UnsafeMutableRawPointer) throws -> ContainerIdLike {
     return try FfiConverterTypeContainerIdLike.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeContainerIdLike_lower(_ value: ContainerIdLike) -> UnsafeMutableRawPointer {
     return FfiConverterTypeContainerIdLike.lower(value)
 }
@@ -1177,6 +1290,9 @@ open class Cursor:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -1188,15 +1304,21 @@ open class Cursor:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_cursor(self.pointer, $0) }
     }
@@ -1227,6 +1349,9 @@ public convenience init(id: Id?, container: ContainerId, side: Side, originPos: 
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeCursor: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -1261,10 +1386,16 @@ public struct FfiConverterTypeCursor: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeCursor_lift(_ pointer: UnsafeMutableRawPointer) throws -> Cursor {
     return try FfiConverterTypeCursor.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeCursor_lower(_ value: Cursor) -> UnsafeMutableRawPointer {
     return FfiConverterTypeCursor.lower(value)
 }
@@ -1283,6 +1414,9 @@ open class FractionalIndex:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -1294,15 +1428,21 @@ open class FractionalIndex:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_fractionalindex(self.pointer, $0) }
     }
@@ -1345,6 +1485,9 @@ open func toString() -> String {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeFractionalIndex: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -1379,10 +1522,16 @@ public struct FfiConverterTypeFractionalIndex: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFractionalIndex_lift(_ pointer: UnsafeMutableRawPointer) throws -> FractionalIndex {
     return try FfiConverterTypeFractionalIndex.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFractionalIndex_lower(_ value: FractionalIndex) -> UnsafeMutableRawPointer {
     return FfiConverterTypeFractionalIndex.lower(value)
 }
@@ -1403,6 +1552,9 @@ open class Frontiers:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -1414,15 +1566,21 @@ open class Frontiers:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_frontiers(self.pointer, $0) }
     }
@@ -1488,6 +1646,9 @@ open func eq(other: Frontiers) -> Bool {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeFrontiers: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -1522,10 +1683,16 @@ public struct FfiConverterTypeFrontiers: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFrontiers_lift(_ pointer: UnsafeMutableRawPointer) throws -> Frontiers {
     return try FfiConverterTypeFrontiers.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFrontiers_lower(_ value: Frontiers) -> UnsafeMutableRawPointer {
     return FfiConverterTypeFrontiers.lower(value)
 }
@@ -1544,6 +1711,9 @@ open class LocalUpdateCallbackImpl:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -1555,15 +1725,21 @@ open class LocalUpdateCallbackImpl:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_localupdatecallback(self.pointer, $0) }
     }
@@ -1634,6 +1810,9 @@ private func uniffiCallbackInitLocalUpdateCallback() {
     uniffi_loro_fn_init_callback_vtable_localupdatecallback(&UniffiCallbackInterfaceLocalUpdateCallback.vtable)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLocalUpdateCallback: FfiConverter {
     fileprivate static var handleMap = UniffiHandleMap<LocalUpdateCallback>()
 
@@ -1672,10 +1851,16 @@ public struct FfiConverterTypeLocalUpdateCallback: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLocalUpdateCallback_lift(_ pointer: UnsafeMutableRawPointer) throws -> LocalUpdateCallback {
     return try FfiConverterTypeLocalUpdateCallback.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLocalUpdateCallback_lower(_ value: LocalUpdateCallback) -> UnsafeMutableRawPointer {
     return FfiConverterTypeLocalUpdateCallback.lower(value)
 }
@@ -1717,6 +1902,9 @@ open class LoroCounter:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -1728,15 +1916,21 @@ open class LoroCounter:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_lorocounter(self.pointer, $0) }
     }
@@ -1816,6 +2010,9 @@ open func isDeleted() -> Bool {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLoroCounter: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -1850,10 +2047,16 @@ public struct FfiConverterTypeLoroCounter: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroCounter_lift(_ pointer: UnsafeMutableRawPointer) throws -> LoroCounter {
     return try FfiConverterTypeLoroCounter.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroCounter_lower(_ value: LoroCounter) -> UnsafeMutableRawPointer {
     return FfiConverterTypeLoroCounter.lower(value)
 }
@@ -1958,25 +2161,27 @@ public protocol LoroDocProtocol : AnyObject {
     func detach() 
     
     /**
-     * Export all the ops not included in the given `VersionVector`
-     */
-    func exportFrom(vv: VersionVector)  -> Data
-    
-    /**
      * Export the current state with json-string format of the document.
      */
     func exportJsonUpdates(startVv: VersionVector, endVv: VersionVector)  -> String
     
-    func exportShallowSnapshot(frontiers: Frontiers)  -> Data
+    func exportShallowSnapshot(frontiers: Frontiers) throws  -> Data
     
     /**
      * Export the current state and history of the document.
      */
-    func exportSnapshot()  -> Data
+    func exportSnapshot() throws  -> Data
+    
+    func exportSnapshotAt(frontiers: Frontiers) throws  -> Data
     
     func exportStateOnly(frontiers: Frontiers?) throws  -> Data
     
-    func exportUpdatesInRange(spans: [IdSpan])  -> Data
+    /**
+     * Export all the ops not included in the given `VersionVector`
+     */
+    func exportUpdates(vv: VersionVector) throws  -> Data
+    
+    func exportUpdatesInRange(spans: [IdSpan]) throws  -> Data
     
     /**
      * Duplicate the document with a different PeerID
@@ -2333,6 +2538,9 @@ open class LoroDoc:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -2344,15 +2552,21 @@ open class LoroDoc:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_lorodoc(self.pointer, $0) }
     }
@@ -2524,17 +2738,6 @@ open func detach() {try! rustCall() {
 }
     
     /**
-     * Export all the ops not included in the given `VersionVector`
-     */
-open func exportFrom(vv: VersionVector) -> Data {
-    return try!  FfiConverterData.lift(try! rustCall() {
-    uniffi_loro_fn_method_lorodoc_export_from(self.uniffiClonePointer(),
-        FfiConverterTypeVersionVector.lower(vv),$0
-    )
-})
-}
-    
-    /**
      * Export the current state with json-string format of the document.
      */
 open func exportJsonUpdates(startVv: VersionVector, endVv: VersionVector) -> String {
@@ -2546,8 +2749,8 @@ open func exportJsonUpdates(startVv: VersionVector, endVv: VersionVector) -> Str
 })
 }
     
-open func exportShallowSnapshot(frontiers: Frontiers) -> Data {
-    return try!  FfiConverterData.lift(try! rustCall() {
+open func exportShallowSnapshot(frontiers: Frontiers)throws  -> Data {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoroEncodeError.lift) {
     uniffi_loro_fn_method_lorodoc_export_shallow_snapshot(self.uniffiClonePointer(),
         FfiConverterTypeFrontiers.lower(frontiers),$0
     )
@@ -2557,9 +2760,17 @@ open func exportShallowSnapshot(frontiers: Frontiers) -> Data {
     /**
      * Export the current state and history of the document.
      */
-open func exportSnapshot() -> Data {
-    return try!  FfiConverterData.lift(try! rustCall() {
+open func exportSnapshot()throws  -> Data {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoroEncodeError.lift) {
     uniffi_loro_fn_method_lorodoc_export_snapshot(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func exportSnapshotAt(frontiers: Frontiers)throws  -> Data {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoroEncodeError.lift) {
+    uniffi_loro_fn_method_lorodoc_export_snapshot_at(self.uniffiClonePointer(),
+        FfiConverterTypeFrontiers.lower(frontiers),$0
     )
 })
 }
@@ -2572,8 +2783,19 @@ open func exportStateOnly(frontiers: Frontiers?)throws  -> Data {
 })
 }
     
-open func exportUpdatesInRange(spans: [IdSpan]) -> Data {
-    return try!  FfiConverterData.lift(try! rustCall() {
+    /**
+     * Export all the ops not included in the given `VersionVector`
+     */
+open func exportUpdates(vv: VersionVector)throws  -> Data {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoroEncodeError.lift) {
+    uniffi_loro_fn_method_lorodoc_export_updates(self.uniffiClonePointer(),
+        FfiConverterTypeVersionVector.lower(vv),$0
+    )
+})
+}
+    
+open func exportUpdatesInRange(spans: [IdSpan])throws  -> Data {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoroEncodeError.lift) {
     uniffi_loro_fn_method_lorodoc_export_updates_in_range(self.uniffiClonePointer(),
         FfiConverterSequenceTypeIdSpan.lower(spans),$0
     )
@@ -3195,6 +3417,9 @@ open func vvToFrontiers(vv: VersionVector) -> Frontiers {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLoroDoc: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -3229,10 +3454,16 @@ public struct FfiConverterTypeLoroDoc: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroDoc_lift(_ pointer: UnsafeMutableRawPointer) throws -> LoroDoc {
     return try FfiConverterTypeLoroDoc.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroDoc_lower(_ value: LoroDoc) -> UnsafeMutableRawPointer {
     return FfiConverterTypeLoroDoc.lower(value)
 }
@@ -3337,6 +3568,9 @@ open class LoroList:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -3348,15 +3582,21 @@ open class LoroList:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_lorolist(self.pointer, $0) }
     }
@@ -3604,6 +3844,9 @@ open func toVec() -> [LoroValue] {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLoroList: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -3638,10 +3881,16 @@ public struct FfiConverterTypeLoroList: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroList_lift(_ pointer: UnsafeMutableRawPointer) throws -> LoroList {
     return try FfiConverterTypeLoroList.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroList_lower(_ value: LoroList) -> UnsafeMutableRawPointer {
     return FfiConverterTypeLoroList.lower(value)
 }
@@ -3744,6 +3993,9 @@ open class LoroMap:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -3755,15 +4007,21 @@ open class LoroMap:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_loromap(self.pointer, $0) }
     }
@@ -3996,6 +4254,9 @@ open func values() -> [ValueOrContainer] {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLoroMap: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -4030,10 +4291,16 @@ public struct FfiConverterTypeLoroMap: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroMap_lift(_ pointer: UnsafeMutableRawPointer) throws -> LoroMap {
     return try FfiConverterTypeLoroMap.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroMap_lower(_ value: LoroMap) -> UnsafeMutableRawPointer {
     return FfiConverterTypeLoroMap.lower(value)
 }
@@ -4183,6 +4450,9 @@ open class LoroMovableList:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -4194,15 +4464,21 @@ open class LoroMovableList:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_loromovablelist(self.pointer, $0) }
     }
@@ -4561,6 +4837,9 @@ open func toVec() -> [LoroValue] {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLoroMovableList: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -4595,10 +4874,16 @@ public struct FfiConverterTypeLoroMovableList: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroMovableList_lift(_ pointer: UnsafeMutableRawPointer) throws -> LoroMovableList {
     return try FfiConverterTypeLoroMovableList.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroMovableList_lower(_ value: LoroMovableList) -> UnsafeMutableRawPointer {
     return FfiConverterTypeLoroMovableList.lower(value)
 }
@@ -4776,6 +5061,9 @@ open class LoroText:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -4787,15 +5075,21 @@ open class LoroText:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_lorotext(self.pointer, $0) }
     }
@@ -5118,6 +5412,9 @@ open func updateByLine(s: String, options: UpdateOptions)throws  {try rustCallWi
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLoroText: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -5152,10 +5449,16 @@ public struct FfiConverterTypeLoroText: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroText_lift(_ pointer: UnsafeMutableRawPointer) throws -> LoroText {
     return try FfiConverterTypeLoroText.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroText_lower(_ value: LoroText) -> UnsafeMutableRawPointer {
     return FfiConverterTypeLoroText.lower(value)
 }
@@ -5333,6 +5636,9 @@ open class LoroTree:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -5344,15 +5650,21 @@ open class LoroTree:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_lorotree(self.pointer, $0) }
     }
@@ -5686,6 +5998,9 @@ open func roots() -> [TreeId] {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLoroTree: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -5720,10 +6035,16 @@ public struct FfiConverterTypeLoroTree: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroTree_lift(_ pointer: UnsafeMutableRawPointer) throws -> LoroTree {
     return try FfiConverterTypeLoroTree.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroTree_lower(_ value: LoroTree) -> UnsafeMutableRawPointer {
     return FfiConverterTypeLoroTree.lower(value)
 }
@@ -5745,6 +6066,9 @@ open class LoroUnknown:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -5756,15 +6080,21 @@ open class LoroUnknown:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_lorounknown(self.pointer, $0) }
     }
@@ -5794,6 +6124,9 @@ open func id() -> ContainerId {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLoroUnknown: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -5828,10 +6161,16 @@ public struct FfiConverterTypeLoroUnknown: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroUnknown_lift(_ pointer: UnsafeMutableRawPointer) throws -> LoroUnknown {
     return try FfiConverterTypeLoroUnknown.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroUnknown_lower(_ value: LoroUnknown) -> UnsafeMutableRawPointer {
     return FfiConverterTypeLoroUnknown.lower(value)
 }
@@ -5850,6 +6189,9 @@ open class LoroValueLikeImpl:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -5861,15 +6203,21 @@ open class LoroValueLikeImpl:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_lorovaluelike(self.pointer, $0) }
     }
@@ -5938,6 +6286,9 @@ private func uniffiCallbackInitLoroValueLike() {
     uniffi_loro_fn_init_callback_vtable_lorovaluelike(&UniffiCallbackInterfaceLoroValueLike.vtable)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLoroValueLike: FfiConverter {
     fileprivate static var handleMap = UniffiHandleMap<LoroValueLike>()
 
@@ -5976,10 +6327,16 @@ public struct FfiConverterTypeLoroValueLike: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroValueLike_lift(_ pointer: UnsafeMutableRawPointer) throws -> LoroValueLike {
     return try FfiConverterTypeLoroValueLike.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroValueLike_lower(_ value: LoroValueLike) -> UnsafeMutableRawPointer {
     return FfiConverterTypeLoroValueLike.lower(value)
 }
@@ -5998,6 +6355,9 @@ open class OnPopImpl:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -6009,15 +6369,21 @@ open class OnPopImpl:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_onpop(self.pointer, $0) }
     }
@@ -6094,6 +6460,9 @@ private func uniffiCallbackInitOnPop() {
     uniffi_loro_fn_init_callback_vtable_onpop(&UniffiCallbackInterfaceOnPop.vtable)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeOnPop: FfiConverter {
     fileprivate static var handleMap = UniffiHandleMap<OnPop>()
 
@@ -6132,10 +6501,16 @@ public struct FfiConverterTypeOnPop: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeOnPop_lift(_ pointer: UnsafeMutableRawPointer) throws -> OnPop {
     return try FfiConverterTypeOnPop.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeOnPop_lower(_ value: OnPop) -> UnsafeMutableRawPointer {
     return FfiConverterTypeOnPop.lower(value)
 }
@@ -6154,6 +6529,9 @@ open class OnPushImpl:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -6165,15 +6543,21 @@ open class OnPushImpl:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_onpush(self.pointer, $0) }
     }
@@ -6248,6 +6632,9 @@ private func uniffiCallbackInitOnPush() {
     uniffi_loro_fn_init_callback_vtable_onpush(&UniffiCallbackInterfaceOnPush.vtable)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeOnPush: FfiConverter {
     fileprivate static var handleMap = UniffiHandleMap<OnPush>()
 
@@ -6286,10 +6673,16 @@ public struct FfiConverterTypeOnPush: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeOnPush_lift(_ pointer: UnsafeMutableRawPointer) throws -> OnPush {
     return try FfiConverterTypeOnPush.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeOnPush_lower(_ value: OnPush) -> UnsafeMutableRawPointer {
     return FfiConverterTypeOnPush.lower(value)
 }
@@ -6310,6 +6703,9 @@ open class StyleConfigMap:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -6321,15 +6717,21 @@ open class StyleConfigMap:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_styleconfigmap(self.pointer, $0) }
     }
@@ -6379,6 +6781,9 @@ open func insert(key: String, value: StyleConfig) {try! rustCall() {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeStyleConfigMap: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -6413,10 +6818,16 @@ public struct FfiConverterTypeStyleConfigMap: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeStyleConfigMap_lift(_ pointer: UnsafeMutableRawPointer) throws -> StyleConfigMap {
     return try FfiConverterTypeStyleConfigMap.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeStyleConfigMap_lower(_ value: StyleConfigMap) -> UnsafeMutableRawPointer {
     return FfiConverterTypeStyleConfigMap.lower(value)
 }
@@ -6435,6 +6846,9 @@ open class SubscriberImpl:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -6446,15 +6860,21 @@ open class SubscriberImpl:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_subscriber(self.pointer, $0) }
     }
@@ -6525,6 +6945,9 @@ private func uniffiCallbackInitSubscriber() {
     uniffi_loro_fn_init_callback_vtable_subscriber(&UniffiCallbackInterfaceSubscriber.vtable)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeSubscriber: FfiConverter {
     fileprivate static var handleMap = UniffiHandleMap<Subscriber>()
 
@@ -6563,10 +6986,16 @@ public struct FfiConverterTypeSubscriber: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeSubscriber_lift(_ pointer: UnsafeMutableRawPointer) throws -> Subscriber {
     return try FfiConverterTypeSubscriber.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeSubscriber_lower(_ value: Subscriber) -> UnsafeMutableRawPointer {
     return FfiConverterTypeSubscriber.lower(value)
 }
@@ -6598,6 +7027,9 @@ open class Subscription:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -6609,15 +7041,21 @@ open class Subscription:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_subscription(self.pointer, $0) }
     }
@@ -6648,6 +7086,9 @@ open func detach() {try! rustCall() {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeSubscription: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -6682,10 +7123,16 @@ public struct FfiConverterTypeSubscription: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeSubscription_lift(_ pointer: UnsafeMutableRawPointer) throws -> Subscription {
     return try FfiConverterTypeSubscription.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeSubscription_lower(_ value: Subscription) -> UnsafeMutableRawPointer {
     return FfiConverterTypeSubscription.lower(value)
 }
@@ -6755,6 +7202,9 @@ open class UndoManager:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -6766,15 +7216,21 @@ open class UndoManager:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_undomanager(self.pointer, $0) }
     }
@@ -6910,6 +7366,9 @@ open func undo(doc: LoroDoc)throws  -> Bool {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeUndoManager: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -6944,10 +7403,16 @@ public struct FfiConverterTypeUndoManager: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeUndoManager_lift(_ pointer: UnsafeMutableRawPointer) throws -> UndoManager {
     return try FfiConverterTypeUndoManager.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeUndoManager_lower(_ value: UndoManager) -> UnsafeMutableRawPointer {
     return FfiConverterTypeUndoManager.lower(value)
 }
@@ -6966,6 +7431,9 @@ open class UnsubscriberImpl:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -6977,15 +7445,21 @@ open class UnsubscriberImpl:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_unsubscriber(self.pointer, $0) }
     }
@@ -7053,6 +7527,9 @@ private func uniffiCallbackInitUnsubscriber() {
     uniffi_loro_fn_init_callback_vtable_unsubscriber(&UniffiCallbackInterfaceUnsubscriber.vtable)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeUnsubscriber: FfiConverter {
     fileprivate static var handleMap = UniffiHandleMap<Unsubscriber>()
 
@@ -7091,10 +7568,16 @@ public struct FfiConverterTypeUnsubscriber: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeUnsubscriber_lift(_ pointer: UnsafeMutableRawPointer) throws -> Unsubscriber {
     return try FfiConverterTypeUnsubscriber.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeUnsubscriber_lower(_ value: Unsubscriber) -> UnsafeMutableRawPointer {
     return FfiConverterTypeUnsubscriber.lower(value)
 }
@@ -7131,6 +7614,9 @@ open class ValueOrContainer:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -7142,15 +7628,21 @@ open class ValueOrContainer:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_valueorcontainer(self.pointer, $0) }
     }
@@ -7240,6 +7732,9 @@ open func isValue() -> Bool {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeValueOrContainer: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -7274,10 +7769,16 @@ public struct FfiConverterTypeValueOrContainer: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeValueOrContainer_lift(_ pointer: UnsafeMutableRawPointer) throws -> ValueOrContainer {
     return try FfiConverterTypeValueOrContainer.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeValueOrContainer_lower(_ value: ValueOrContainer) -> UnsafeMutableRawPointer {
     return FfiConverterTypeValueOrContainer.lower(value)
 }
@@ -7320,6 +7821,9 @@ open class VersionVector:
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -7331,15 +7835,21 @@ open class VersionVector:
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public init(noPointer: NoPointer) {
         self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_loro_fn_clone_versionvector(self.pointer, $0) }
     }
@@ -7473,6 +7983,9 @@ open func setLast(id: Id) {try! rustCall() {
 
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeVersionVector: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
@@ -7507,10 +8020,16 @@ public struct FfiConverterTypeVersionVector: FfiConverter {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeVersionVector_lift(_ pointer: UnsafeMutableRawPointer) throws -> VersionVector {
     return try FfiConverterTypeVersionVector.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeVersionVector_lower(_ value: VersionVector) -> UnsafeMutableRawPointer {
     return FfiConverterTypeVersionVector.lower(value)
 }
@@ -7548,6 +8067,9 @@ extension AbsolutePosition: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeAbsolutePosition: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AbsolutePosition {
         return
@@ -7564,10 +8086,16 @@ public struct FfiConverterTypeAbsolutePosition: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAbsolutePosition_lift(_ buf: RustBuffer) throws -> AbsolutePosition {
     return try FfiConverterTypeAbsolutePosition.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAbsolutePosition_lower(_ value: AbsolutePosition) -> RustBuffer {
     return FfiConverterTypeAbsolutePosition.lower(value)
 }
@@ -7605,6 +8133,9 @@ extension AwarenessPeerUpdate: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeAwarenessPeerUpdate: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AwarenessPeerUpdate {
         return
@@ -7621,10 +8152,16 @@ public struct FfiConverterTypeAwarenessPeerUpdate: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAwarenessPeerUpdate_lift(_ buf: RustBuffer) throws -> AwarenessPeerUpdate {
     return try FfiConverterTypeAwarenessPeerUpdate.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAwarenessPeerUpdate_lower(_ value: AwarenessPeerUpdate) -> RustBuffer {
     return FfiConverterTypeAwarenessPeerUpdate.lower(value)
 }
@@ -7690,6 +8227,9 @@ public struct ChangeMeta {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeChangeMeta: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ChangeMeta {
         return
@@ -7714,10 +8254,16 @@ public struct FfiConverterTypeChangeMeta: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeChangeMeta_lift(_ buf: RustBuffer) throws -> ChangeMeta {
     return try FfiConverterTypeChangeMeta.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeChangeMeta_lower(_ value: ChangeMeta) -> RustBuffer {
     return FfiConverterTypeChangeMeta.lower(value)
 }
@@ -7767,6 +8313,9 @@ extension CommitOptions: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeCommitOptions: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CommitOptions {
         return
@@ -7787,10 +8336,16 @@ public struct FfiConverterTypeCommitOptions: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeCommitOptions_lift(_ buf: RustBuffer) throws -> CommitOptions {
     return try FfiConverterTypeCommitOptions.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeCommitOptions_lower(_ value: CommitOptions) -> RustBuffer {
     return FfiConverterTypeCommitOptions.lower(value)
 }
@@ -7841,6 +8396,9 @@ public struct ContainerDiff {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeContainerDiff: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ContainerDiff {
         return
@@ -7861,10 +8419,16 @@ public struct FfiConverterTypeContainerDiff: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeContainerDiff_lift(_ buf: RustBuffer) throws -> ContainerDiff {
     return try FfiConverterTypeContainerDiff.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeContainerDiff_lower(_ value: ContainerDiff) -> RustBuffer {
     return FfiConverterTypeContainerDiff.lower(value)
 }
@@ -7902,6 +8466,9 @@ extension ContainerPath: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeContainerPath: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ContainerPath {
         return
@@ -7918,10 +8485,16 @@ public struct FfiConverterTypeContainerPath: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeContainerPath_lift(_ buf: RustBuffer) throws -> ContainerPath {
     return try FfiConverterTypeContainerPath.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeContainerPath_lower(_ value: ContainerPath) -> RustBuffer {
     return FfiConverterTypeContainerPath.lower(value)
 }
@@ -7959,6 +8532,9 @@ extension CounterSpan: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeCounterSpan: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CounterSpan {
         return
@@ -7975,10 +8551,16 @@ public struct FfiConverterTypeCounterSpan: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeCounterSpan_lift(_ buf: RustBuffer) throws -> CounterSpan {
     return try FfiConverterTypeCounterSpan.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeCounterSpan_lower(_ value: CounterSpan) -> RustBuffer {
     return FfiConverterTypeCounterSpan.lower(value)
 }
@@ -7998,6 +8580,9 @@ public struct CursorWithPos {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeCursorWithPos: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CursorWithPos {
         return
@@ -8014,10 +8599,16 @@ public struct FfiConverterTypeCursorWithPos: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeCursorWithPos_lift(_ buf: RustBuffer) throws -> CursorWithPos {
     return try FfiConverterTypeCursorWithPos.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeCursorWithPos_lower(_ value: CursorWithPos) -> RustBuffer {
     return FfiConverterTypeCursorWithPos.lower(value)
 }
@@ -8065,6 +8656,9 @@ public struct DiffEvent {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeDiffEvent: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DiffEvent {
         return
@@ -8085,10 +8679,16 @@ public struct FfiConverterTypeDiffEvent: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeDiffEvent_lift(_ buf: RustBuffer) throws -> DiffEvent {
     return try FfiConverterTypeDiffEvent.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeDiffEvent_lower(_ value: DiffEvent) -> RustBuffer {
     return FfiConverterTypeDiffEvent.lower(value)
 }
@@ -8108,6 +8708,9 @@ public struct FrontiersOrId {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeFrontiersOrID: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FrontiersOrId {
         return
@@ -8124,10 +8727,16 @@ public struct FfiConverterTypeFrontiersOrID: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFrontiersOrID_lift(_ buf: RustBuffer) throws -> FrontiersOrId {
     return try FfiConverterTypeFrontiersOrID.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFrontiersOrID_lower(_ value: FrontiersOrId) -> RustBuffer {
     return FfiConverterTypeFrontiersOrID.lower(value)
 }
@@ -8165,6 +8774,9 @@ extension Id: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeID: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Id {
         return
@@ -8181,10 +8793,16 @@ public struct FfiConverterTypeID: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeID_lift(_ buf: RustBuffer) throws -> Id {
     return try FfiConverterTypeID.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeID_lower(_ value: Id) -> RustBuffer {
     return FfiConverterTypeID.lower(value)
 }
@@ -8222,6 +8840,9 @@ extension IdLp: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeIdLp: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IdLp {
         return
@@ -8238,10 +8859,16 @@ public struct FfiConverterTypeIdLp: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeIdLp_lift(_ buf: RustBuffer) throws -> IdLp {
     return try FfiConverterTypeIdLp.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeIdLp_lower(_ value: IdLp) -> RustBuffer {
     return FfiConverterTypeIdLp.lower(value)
 }
@@ -8279,6 +8906,9 @@ extension IdSpan: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeIdSpan: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IdSpan {
         return
@@ -8295,10 +8925,16 @@ public struct FfiConverterTypeIdSpan: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeIdSpan_lift(_ buf: RustBuffer) throws -> IdSpan {
     return try FfiConverterTypeIdSpan.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeIdSpan_lower(_ value: IdSpan) -> RustBuffer {
     return FfiConverterTypeIdSpan.lower(value)
 }
@@ -8356,6 +8992,9 @@ public struct ImportBlobMetadata {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeImportBlobMetadata: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportBlobMetadata {
         return
@@ -8382,10 +9021,16 @@ public struct FfiConverterTypeImportBlobMetadata: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeImportBlobMetadata_lift(_ buf: RustBuffer) throws -> ImportBlobMetadata {
     return try FfiConverterTypeImportBlobMetadata.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeImportBlobMetadata_lower(_ value: ImportBlobMetadata) -> RustBuffer {
     return FfiConverterTypeImportBlobMetadata.lower(value)
 }
@@ -8423,6 +9068,9 @@ extension ImportStatus: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeImportStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportStatus {
         return
@@ -8439,10 +9087,16 @@ public struct FfiConverterTypeImportStatus: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeImportStatus_lift(_ buf: RustBuffer) throws -> ImportStatus {
     return try FfiConverterTypeImportStatus.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeImportStatus_lower(_ value: ImportStatus) -> RustBuffer {
     return FfiConverterTypeImportStatus.lower(value)
 }
@@ -8460,6 +9114,9 @@ public struct MapDelta {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeMapDelta: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MapDelta {
         return
@@ -8474,10 +9131,16 @@ public struct FfiConverterTypeMapDelta: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeMapDelta_lift(_ buf: RustBuffer) throws -> MapDelta {
     return try FfiConverterTypeMapDelta.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeMapDelta_lower(_ value: MapDelta) -> RustBuffer {
     return FfiConverterTypeMapDelta.lower(value)
 }
@@ -8515,6 +9178,9 @@ extension PathItem: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypePathItem: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PathItem {
         return
@@ -8531,10 +9197,16 @@ public struct FfiConverterTypePathItem: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypePathItem_lift(_ buf: RustBuffer) throws -> PathItem {
     return try FfiConverterTypePathItem.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypePathItem_lower(_ value: PathItem) -> RustBuffer {
     return FfiConverterTypePathItem.lower(value)
 }
@@ -8578,6 +9250,9 @@ extension PeerInfo: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypePeerInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PeerInfo {
         return
@@ -8596,10 +9271,16 @@ public struct FfiConverterTypePeerInfo: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypePeerInfo_lift(_ buf: RustBuffer) throws -> PeerInfo {
     return try FfiConverterTypePeerInfo.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypePeerInfo_lower(_ value: PeerInfo) -> RustBuffer {
     return FfiConverterTypePeerInfo.lower(value)
 }
@@ -8619,6 +9300,9 @@ public struct PosQueryResult {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypePosQueryResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PosQueryResult {
         return
@@ -8635,10 +9319,16 @@ public struct FfiConverterTypePosQueryResult: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypePosQueryResult_lift(_ buf: RustBuffer) throws -> PosQueryResult {
     return try FfiConverterTypePosQueryResult.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypePosQueryResult_lower(_ value: PosQueryResult) -> RustBuffer {
     return FfiConverterTypePosQueryResult.lower(value)
 }
@@ -8670,6 +9360,9 @@ extension StyleConfig: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeStyleConfig: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> StyleConfig {
         return
@@ -8684,10 +9377,16 @@ public struct FfiConverterTypeStyleConfig: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeStyleConfig_lift(_ buf: RustBuffer) throws -> StyleConfig {
     return try FfiConverterTypeStyleConfig.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeStyleConfig_lower(_ value: StyleConfig) -> RustBuffer {
     return FfiConverterTypeStyleConfig.lower(value)
 }
@@ -8719,6 +9418,9 @@ extension TreeDiff: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeTreeDiff: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TreeDiff {
         return
@@ -8733,10 +9435,16 @@ public struct FfiConverterTypeTreeDiff: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTreeDiff_lift(_ buf: RustBuffer) throws -> TreeDiff {
     return try FfiConverterTypeTreeDiff.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTreeDiff_lower(_ value: TreeDiff) -> RustBuffer {
     return FfiConverterTypeTreeDiff.lower(value)
 }
@@ -8774,6 +9482,9 @@ extension TreeDiffItem: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeTreeDiffItem: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TreeDiffItem {
         return
@@ -8790,10 +9501,16 @@ public struct FfiConverterTypeTreeDiffItem: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTreeDiffItem_lift(_ buf: RustBuffer) throws -> TreeDiffItem {
     return try FfiConverterTypeTreeDiffItem.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTreeDiffItem_lower(_ value: TreeDiffItem) -> RustBuffer {
     return FfiConverterTypeTreeDiffItem.lower(value)
 }
@@ -8831,6 +9548,9 @@ extension TreeId: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeTreeID: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TreeId {
         return
@@ -8847,10 +9567,16 @@ public struct FfiConverterTypeTreeID: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTreeID_lift(_ buf: RustBuffer) throws -> TreeId {
     return try FfiConverterTypeTreeID.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTreeID_lower(_ value: TreeId) -> RustBuffer {
     return FfiConverterTypeTreeID.lower(value)
 }
@@ -8870,6 +9596,9 @@ public struct UndoItemMeta {
 
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeUndoItemMeta: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UndoItemMeta {
         return
@@ -8886,10 +9615,16 @@ public struct FfiConverterTypeUndoItemMeta: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeUndoItemMeta_lift(_ buf: RustBuffer) throws -> UndoItemMeta {
     return try FfiConverterTypeUndoItemMeta.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeUndoItemMeta_lower(_ value: UndoItemMeta) -> RustBuffer {
     return FfiConverterTypeUndoItemMeta.lower(value)
 }
@@ -8927,6 +9662,9 @@ extension UpdateOptions: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeUpdateOptions: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UpdateOptions {
         return
@@ -8943,10 +9681,16 @@ public struct FfiConverterTypeUpdateOptions: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeUpdateOptions_lift(_ buf: RustBuffer) throws -> UpdateOptions {
     return try FfiConverterTypeUpdateOptions.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeUpdateOptions_lower(_ value: UpdateOptions) -> RustBuffer {
     return FfiConverterTypeUpdateOptions.lower(value)
 }
@@ -8996,6 +9740,9 @@ extension VersionVectorDiff: Equatable, Hashable {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeVersionVectorDiff: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> VersionVectorDiff {
         return
@@ -9012,10 +9759,16 @@ public struct FfiConverterTypeVersionVectorDiff: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeVersionVectorDiff_lift(_ buf: RustBuffer) throws -> VersionVectorDiff {
     return try FfiConverterTypeVersionVectorDiff.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeVersionVectorDiff_lower(_ value: VersionVectorDiff) -> RustBuffer {
     return FfiConverterTypeVersionVectorDiff.lower(value)
 }
@@ -9034,6 +9787,9 @@ public enum CannotFindRelativePosition {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeCannotFindRelativePosition: FfiConverterRustBuffer {
     typealias SwiftType = CannotFindRelativePosition
 
@@ -9100,6 +9856,9 @@ public enum ChangeTravelError {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeChangeTravelError: FfiConverterRustBuffer {
     typealias SwiftType = ChangeTravelError
 
@@ -9160,6 +9919,9 @@ public enum ContainerId {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeContainerID: FfiConverterRustBuffer {
     typealias SwiftType = ContainerId
 
@@ -9198,10 +9960,16 @@ public struct FfiConverterTypeContainerID: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeContainerID_lift(_ buf: RustBuffer) throws -> ContainerId {
     return try FfiConverterTypeContainerID.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeContainerID_lower(_ value: ContainerId) -> RustBuffer {
     return FfiConverterTypeContainerID.lower(value)
 }
@@ -9228,6 +9996,9 @@ public enum ContainerType {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeContainerType: FfiConverterRustBuffer {
     typealias SwiftType = ContainerType
 
@@ -9291,10 +10062,16 @@ public struct FfiConverterTypeContainerType: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeContainerType_lift(_ buf: RustBuffer) throws -> ContainerType {
     return try FfiConverterTypeContainerType.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeContainerType_lower(_ value: ContainerType) -> RustBuffer {
     return FfiConverterTypeContainerType.lower(value)
 }
@@ -9324,6 +10101,9 @@ public enum Diff {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeDiff: FfiConverterRustBuffer {
     typealias SwiftType = Diff
 
@@ -9389,10 +10169,16 @@ public struct FfiConverterTypeDiff: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeDiff_lift(_ buf: RustBuffer) throws -> Diff {
     return try FfiConverterTypeDiff.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeDiff_lower(_ value: Diff) -> RustBuffer {
     return FfiConverterTypeDiff.lower(value)
 }
@@ -9423,6 +10209,9 @@ public enum EventTriggerKind {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeEventTriggerKind: FfiConverterRustBuffer {
     typealias SwiftType = EventTriggerKind
 
@@ -9460,10 +10249,16 @@ public struct FfiConverterTypeEventTriggerKind: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeEventTriggerKind_lift(_ buf: RustBuffer) throws -> EventTriggerKind {
     return try FfiConverterTypeEventTriggerKind.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeEventTriggerKind_lower(_ value: EventTriggerKind) -> RustBuffer {
     return FfiConverterTypeEventTriggerKind.lower(value)
 }
@@ -9486,6 +10281,9 @@ public enum ExpandType {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeExpandType: FfiConverterRustBuffer {
     typealias SwiftType = ExpandType
 
@@ -9529,10 +10327,16 @@ public struct FfiConverterTypeExpandType: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeExpandType_lift(_ buf: RustBuffer) throws -> ExpandType {
     return try FfiConverterTypeExpandType.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeExpandType_lower(_ value: ExpandType) -> RustBuffer {
     return FfiConverterTypeExpandType.lower(value)
 }
@@ -9557,6 +10361,9 @@ public enum Index {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeIndex: FfiConverterRustBuffer {
     typealias SwiftType = Index
 
@@ -9600,10 +10407,16 @@ public struct FfiConverterTypeIndex: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeIndex_lift(_ buf: RustBuffer) throws -> Index {
     return try FfiConverterTypeIndex.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeIndex_lower(_ value: Index) -> RustBuffer {
     return FfiConverterTypeIndex.lower(value)
 }
@@ -9626,6 +10439,9 @@ public enum JsonPathError {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeJsonPathError: FfiConverterRustBuffer {
     typealias SwiftType = JsonPathError
 
@@ -9699,6 +10515,9 @@ public enum ListDiffItem {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeListDiffItem: FfiConverterRustBuffer {
     typealias SwiftType = ListDiffItem
 
@@ -9743,10 +10562,16 @@ public struct FfiConverterTypeListDiffItem: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeListDiffItem_lift(_ buf: RustBuffer) throws -> ListDiffItem {
     return try FfiConverterTypeListDiffItem.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeListDiffItem_lower(_ value: ListDiffItem) -> RustBuffer {
     return FfiConverterTypeListDiffItem.lower(value)
 }
@@ -9768,6 +10593,9 @@ public enum LoroEncodeError {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLoroEncodeError: FfiConverterRustBuffer {
     typealias SwiftType = LoroEncodeError
 
@@ -9902,6 +10730,9 @@ public enum LoroError {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLoroError: FfiConverterRustBuffer {
     typealias SwiftType = LoroError
 
@@ -10179,6 +11010,9 @@ public enum LoroValue {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLoroValue: FfiConverterRustBuffer {
     typealias SwiftType = LoroValue
 
@@ -10268,10 +11102,16 @@ public struct FfiConverterTypeLoroValue: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroValue_lift(_ buf: RustBuffer) throws -> LoroValue {
     return try FfiConverterTypeLoroValue.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLoroValue_lower(_ value: LoroValue) -> RustBuffer {
     return FfiConverterTypeLoroValue.lower(value)
 }
@@ -10293,6 +11133,9 @@ public enum Ordering {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeOrdering: FfiConverterRustBuffer {
     typealias SwiftType = Ordering
 
@@ -10330,10 +11173,16 @@ public struct FfiConverterTypeOrdering: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeOrdering_lift(_ buf: RustBuffer) throws -> Ordering {
     return try FfiConverterTypeOrdering.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeOrdering_lower(_ value: Ordering) -> RustBuffer {
     return FfiConverterTypeOrdering.lower(value)
 }
@@ -10355,6 +11204,9 @@ public enum Side {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeSide: FfiConverterRustBuffer {
     typealias SwiftType = Side
 
@@ -10392,10 +11244,16 @@ public struct FfiConverterTypeSide: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeSide_lift(_ buf: RustBuffer) throws -> Side {
     return try FfiConverterTypeSide.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeSide_lower(_ value: Side) -> RustBuffer {
     return FfiConverterTypeSide.lower(value)
 }
@@ -10420,6 +11278,9 @@ public enum TextDelta {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeTextDelta: FfiConverterRustBuffer {
     typealias SwiftType = TextDelta
 
@@ -10465,10 +11326,16 @@ public struct FfiConverterTypeTextDelta: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTextDelta_lift(_ buf: RustBuffer) throws -> TextDelta {
     return try FfiConverterTypeTextDelta.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTextDelta_lower(_ value: TextDelta) -> RustBuffer {
     return FfiConverterTypeTextDelta.lower(value)
 }
@@ -10493,6 +11360,9 @@ public enum TreeExternalDiff {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeTreeExternalDiff: FfiConverterRustBuffer {
     typealias SwiftType = TreeExternalDiff
 
@@ -10543,10 +11413,16 @@ public struct FfiConverterTypeTreeExternalDiff: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTreeExternalDiff_lift(_ buf: RustBuffer) throws -> TreeExternalDiff {
     return try FfiConverterTypeTreeExternalDiff.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTreeExternalDiff_lower(_ value: TreeExternalDiff) -> RustBuffer {
     return FfiConverterTypeTreeExternalDiff.lower(value)
 }
@@ -10570,6 +11446,9 @@ public enum TreeParentId {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeTreeParentId: FfiConverterRustBuffer {
     typealias SwiftType = TreeParentId
 
@@ -10615,10 +11494,16 @@ public struct FfiConverterTypeTreeParentId: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTreeParentId_lift(_ buf: RustBuffer) throws -> TreeParentId {
     return try FfiConverterTypeTreeParentId.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTreeParentId_lower(_ value: TreeParentId) -> RustBuffer {
     return FfiConverterTypeTreeParentId.lower(value)
 }
@@ -10639,6 +11524,9 @@ public enum UndoOrRedo {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeUndoOrRedo: FfiConverterRustBuffer {
     typealias SwiftType = UndoOrRedo
 
@@ -10670,10 +11558,16 @@ public struct FfiConverterTypeUndoOrRedo: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeUndoOrRedo_lift(_ buf: RustBuffer) throws -> UndoOrRedo {
     return try FfiConverterTypeUndoOrRedo.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeUndoOrRedo_lower(_ value: UndoOrRedo) -> RustBuffer {
     return FfiConverterTypeUndoOrRedo.lower(value)
 }
@@ -10694,6 +11588,9 @@ public enum UpdateTimeoutError {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeUpdateTimeoutError: FfiConverterRustBuffer {
     typealias SwiftType = UpdateTimeoutError
 
@@ -10736,6 +11633,9 @@ extension UpdateTimeoutError: Foundation.LocalizedError {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
     typealias SwiftType = UInt32?
 
@@ -10757,6 +11657,9 @@ fileprivate struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionInt32: FfiConverterRustBuffer {
     typealias SwiftType = Int32?
 
@@ -10778,6 +11681,9 @@ fileprivate struct FfiConverterOptionInt32: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionUInt64: FfiConverterRustBuffer {
     typealias SwiftType = UInt64?
 
@@ -10799,6 +11705,9 @@ fileprivate struct FfiConverterOptionUInt64: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     typealias SwiftType = Int64?
 
@@ -10820,6 +11729,9 @@ fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionDouble: FfiConverterRustBuffer {
     typealias SwiftType = Double?
 
@@ -10841,6 +11753,9 @@ fileprivate struct FfiConverterOptionDouble: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
 
@@ -10862,6 +11777,9 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeCursor: FfiConverterRustBuffer {
     typealias SwiftType = Cursor?
 
@@ -10883,6 +11801,9 @@ fileprivate struct FfiConverterOptionTypeCursor: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeFrontiers: FfiConverterRustBuffer {
     typealias SwiftType = Frontiers?
 
@@ -10904,6 +11825,9 @@ fileprivate struct FfiConverterOptionTypeFrontiers: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeLoroCounter: FfiConverterRustBuffer {
     typealias SwiftType = LoroCounter?
 
@@ -10925,6 +11849,9 @@ fileprivate struct FfiConverterOptionTypeLoroCounter: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeLoroList: FfiConverterRustBuffer {
     typealias SwiftType = LoroList?
 
@@ -10946,6 +11873,9 @@ fileprivate struct FfiConverterOptionTypeLoroList: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeLoroMap: FfiConverterRustBuffer {
     typealias SwiftType = LoroMap?
 
@@ -10967,6 +11897,9 @@ fileprivate struct FfiConverterOptionTypeLoroMap: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeLoroMovableList: FfiConverterRustBuffer {
     typealias SwiftType = LoroMovableList?
 
@@ -10988,6 +11921,9 @@ fileprivate struct FfiConverterOptionTypeLoroMovableList: FfiConverterRustBuffer
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeLoroText: FfiConverterRustBuffer {
     typealias SwiftType = LoroText?
 
@@ -11009,6 +11945,9 @@ fileprivate struct FfiConverterOptionTypeLoroText: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeLoroTree: FfiConverterRustBuffer {
     typealias SwiftType = LoroTree?
 
@@ -11030,6 +11969,9 @@ fileprivate struct FfiConverterOptionTypeLoroTree: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeOnPop: FfiConverterRustBuffer {
     typealias SwiftType = OnPop?
 
@@ -11051,6 +11993,9 @@ fileprivate struct FfiConverterOptionTypeOnPop: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeOnPush: FfiConverterRustBuffer {
     typealias SwiftType = OnPush?
 
@@ -11072,6 +12017,9 @@ fileprivate struct FfiConverterOptionTypeOnPush: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeValueOrContainer: FfiConverterRustBuffer {
     typealias SwiftType = ValueOrContainer?
 
@@ -11093,6 +12041,9 @@ fileprivate struct FfiConverterOptionTypeValueOrContainer: FfiConverterRustBuffe
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeVersionVector: FfiConverterRustBuffer {
     typealias SwiftType = VersionVector?
 
@@ -11114,6 +12065,9 @@ fileprivate struct FfiConverterOptionTypeVersionVector: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeChangeMeta: FfiConverterRustBuffer {
     typealias SwiftType = ChangeMeta?
 
@@ -11135,6 +12089,9 @@ fileprivate struct FfiConverterOptionTypeChangeMeta: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeCounterSpan: FfiConverterRustBuffer {
     typealias SwiftType = CounterSpan?
 
@@ -11156,6 +12113,9 @@ fileprivate struct FfiConverterOptionTypeCounterSpan: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeID: FfiConverterRustBuffer {
     typealias SwiftType = Id?
 
@@ -11177,6 +12137,9 @@ fileprivate struct FfiConverterOptionTypeID: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeStyleConfig: FfiConverterRustBuffer {
     typealias SwiftType = StyleConfig?
 
@@ -11198,6 +12161,9 @@ fileprivate struct FfiConverterOptionTypeStyleConfig: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeContainerID: FfiConverterRustBuffer {
     typealias SwiftType = ContainerId?
 
@@ -11219,6 +12185,9 @@ fileprivate struct FfiConverterOptionTypeContainerID: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeLoroValue: FfiConverterRustBuffer {
     typealias SwiftType = LoroValue?
 
@@ -11240,6 +12209,9 @@ fileprivate struct FfiConverterOptionTypeLoroValue: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeOrdering: FfiConverterRustBuffer {
     typealias SwiftType = Ordering?
 
@@ -11261,6 +12233,9 @@ fileprivate struct FfiConverterOptionTypeOrdering: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionSequenceTypeContainerPath: FfiConverterRustBuffer {
     typealias SwiftType = [ContainerPath]?
 
@@ -11282,6 +12257,9 @@ fileprivate struct FfiConverterOptionSequenceTypeContainerPath: FfiConverterRust
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionSequenceTypeTreeID: FfiConverterRustBuffer {
     typealias SwiftType = [TreeId]?
 
@@ -11303,6 +12281,9 @@ fileprivate struct FfiConverterOptionSequenceTypeTreeID: FfiConverterRustBuffer 
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionDictionaryUInt64TypeCounterSpan: FfiConverterRustBuffer {
     typealias SwiftType = [UInt64: CounterSpan]?
 
@@ -11324,6 +12305,9 @@ fileprivate struct FfiConverterOptionDictionaryUInt64TypeCounterSpan: FfiConvert
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionDictionaryStringTypeLoroValue: FfiConverterRustBuffer {
     typealias SwiftType = [String: LoroValue]?
 
@@ -11345,6 +12329,9 @@ fileprivate struct FfiConverterOptionDictionaryStringTypeLoroValue: FfiConverter
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceUInt64: FfiConverterRustBuffer {
     typealias SwiftType = [UInt64]
 
@@ -11367,6 +12354,9 @@ fileprivate struct FfiConverterSequenceUInt64: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
@@ -11389,6 +12379,9 @@ fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceData: FfiConverterRustBuffer {
     typealias SwiftType = [Data]
 
@@ -11411,6 +12404,9 @@ fileprivate struct FfiConverterSequenceData: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeValueOrContainer: FfiConverterRustBuffer {
     typealias SwiftType = [ValueOrContainer]
 
@@ -11433,6 +12429,9 @@ fileprivate struct FfiConverterSequenceTypeValueOrContainer: FfiConverterRustBuf
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeContainerDiff: FfiConverterRustBuffer {
     typealias SwiftType = [ContainerDiff]
 
@@ -11455,6 +12454,9 @@ fileprivate struct FfiConverterSequenceTypeContainerDiff: FfiConverterRustBuffer
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeContainerPath: FfiConverterRustBuffer {
     typealias SwiftType = [ContainerPath]
 
@@ -11477,6 +12479,9 @@ fileprivate struct FfiConverterSequenceTypeContainerPath: FfiConverterRustBuffer
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeCursorWithPos: FfiConverterRustBuffer {
     typealias SwiftType = [CursorWithPos]
 
@@ -11499,6 +12504,9 @@ fileprivate struct FfiConverterSequenceTypeCursorWithPos: FfiConverterRustBuffer
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeID: FfiConverterRustBuffer {
     typealias SwiftType = [Id]
 
@@ -11521,6 +12529,9 @@ fileprivate struct FfiConverterSequenceTypeID: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeIdSpan: FfiConverterRustBuffer {
     typealias SwiftType = [IdSpan]
 
@@ -11543,6 +12554,9 @@ fileprivate struct FfiConverterSequenceTypeIdSpan: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypePathItem: FfiConverterRustBuffer {
     typealias SwiftType = [PathItem]
 
@@ -11565,6 +12579,9 @@ fileprivate struct FfiConverterSequenceTypePathItem: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeTreeDiffItem: FfiConverterRustBuffer {
     typealias SwiftType = [TreeDiffItem]
 
@@ -11587,6 +12604,9 @@ fileprivate struct FfiConverterSequenceTypeTreeDiffItem: FfiConverterRustBuffer 
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeTreeID: FfiConverterRustBuffer {
     typealias SwiftType = [TreeId]
 
@@ -11609,6 +12629,9 @@ fileprivate struct FfiConverterSequenceTypeTreeID: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeContainerID: FfiConverterRustBuffer {
     typealias SwiftType = [ContainerId]
 
@@ -11631,6 +12654,9 @@ fileprivate struct FfiConverterSequenceTypeContainerID: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeIndex: FfiConverterRustBuffer {
     typealias SwiftType = [Index]
 
@@ -11653,6 +12679,9 @@ fileprivate struct FfiConverterSequenceTypeIndex: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeListDiffItem: FfiConverterRustBuffer {
     typealias SwiftType = [ListDiffItem]
 
@@ -11675,6 +12704,9 @@ fileprivate struct FfiConverterSequenceTypeListDiffItem: FfiConverterRustBuffer 
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeLoroValue: FfiConverterRustBuffer {
     typealias SwiftType = [LoroValue]
 
@@ -11697,6 +12729,9 @@ fileprivate struct FfiConverterSequenceTypeLoroValue: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeTextDelta: FfiConverterRustBuffer {
     typealias SwiftType = [TextDelta]
 
@@ -11719,6 +12754,9 @@ fileprivate struct FfiConverterSequenceTypeTextDelta: FfiConverterRustBuffer {
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterDictionaryUInt64TypeCounterSpan: FfiConverterRustBuffer {
     public static func write(_ value: [UInt64: CounterSpan], into buf: inout [UInt8]) {
         let len = Int32(value.count)
@@ -11742,6 +12780,9 @@ fileprivate struct FfiConverterDictionaryUInt64TypeCounterSpan: FfiConverterRust
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterDictionaryUInt64TypePeerInfo: FfiConverterRustBuffer {
     public static func write(_ value: [UInt64: PeerInfo], into buf: inout [UInt8]) {
         let len = Int32(value.count)
@@ -11765,6 +12806,9 @@ fileprivate struct FfiConverterDictionaryUInt64TypePeerInfo: FfiConverterRustBuf
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterDictionaryStringTypeLoroValue: FfiConverterRustBuffer {
     public static func write(_ value: [String: LoroValue], into buf: inout [UInt8]) {
         let len = Int32(value.count)
@@ -11788,6 +12832,9 @@ fileprivate struct FfiConverterDictionaryStringTypeLoroValue: FfiConverterRustBu
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterDictionaryStringOptionTypeValueOrContainer: FfiConverterRustBuffer {
     public static func write(_ value: [String: ValueOrContainer?], into buf: inout [UInt8]) {
         let len = Int32(value.count)
@@ -11948,22 +12995,25 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_detach() != 61399) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_export_from() != 2990) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_loro_checksum_method_lorodoc_export_json_updates() != 15152) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_export_shallow_snapshot() != 50284) {
+    if (uniffi_loro_checksum_method_lorodoc_export_shallow_snapshot() != 27927) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_export_snapshot() != 8377) {
+    if (uniffi_loro_checksum_method_lorodoc_export_snapshot() != 61274) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_export_snapshot_at() != 64602) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_export_state_only() != 16747) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_export_updates_in_range() != 35227) {
+    if (uniffi_loro_checksum_method_lorodoc_export_updates() != 57637) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_export_updates_in_range() != 22491) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_fork() != 45665) {
