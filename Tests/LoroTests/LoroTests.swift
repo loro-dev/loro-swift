@@ -45,7 +45,7 @@ final class LoroTests: XCTestCase {
         let text2 = doc2.getText(id: "text")
         try! text2.insert(pos: 0, s:"123")
         let _ = try! doc2.import(bytes: doc.export(mode:ExportMode.snapshot))
-        try! doc2.importBatch(bytes: [doc.exportSnapshot(), doc.export(mode: ExportMode.updates(from: VersionVector()))])
+        let _ = try! doc2.importBatch(bytes: [doc.exportSnapshot(), doc.export(mode: ExportMode.updates(from: VersionVector()))])
         XCTAssertEqual(text2.toString(), "bc123")
     }
     
@@ -78,5 +78,14 @@ final class LoroTests: XCTestCase {
         let _ = try! undoManager.undo(doc:doc)
         XCTAssertEqual(text.toString(), "abc")
         XCTAssertEqual(n, 1)
+    }
+
+    func testApplyDelta(){
+        let doc = LoroDoc()
+        let text = doc.getText(id: "text")
+        try! text.insert(pos: 0, s: "abc")
+        try! text.applyDelta(delta: [TextDelta.delete(delete: 1), TextDelta.retain(retain: 2, attributes: nil), TextDelta.insert(insert: "def", attributes: nil)])
+        let s = text.toString()
+        XCTAssertEqual(s, "bcdef")
     }
 }

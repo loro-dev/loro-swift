@@ -257,7 +257,6 @@ interface LoroDoc{
     VersionVector? frontiers_to_vv([ByRef] Frontiers frontiers);
 
     /// Minimize the frontiers by removing the unnecessary entries.
-    // TODO:
     FrontiersOrID minimize_frontiers([ByRef] Frontiers frontiers);
 
     /// Convert `VersionVector` into `Frontiers`
@@ -440,7 +439,6 @@ interface LoroDoc{
     ///
     /// * `id` - The starting ID of the change range
     /// * `len` - The length of the change range to check
-    // TODO: 
     sequence<ContainerID> get_changed_containers_in(ID id, u32 len);
 
     /// Check if the doc contains the full history.
@@ -519,9 +517,12 @@ interface LoroText{
     ///
     /// This could take a long time for large texts (e.g. > 50_000 characters).
     /// In that case, you should use `updateByLine` instead.
-    // TODO:
     [Throws=UpdateTimeoutError]
     void update([ByRef] string s, UpdateOptions options);
+
+    /// Apply a [delta](https://quilljs.com/docs/delta/) to the text container.
+    [Throws=LoroError]
+    void apply_delta(sequence<TextDelta> delta);
 
     /// Update the current text based on the provided text.
     ///

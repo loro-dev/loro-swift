@@ -4895,6 +4895,11 @@ public func FfiConverterTypeLoroMovableList_lower(_ value: LoroMovableList) -> U
 public protocol LoroTextProtocol : AnyObject {
     
     /**
+     * Apply a [delta](https://quilljs.com/docs/delta/) to the text container.
+     */
+    func applyDelta(delta: [TextDelta]) throws 
+    
+    /**
      * Delete a range of text at the given unicode position with unicode length.
      */
     func delete(pos: UInt32, len: UInt32) throws 
@@ -5119,6 +5124,16 @@ public convenience init() {
 
     
 
+    
+    /**
+     * Apply a [delta](https://quilljs.com/docs/delta/) to the text container.
+     */
+open func applyDelta(delta: [TextDelta])throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_fn_method_lorotext_apply_delta(self.uniffiClonePointer(),
+        FfiConverterSequenceTypeTextDelta.lower(delta),$0
+    )
+}
+}
     
     /**
      * Delete a range of text at the given unicode position with unicode length.
@@ -13408,6 +13423,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_loromovablelist_to_vec() != 28826) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorotext_apply_delta() != 32084) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorotext_delete() != 47933) {
