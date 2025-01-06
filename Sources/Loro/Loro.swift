@@ -44,14 +44,14 @@ extension LoroDoc{
 
 
 class ClosureOnPush: OnPush {
-    private let closure: (UndoOrRedo, CounterSpan) ->UndoItemMeta
+    private let closure: (UndoOrRedo, CounterSpan, DiffEvent?) ->UndoItemMeta
 
-    public init(closure: @escaping (UndoOrRedo, CounterSpan) ->UndoItemMeta) {
+    public init(closure: @escaping (UndoOrRedo, CounterSpan, DiffEvent?) ->UndoItemMeta) {
         self.closure = closure
     }
 
-    public func onPush(undoOrRedo: UndoOrRedo, span: CounterSpan) -> UndoItemMeta{
-        closure(undoOrRedo, span)
+    public func onPush(undoOrRedo: UndoOrRedo, span: CounterSpan, diffEvent: DiffEvent?) -> UndoItemMeta{
+        closure(undoOrRedo, span, diffEvent)
     }
 }
 
@@ -68,7 +68,7 @@ class ClosureOnPop: OnPop {
 }
 
 extension UndoManager{
-    public func setOnPush(callback: ((UndoOrRedo, CounterSpan) ->UndoItemMeta)?){
+    public func setOnPush(callback: ((UndoOrRedo, CounterSpan, DiffEvent?) ->UndoItemMeta)?){
         if let onPush = callback{
             let closureOnPush = ClosureOnPush(closure: onPush)
             self.setOnPush(onPush: closureOnPush)
