@@ -2344,7 +2344,7 @@ public protocol LoroDocProtocol : AnyObject {
      *
      * The data can be in arbitrary order. The import result will be the same.
      */
-    func importBatch(bytes: [Data]) throws 
+    func importBatch(bytes: [Data]) throws  -> ImportStatus
     
     func importJsonUpdates(json: String) throws  -> ImportStatus
     
@@ -3092,11 +3092,12 @@ open func `import`(bytes: Data)throws  -> ImportStatus {
      *
      * The data can be in arbitrary order. The import result will be the same.
      */
-open func importBatch(bytes: [Data])throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+open func importBatch(bytes: [Data])throws  -> ImportStatus {
+    return try  FfiConverterTypeImportStatus.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
     uniffi_loro_fn_method_lorodoc_import_batch(self.uniffiClonePointer(),
         FfiConverterSequenceData.lower(bytes),$0
     )
-}
+})
 }
     
 open func importJsonUpdates(json: String)throws  -> ImportStatus {
@@ -6520,7 +6521,7 @@ public func FfiConverterTypeOnPop_lower(_ value: OnPop) -> UnsafeMutableRawPoint
 
 public protocol OnPush : AnyObject {
     
-    func onPush(undoOrRedo: UndoOrRedo, span: CounterSpan)  -> UndoItemMeta
+    func onPush(undoOrRedo: UndoOrRedo, span: CounterSpan, diffEvent: DiffEvent?)  -> UndoItemMeta
     
 }
 
@@ -6574,11 +6575,12 @@ open class OnPushImpl:
     
 
     
-open func onPush(undoOrRedo: UndoOrRedo, span: CounterSpan) -> UndoItemMeta {
+open func onPush(undoOrRedo: UndoOrRedo, span: CounterSpan, diffEvent: DiffEvent?) -> UndoItemMeta {
     return try!  FfiConverterTypeUndoItemMeta.lift(try! rustCall() {
     uniffi_loro_fn_method_onpush_on_push(self.uniffiClonePointer(),
         FfiConverterTypeUndoOrRedo.lower(undoOrRedo),
-        FfiConverterTypeCounterSpan.lower(span),$0
+        FfiConverterTypeCounterSpan.lower(span),
+        FfiConverterOptionTypeDiffEvent.lower(diffEvent),$0
     )
 })
 }
@@ -6597,6 +6599,7 @@ fileprivate struct UniffiCallbackInterfaceOnPush {
             uniffiHandle: UInt64,
             undoOrRedo: RustBuffer,
             span: RustBuffer,
+            diffEvent: RustBuffer,
             uniffiOutReturn: UnsafeMutablePointer<RustBuffer>,
             uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
         ) in
@@ -6607,7 +6610,8 @@ fileprivate struct UniffiCallbackInterfaceOnPush {
                 }
                 return uniffiObj.onPush(
                      undoOrRedo: try FfiConverterTypeUndoOrRedo.lift(undoOrRedo),
-                     span: try FfiConverterTypeCounterSpan.lift(span)
+                     span: try FfiConverterTypeCounterSpan.lift(span),
+                     diffEvent: try FfiConverterOptionTypeDiffEvent.lift(diffEvent)
                 )
             }
 
@@ -12116,6 +12120,30 @@ fileprivate struct FfiConverterOptionTypeCounterSpan: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeDiffEvent: FfiConverterRustBuffer {
+    typealias SwiftType = DiffEvent?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeDiffEvent.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeDiffEvent.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeID: FfiConverterRustBuffer {
     typealias SwiftType = Id?
 
@@ -13085,7 +13113,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_import() != 11528) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_lorodoc_import_batch() != 60062) {
+    if (uniffi_loro_checksum_method_lorodoc_import_batch() != 34010) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_import_json_updates() != 57379) {
@@ -13532,7 +13560,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_onpop_on_pop() != 39438) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_checksum_method_onpush_on_push() != 4043) {
+    if (uniffi_loro_checksum_method_onpush_on_push() != 46111) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_styleconfigmap_get() != 25442) {
