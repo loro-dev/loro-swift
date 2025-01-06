@@ -47,7 +47,7 @@ interface Unsubscriber{
 
 [Trait, WithForeign]
 interface OnPush{
-    UndoItemMeta on_push(UndoOrRedo undo_or_redo, CounterSpan span);
+    UndoItemMeta on_push(UndoOrRedo undo_or_redo, CounterSpan span, DiffEvent? diff_event);
 };
 
 [Trait, WithForeign]
