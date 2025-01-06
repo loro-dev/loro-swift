@@ -523,6 +523,10 @@ interface LoroText{
     [Throws=UpdateTimeoutError]
     void update([ByRef] string s, UpdateOptions options);
 
+    /// Apply a [delta](https://quilljs.com/docs/delta/) to the text container.
+    [Throws=LoroError]
+    void apply_delta(sequence<TextDelta> delta);
+
     /// Update the current text based on the provided text.
     ///
     /// This update calculation is line-based, which will be more efficient but less precise.
