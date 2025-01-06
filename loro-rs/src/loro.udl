@@ -177,7 +177,7 @@ interface LoroDoc{
     ///
     /// The data can be in arbitrary order. The import result will be the same.
     [Throws=LoroError]
-    void import_batch([ByRef] sequence<bytes> bytes);
+    ImportStatus import_batch([ByRef] sequence<bytes> bytes);
 
     /// Get a [LoroMovableList] by container id.
     ///
