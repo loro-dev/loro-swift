@@ -20,14 +20,14 @@ our [Discord](https://discord.gg/tUsBSVfqzf) community.
 
 ## TODO
 
-- [x] `LoroDoc` export and import
-- [x] `List`/`Map`/`Text`/`Tree`/`MovableList`/`Counter` Container
-- [x] Checkout
-- [x] Subscribe Event
-- [x] UndoManager
-- [x] Bindings for all types in Loro
-- [ ] Tests
-- [ ] Benchmarks
+-   [x] `LoroDoc` export and import
+-   [x] `List`/`Map`/`Text`/`Tree`/`MovableList`/`Counter` Container
+-   [x] Checkout
+-   [x] Subscribe Event
+-   [x] UndoManager
+-   [x] Bindings for all types in Loro
+-   [ ] Tests
+-   [ ] Benchmarks
 
 ## Usage
 
@@ -39,7 +39,7 @@ let package = Package(
     products: [......],
     dependencies:[
         ...,
-        .package(url: "https://github.com/loro-dev/loro-swift.git", from: "1.1.3")
+        .package(url: "https://github.com/loro-dev/loro-swift.git", from: "1.2.7-alpha")
     ],
     targets:[
         .executableTarget(
@@ -102,5 +102,5 @@ The script will run `uniffi` and generate the `loroFFI.xcframework.zip`.
 
 # Credits
 
-- [Automerge-swift](https://github.com/automerge/automerge-swift): `loro-swift`
-  uses many of `automerge-swift`'s scripts for building and CI.
+-   [Automerge-swift](https://github.com/automerge/automerge-swift): `loro-swift`
+    uses many of `automerge-swift`'s scripts for building and CI.
