@@ -10,6 +10,7 @@ namespace loro{
 interface ValueOrContainer{
     boolean is_value();
     boolean is_container();
+    ContainerType? container_type();
     LoroValue? as_value();
     ContainerID? as_container();
     LoroText? as_loro_text();
@@ -18,6 +19,7 @@ interface ValueOrContainer{
     LoroTree? as_loro_tree();
     LoroCounter? as_loro_counter();
     LoroMovableList? as_loro_movable_list();
+    LoroUnknown? as_loro_unknown();
 };
 
 [Trait, WithForeign]
@@ -114,10 +116,13 @@ interface LoroDoc{
     /// the largest existing timestamp will be used instead.
     void set_record_timestamp(boolean record);
 
-    /// Set the interval of mergeable changes, in seconds.
+    /// Set the interval of mergeable changes, **in seconds**.
     ///
     /// If two continuous local changes are within the interval, they will be merged into one change.
     /// The default value is 1000 seconds.
+    ///
+    /// By default, we record timestamps in seconds for each change. So if the merge interval is 1, and changes A and B
+    /// have timestamps of 3 and 4 respectively, then they will be merged into one change
     void set_change_merge_interval(i64 interval);
 
     /// Set the rich text format configuration of the document.
@@ -222,6 +227,9 @@ interface LoroDoc{
 
     void commit_with(CommitOptions options);
 
+    /// Set commit message for the current uncommitted changes
+    ///
+    /// It will be persisted.
     void set_next_commit_message([ByRef] string msg);
 
     /// Whether the document is in detached mode, where the [loro_internal::DocState] is not
@@ -338,8 +346,58 @@ interface LoroDoc{
 
     /// Get the handler by the path.
     ValueOrContainer? get_by_path([ByRef] sequence<Index> path);
-
-    /// Get the handler by the string path.
+    
+    /// The path can be specified in different ways depending on the container type:
+    ///
+    /// For Tree:
+    /// 1. Using node IDs: `tree/{node_id}/property`
+    /// 2. Using indices: `tree/0/1/property`
+    ///
+    /// For List and MovableList:
+    /// - Using indices: `list/0` or `list/1/property`
+    ///
+    /// For Map:
+    /// - Using keys: `map/key` or `map/nested/property`
+    ///
+    /// For tree structures, index-based paths follow depth-first traversal order.
+    /// The indices start from 0 and represent the position of a node among its siblings.
+    ///
+    /// # Examples
+    /// ```
+    /// # use loro::{LoroDoc, LoroValue};
+    /// let doc = LoroDoc::new();
+    ///
+    /// // Tree example
+    /// let tree = doc.get_tree("tree");
+    /// let root = tree.create(None).unwrap();
+    /// tree.get_meta(root).unwrap().insert("name", "root").unwrap();
+    /// // Access tree by ID or index
+    /// let name1 = doc.get_by_str_path(&format!("tree/{}/name", root)).unwrap().into_value().unwrap();
+    /// let name2 = doc.get_by_str_path("tree/0/name").unwrap().into_value().unwrap();
+    /// assert_eq!(name1, name2);
+    ///
+    /// // List example
+    /// let list = doc.get_list("list");
+    /// list.insert(0, "first").unwrap();
+    /// list.insert(1, "second").unwrap();
+    /// // Access list by index
+    /// let item = doc.get_by_str_path("list/0");
+    /// assert_eq!(item.unwrap().into_value().unwrap().into_string().unwrap(), "first".into());
+    ///
+    /// // Map example
+    /// let map = doc.get_map("map");
+    /// map.insert("key", "value").unwrap();
+    /// // Access map by key
+    /// let value = doc.get_by_str_path("map/key");
+    /// assert_eq!(value.unwrap().into_value().unwrap().into_string().unwrap(), "value".into());
+    ///
+    /// // MovableList example
+    /// let mlist = doc.get_movable_list("mlist");
+    /// mlist.insert(0, "item").unwrap();
+    /// // Access movable list by index
+    /// let item = doc.get_by_str_path("mlist/0");
+    /// assert_eq!(item.unwrap().into_value().unwrap().into_string().unwrap(), "item".into());
+    /// ```
     ValueOrContainer? get_by_str_path([ByRef] string path);
 
     [Throws=CannotFindRelativePosition]
@@ -449,6 +507,36 @@ interface LoroDoc{
     /// The pending transaction is the one that is not committed yet. It will be committed
     /// after calling `doc.commit()`, `doc.export(mode)` or `doc.checkout(version)`.
     u32 get_pending_txn_len();
+
+    /// Export the current state with json-string format of the document, without peer compression.
+    ///
+    /// Compared to [`export_json_updates`], this method does not compress the peer IDs in the updates.
+    /// So the operations are easier to be processed by application code.
+    string export_json_updates_without_peer_compression([ByRef] VersionVector start_vv, [ByRef] VersionVector end_vv);
+
+    /// Export the readable [`Change`]s in the given [`IdSpan`]
+    sequence<string> export_json_in_id_span(IdSpan id_span);
+
+    /// Find the operation id spans that between the `from` version and the `to` version.
+    VersionVectorDiff find_id_spans_between([ByRef] Frontiers from, [ByRef] Frontiers to);
+
+    /// Revert the current document state back to the target version
+    ///
+    /// Internally, it will generate a series of local operations that can revert the
+    /// current doc to the target version. It will calculate the diff between the current
+    /// state and the target state, and apply the diff to the current state.
+    [Throws=LoroError]
+    void revert_to([ByRef] Frontiers version);
+
+    /// Apply a diff to the current document state.
+    ///
+    /// Internally, it will apply the diff to the current state.
+    [Throws=LoroError]
+    void apply_diff([ByRef] DiffBatch diff);
+
+    /// Calculate the diff between two versions
+    [Throws=LoroError]
+    DiffBatch diff([ByRef] Frontiers a, [ByRef] Frontiers b);
 };
 
 dictionary ContainerPath{
@@ -1218,9 +1306,9 @@ interface Frontiers{
 
 dictionary VersionVectorDiff{
     /// need to add these spans to move from right to left
-    record<u64, CounterSpan> left;
+    record<u64, CounterSpan> retreat;
     /// need to add these spans to move from left to right
-    record<u64, CounterSpan> right;
+    record<u64, CounterSpan> forward;
 };
 
 // ============= UNDO MANAGER =============
@@ -1395,6 +1483,29 @@ interface Subscription{
     /// subscribed to are dropped
     [Self=ByArc]
     void detach();
+};
+
+interface DiffBatch{
+    constructor();
+
+    /// Push a new event to the batch.
+    ///
+    /// If the cid already exists in the batch, return Err
+    Diff? push(ContainerID cid, Diff diff);
+
+    /// Returns an iterator over the diffs in this batch, in the order they were added.
+    ///
+    /// The iterator yields tuples of `(&ContainerID, &Diff)` where:
+    /// - `ContainerID` is the ID of the container that was modified
+    /// - `Diff` contains the actual changes made to that container
+    ///
+    /// The order of the diffs is preserved from when they were originally added to the batch.
+    sequence<ContainerIDAndDiff> get_diff();
+};
+
+dictionary ContainerIDAndDiff{
+    ContainerID cid;
+    Diff diff;
 };
 
 // ============= TYPES =============

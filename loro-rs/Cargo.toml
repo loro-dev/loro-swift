@@ -1,6 +1,6 @@
 [package]
 name = "loro-swift"
-version = "1.2.7-alpha"
+version = "1.3.0"
 edition = "2021"
 
 [lib]
@@ -14,8 +14,8 @@ path = "src/uniffi-bindgen.rs"
 
 
 [dependencies]
+loro-ffi = { git = "https://github.com/loro-dev/loro.git", tag = "loro-ffi@1.3.0" }
 # loro-ffi = { path = "../../loro/crates/loro-ffi" }
-loro-ffi = { git = "https://github.com/loro-dev/loro.git", branch = "main" }
 uniffi = { version = "0.28.3" }
 
 [build-dependencies]
