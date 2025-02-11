@@ -18,16 +18,6 @@ This repository contains experimental Swift bindings for
 If you have any suggestions for API, please feel free to create an issue or join
 our [Discord](https://discord.gg/tUsBSVfqzf) community.
 
-## TODO
-
--   [x] `LoroDoc` export and import
--   [x] `List`/`Map`/`Text`/`Tree`/`MovableList`/`Counter` Container
--   [x] Checkout
--   [x] Subscribe Event
--   [x] UndoManager
--   [x] Bindings for all types in Loro
--   [ ] Tests
--   [ ] Benchmarks
 
 ## Usage
 
@@ -39,7 +29,7 @@ let package = Package(
     products: [......],
     dependencies:[
         ...,
-        .package(url: "https://github.com/loro-dev/loro-swift.git", from: "1.3.0")
+        .package(url: "https://github.com/loro-dev/loro-swift.git", from: "1.3.1")
     ],
     targets:[
         .executableTarget(
@@ -94,13 +84,13 @@ If you wanna build and develop this project with MacOS, you need first run this
 script:
 
 ```bash
-export LOCAL_BUILD=1
 sh ./scripts/build_macos.sh
+LOCAL_BUILD=1 swift test
 ```
 
 The script will run `uniffi` and generate the `loroFFI.xcframework.zip`.
 
 # Credits
-
--   [Automerge-swift](https://github.com/automerge/automerge-swift): `loro-swift`
+- [uniffi-rs](https://github.com/mozilla/uniffi-rs): a multi-language bindings generator for rust
+- [Automerge-swift](https://github.com/automerge/automerge-swift): `loro-swift`
     uses many of `automerge-swift`'s scripts for building and CI.

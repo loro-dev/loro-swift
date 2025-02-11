@@ -31,6 +31,14 @@ final class LoroTests: XCTestCase {
         XCTAssertFalse(LoroMovableList().isAttached())
     }
 
+    func testMap(){
+        let doc = LoroDoc()
+        let map = doc.getMap(id: "map")
+        let _ = try! map.getOrCreateContainer(key: "list", child: LoroList())
+        try! map.insert(key: "key", v: "value")
+        XCTAssertEqual(map.get(key: "key")!.asValue()!, LoroValue.string(value:"value"))
+    }
+
     func testSync(){
         let doc = LoroDoc()
         try! doc.setPeerId(peer: 0)
@@ -75,7 +83,7 @@ final class LoroTests: XCTestCase {
         doc.commit()
         let s = text.toString()
         XCTAssertEqual(s, "bc")
-        let _ = try! undoManager.undo(doc:doc)
+        let _ = try! undoManager.undo()
         XCTAssertEqual(text.toString(), "abc")
         XCTAssertEqual(n, 1)
     }

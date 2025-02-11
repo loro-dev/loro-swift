@@ -23,6 +23,6 @@ jobs:
           xcodebuild -version
           swift --version
       - name: build xcframework
-        run: ./scripts/build_swift_ffi.sh
+        run: ./scripts/build_macos.sh
       - name: Swift tests
-        run: swift test
+        run: LOCAL_BUILD=true swift test

@@ -30,65 +30,103 @@ extension ContainerLike{
 
 extension LoroText: ContainerLike{}
 extension LoroMap: ContainerLike{
-    public func insertContainer(key: String, child: ContainerLike) throws -> ContainerLike {
+    public func insertContainer<T: ContainerLike>(key: String, child: T) throws -> T {
+        let result: ContainerLike
         if let list = child as? LoroList{
-           return try self.insertListContainer(key: key, child: list)
+           result = try self.insertListContainer(key: key, child: list)
         }else if let map = child as? LoroMap{
-            return try self.insertMapContainer(key: key, child: map)
+            result = try self.insertMapContainer(key: key, child: map)
         }else if let text = child as? LoroText{
-            return try self.insertTextContainer(key: key, child: text)
+            result = try self.insertTextContainer(key: key, child: text)
             }else if let tree = child as? LoroTree{
-            return try self.insertTreeContainer(key: key, child: tree)
+            result = try self.insertTreeContainer(key: key, child: tree)
         }else if let list = child as? LoroMovableList{
-            return try self.insertMovableListContainer(key: key, child: list)
+            result = try self.insertMovableListContainer(key: key, child: list)
         }else if let counter = child as? LoroCounter{
-            return try self.insertCounterContainer(key: key, child: counter)
+            result = try self.insertCounterContainer(key: key, child: counter)
         }else{
             fatalError()
         }
+        guard let typedResult = result as? T else {
+            fatalError("Type mismatch: expected \(T.self), got \(type(of: result))")
+        }
+        return typedResult
+    }
+
+    public func getOrCreateContainer<T: ContainerLike>(key: String, child: T) throws -> T {
+        let result: ContainerLike
+        if let list = child as? LoroList{
+           result = try self.getOrCreateListContainer(key: key, child: list)
+        }else if let map = child as? LoroMap{
+            result = try self.getOrCreateMapContainer(key: key, child: map)
+        }else if let text = child as? LoroText{
+            result = try self.getOrCreateTextContainer(key: key, child: text)
+        }else if let tree = child as? LoroTree{
+            result = try self.getOrCreateTreeContainer(key: key, child: tree)
+        }else if let list = child as? LoroMovableList{
+            result = try self.getOrCreateMovableListContainer(key: key, child: list)
+        }else if let counter = child as? LoroCounter{
+            result = try self.getOrCreateCounterContainer(key: key, child: counter)
+        }else{
+            fatalError()
+        }
+        guard let typedResult = result as? T else {
+            fatalError("Type mismatch: expected \(T.self), got \(type(of: result))")
+        }
+        return typedResult
     }
 }
 extension LoroTree: ContainerLike{}
 extension LoroMovableList: ContainerLike{
-    public func pushContainer(child: ContainerLike) throws -> ContainerLike{
+    public func pushContainer<T: ContainerLike>(child: T) throws -> T{
         let idx = self.len()
         return try self.insertContainer(pos: idx, child: child)
     }
     
-    public func insertContainer(pos: UInt32, child: ContainerLike) throws -> ContainerLike {
+    public func insertContainer<T: ContainerLike>(pos: UInt32, child: T) throws -> T {
+        let result: ContainerLike
         if let list = child as? LoroList{
-           return try self.insertListContainer(pos: pos, child: list)
+           result = try self.insertListContainer(pos: pos, child: list)
         }else if let map = child as? LoroMap{
-            return try self.insertMapContainer(pos: pos, child: map)
+            result = try self.insertMapContainer(pos: pos, child: map)
         }else if let text = child as? LoroText{
-            return try self.insertTextContainer(pos: pos, child: text)
+            result = try self.insertTextContainer(pos: pos, child: text)
             }else if let tree = child as? LoroTree{
-            return try self.insertTreeContainer(pos: pos, child: tree)
+            result = try self.insertTreeContainer(pos: pos, child: tree)
         }else if let list = child as? LoroMovableList{
-            return try self.insertMovableListContainer(pos: pos, child: list)
+            result = try self.insertMovableListContainer(pos: pos, child: list)
         }else if let counter = child as? LoroCounter{
-            return try self.insertCounterContainer(pos: pos, child: counter)
+            result = try self.insertCounterContainer(pos: pos, child: counter)
         }else{
             fatalError()
         }
+        guard let typedResult = result as? T else {
+            fatalError("Type mismatch: expected \(T.self), got \(type(of: result))")
+        }
+        return typedResult
     }
 
-    public func setContainer(pos: UInt32, child: ContainerLike) throws -> ContainerLike{
+    public func setContainer<T: ContainerLike>(pos: UInt32, child: T) throws -> T{
+        let result: ContainerLike
         if let list = child as? LoroList{
-           return try self.setListContainer(pos: pos, child: list)
+           result = try self.setListContainer(pos: pos, child: list)
         }else if let map = child as? LoroMap{
-            return try self.setMapContainer(pos: pos, child: map)
+            result = try self.setMapContainer(pos: pos, child: map)
         }else if let text = child as? LoroText{
-            return try self.setTextContainer(pos: pos, child: text)
+            result = try self.setTextContainer(pos: pos, child: text)
             }else if let tree = child as? LoroTree{
-            return try self.setTreeContainer(pos: pos, child: tree)
+            result = try self.setTreeContainer(pos: pos, child: tree)
         }else if let list = child as? LoroMovableList{
-            return try self.setMovableListContainer(pos: pos, child: list)
+            result = try self.setMovableListContainer(pos: pos, child: list)
         }else if let counter = child as? LoroCounter{
-            return try self.setCounterContainer(pos: pos, child: counter)
+            result = try self.setCounterContainer(pos: pos, child: counter)
         }else{
             fatalError()
         }
+        guard let typedResult = result as? T else {
+            fatalError("Type mismatch: expected \(T.self), got \(type(of: result))")
+        }
+        return typedResult
     }
 }
 extension LoroCounter: ContainerLike{}
@@ -96,27 +134,32 @@ extension LoroUnknown: ContainerLike{}
 
 
 extension LoroList: ContainerLike{
-    public func pushContainer(child: ContainerLike) throws -> ContainerLike{
+    public func pushContainer<T: ContainerLike>(child: T) throws -> T{
         let idx = self.len()
         return try self.insertContainer(pos: idx, child: child)
     }
     
-    public func insertContainer(pos: UInt32, child: ContainerLike) throws -> ContainerLike {
+    public func insertContainer<T: ContainerLike>(pos: UInt32, child: T) throws -> T {
+        let result: ContainerLike
         if let list = child as? LoroList{
-           return try self.insertListContainer(pos: pos, child: list)
+           result = try self.insertListContainer(pos: pos, child: list)
         }else if let map = child as? LoroMap{
-            return try self.insertMapContainer(pos: pos, child: map)
+            result = try self.insertMapContainer(pos: pos, child: map)
         }else if let text = child as? LoroText{
-            return try self.insertTextContainer(pos: pos, child: text)
+            result = try self.insertTextContainer(pos: pos, child: text)
             }else if let tree = child as? LoroTree{
-            return try self.insertTreeContainer(pos: pos, child: tree)
+            result = try self.insertTreeContainer(pos: pos, child: tree)
         }else if let list = child as? LoroMovableList{
-            return try self.insertMovableListContainer(pos: pos, child: list)
+            result = try self.insertMovableListContainer(pos: pos, child: list)
         }else if let counter = child as? LoroCounter{
-            return try self.insertCounterContainer(pos: pos, child: counter)
+            result = try self.insertCounterContainer(pos: pos, child: counter)
         }else{
             fatalError()
         }
+        guard let typedResult = result as? T else {
+            fatalError("Type mismatch: expected \(T.self), got \(type(of: result))")
+        }
+        return typedResult
     }
 }
 

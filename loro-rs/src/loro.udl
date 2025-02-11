@@ -69,7 +69,12 @@ interface ChangeAncestorsTraveler{
 };
 
 // ============= LORO DOC =============
-
+/// `LoroDoc` is the entry for the whole document.
+/// When it's dropped, all the associated [`Handler`]s will be invalidated.
+///
+/// **Important:** Loro is a pure library and does not handle network protocols.
+/// It is the responsibility of the user to manage the storage, loading, and synchronization
+/// of the bytes exported by Loro in a manner suitable for their specific environment.
 interface LoroDoc{
     /// Create a new `LoroDoc` instance.
     constructor();
@@ -559,6 +564,9 @@ interface LoroText{
     /// To attach the container to the document, please insert it into an attached container.
     boolean is_attached();
 
+    /// If a detached container is attached, this method will return its corresponding attached handler.
+    LoroText? get_attached();
+
     /// Get the [ContainerID]  of the text container.
     ContainerID id();
 
@@ -687,6 +695,9 @@ interface LoroText{
 
     /// Get the editor of the text at the given position.
     u64? get_editor_at_unicode_pos(u32 pos);
+
+    /// Get the LoroDoc from this container
+    LoroDoc? doc();
 };
 
 interface LoroList{
@@ -701,6 +712,9 @@ interface LoroList{
     /// The edits on a detached container will not be persisted.
     /// To attach the container to the document, please insert it into an attached container.
     boolean is_attached();
+
+    /// If a detached container is attached, this method will return its corresponding attached handler.
+    LoroList? get_attached();
 
     /// Insert a value at the given position.
     [Throws=LoroError]
@@ -771,6 +785,9 @@ interface LoroList{
 
     /// Whether the container is deleted.
     boolean is_deleted();
+
+    /// Get the LoroDoc from this container
+    LoroDoc? doc();
 };
 
 interface LoroMap{
@@ -783,11 +800,17 @@ interface LoroMap{
     /// Whether the container is attached to a document.
     boolean is_attached();
 
+    /// If a detached container is attached, this method will return its corresponding attached handler.
+    LoroMap? get_attached();
+
     /// Delete a key-value pair from the map.
     [Throws=LoroError]
     void delete([ByRef] string key);
 
     /// Insert a key-value pair into the map.
+    ///
+    /// > **Note**: When calling `map.set(key, value)` on a LoroMap, if `map.get(key)` already returns `value`,
+    /// > the operation will be a no-op (no operation recorded) to avoid unnecessary updates.
     [Throws=LoroError]
     void insert([ByRef] string key, LoroValueLike v);
 
@@ -802,6 +825,20 @@ interface LoroMap{
 
     /// Get the value of the map with the given key.
     ValueOrContainer? get([ByRef] string key);
+
+    // TODO: uniffi v0.29
+    [Throws=LoroError]
+    LoroList get_or_create_list_container([ByRef] string key, LoroList child);
+    [Throws=LoroError]
+    LoroMap get_or_create_map_container([ByRef] string key, LoroMap child);
+    [Throws=LoroError]
+    LoroTree get_or_create_tree_container([ByRef] string key, LoroTree child);
+    [Throws=LoroError]
+    LoroMovableList get_or_create_movable_list_container([ByRef] string key, LoroMovableList child);
+    [Throws=LoroError]
+    LoroText get_or_create_text_container([ByRef] string key, LoroText child);
+    [Throws=LoroError]
+    LoroCounter get_or_create_counter_container([ByRef] string key, LoroCounter child);
 
     [Throws=LoroError]
     LoroList insert_list_container([ByRef] string key, LoroList child);
@@ -842,6 +879,9 @@ interface LoroMap{
 
     /// Get the values of the map.
     sequence<ValueOrContainer> values();
+
+    /// Get the LoroDoc from this container
+    LoroDoc? doc();
 };
 
 interface LoroTree{
@@ -856,6 +896,9 @@ interface LoroTree{
     /// The edits on a detached container will not be persisted.
     /// To attach the container to the document, please insert it into an attached container.
     boolean is_attached();
+
+    /// If a detached container is attached, this method will return its corresponding attached handler.
+    LoroTree? get_attached();
 
     /// Create a new tree node and return the [`TreeID`].
     ///
@@ -971,6 +1014,9 @@ interface LoroTree{
 
     /// Whether the container is deleted.
     boolean is_deleted();
+
+    /// Get the LoroDoc from this container
+    LoroDoc? doc();
 };
 
 interface LoroMovableList{
@@ -985,6 +1031,9 @@ interface LoroMovableList{
     /// The edits on a detached container will not be persisted.
     /// To attach the container to the document, please insert it into an attached container.
     boolean is_attached();
+
+    /// If a detached container is attached, this method will return its corresponding attached handler.
+    LoroMovableList? get_attached();
 
     /// Get the container id.
     ContainerID id();
@@ -1101,6 +1150,9 @@ interface LoroMovableList{
 
     /// Get the last editor of the list item at the given position.
     u64? get_last_editor_at(u32 pos);
+
+    /// Get the LoroDoc from this container
+    LoroDoc? doc();
 };
 
 interface LoroCounter{
@@ -1109,6 +1161,15 @@ interface LoroCounter{
 
     /// Return container id of the Counter.
     ContainerID id();
+
+    /// Whether the container is attached to a document
+    ///
+    /// The edits on a detached container will not be persisted.
+    /// To attach the container to the document, please insert it into an attached container.
+    boolean is_attached();
+
+    /// If a detached container is attached, this method will return its corresponding attached handler.
+    LoroCounter? get_attached();
 
     /// Increment the counter by the given value.
     [Throws=LoroError]
@@ -1123,6 +1184,9 @@ interface LoroCounter{
 
     /// Whether the container is deleted.
     boolean is_deleted();
+
+    /// Get the LoroDoc from this container
+    LoroDoc? doc();
 };
 
 interface LoroUnknown{
@@ -1319,15 +1383,15 @@ interface UndoManager{
 
     /// Undo the last change made by the peer.
     [Throws=LoroError]
-    boolean undo([ByRef] LoroDoc doc);
+    boolean undo();
 
     /// Redo the last change made by the peer.
     [Throws=LoroError]
-    boolean redo([ByRef] LoroDoc doc);
+    boolean redo();
 
     /// Record a new checkpoint.
     [Throws=LoroError]
-    void record_new_checkpoint([ByRef] LoroDoc doc);
+    void record_new_checkpoint();
 
     /// Whether the undo manager can undo.
     boolean can_undo();
