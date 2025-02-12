@@ -1,0 +1,78 @@
+name: Pre-release Build and Publish
+
+on:
+  push:
+    tags:
+      - '*-pre-release'
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG_NAME%-pre-release}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build Swift FFI
+        run: |
+          chmod +x scripts/build_swift_ffi.sh
+          ./scripts/build_swift_ffi.sh
+
+      - name: Calculate SHA256
+        id: sha256
+        run: |
+          CHECKSUM=$(openssl dgst -sha256 loroFFI.xcframework.zip | awk '{print $2}')
+          echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
+
+      - name: Update Package.swift
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          CHECKSUM=${{ steps.sha256.outputs.checksum }}
+          sed -i '' \
+            -e "s|url: \"https://github.com/.*/loroFFI.xcframework.zip\"|url: \"https://github.com/${GITHUB_REPOSITORY}/releases/download/${VERSION}/loroFFI.xcframework.zip\"|" \
+            -e "s|checksum: \"[a-f0-9]*\"|checksum: \"${CHECKSUM}\"|" \
+            Package.swift
+
+      - name: Update README.md
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          sed -i '' \
+            -e "s|\"https://github.com/loro-dev/loro-swift.git\", from: \"[0-9.]*\"|\"https://github.com/loro-dev/loro-swift.git\", from: \"${VERSION}\"|" \
+            README.md
+
+      - name: Commit and push changes
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add Package.swift README.md
+          git commit -m "chore: update version to ${VERSION}"
+          git tag -a "${VERSION}" -m "Release version ${VERSION}"
+          git push origin HEAD:main
+          git push origin "${VERSION}"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          name: Release ${{ steps.get_version.outputs.version }}
+          files: loroFFI.xcframework.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete pre-release tag
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          git push origin :refs/tags/${VERSION}-pre-release
