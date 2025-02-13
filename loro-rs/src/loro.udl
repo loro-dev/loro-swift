@@ -1547,6 +1547,10 @@ interface Subscription{
     /// subscribed to are dropped
     [Self=ByArc]
     void detach();
+
+    /// Unsubscribes the subscription.
+    [Self=ByArc]
+    void unsubscribe();
 };
 
 interface DiffBatch{

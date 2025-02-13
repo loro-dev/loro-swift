@@ -7736,6 +7736,11 @@ public protocol SubscriptionProtocol : AnyObject {
      */
     func detach() 
     
+    /**
+     * Unsubscribes the subscription.
+     */
+    func unsubscribe() 
+    
 }
 
 /**
@@ -7799,6 +7804,15 @@ open class Subscription:
      */
 open func detach() {try! rustCall() {
     uniffi_loro_fn_method_subscription_detach(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+    /**
+     * Unsubscribes the subscription.
+     */
+open func unsubscribe() {try! rustCall() {
+    uniffi_loro_fn_method_subscription_unsubscribe(self.uniffiClonePointer(),$0
     )
 }
 }
@@ -14568,6 +14582,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_subscription_detach() != 64699) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_subscription_unsubscribe() != 24473) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_undomanager_add_exclude_origin_prefix() != 61306) {
