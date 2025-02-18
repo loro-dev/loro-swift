@@ -738,7 +738,7 @@ dependencies = [
 
 [[package]]
 name = "loro-swift"
-version = "1.4.0"
+version = "1.4.1"
 dependencies = [
  "loro-ffi",
  "uniffi",

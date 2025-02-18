@@ -8797,7 +8797,7 @@ public struct AbsolutePosition {
 }
 
 
-
+extension AbsolutePosition: Sendable {} 
 extension AbsolutePosition: Equatable, Hashable {
     public static func ==(lhs: AbsolutePosition, rhs: AbsolutePosition) -> Bool {
         if lhs.pos != rhs.pos {
@@ -8863,7 +8863,7 @@ public struct AwarenessPeerUpdate {
 }
 
 
-
+extension AwarenessPeerUpdate: Sendable {} 
 extension AwarenessPeerUpdate: Equatable, Hashable {
     public static func ==(lhs: AwarenessPeerUpdate, rhs: AwarenessPeerUpdate) -> Bool {
         if lhs.updated != rhs.updated {
@@ -9035,7 +9035,7 @@ public struct CommitOptions {
 }
 
 
-
+extension CommitOptions: Sendable {} 
 extension CommitOptions: Equatable, Hashable {
     public static func ==(lhs: CommitOptions, rhs: CommitOptions) -> Bool {
         if lhs.origin != rhs.origin {
@@ -9244,7 +9244,7 @@ public struct ContainerPath {
 }
 
 
-
+extension ContainerPath: Sendable {} 
 extension ContainerPath: Equatable, Hashable {
     public static func ==(lhs: ContainerPath, rhs: ContainerPath) -> Bool {
         if lhs.id != rhs.id {
@@ -9310,7 +9310,7 @@ public struct CounterSpan {
 }
 
 
-
+extension CounterSpan: Sendable {} 
 extension CounterSpan: Equatable, Hashable {
     public static func ==(lhs: CounterSpan, rhs: CounterSpan) -> Bool {
         if lhs.start != rhs.start {
@@ -9552,7 +9552,7 @@ public struct Id {
 }
 
 
-
+extension Id: Sendable {} 
 extension Id: Equatable, Hashable {
     public static func ==(lhs: Id, rhs: Id) -> Bool {
         if lhs.peer != rhs.peer {
@@ -9618,7 +9618,7 @@ public struct IdLp {
 }
 
 
-
+extension IdLp: Sendable {} 
 extension IdLp: Equatable, Hashable {
     public static func ==(lhs: IdLp, rhs: IdLp) -> Bool {
         if lhs.lamport != rhs.lamport {
@@ -9684,7 +9684,7 @@ public struct IdSpan {
 }
 
 
-
+extension IdSpan: Sendable {} 
 extension IdSpan: Equatable, Hashable {
     public static func ==(lhs: IdSpan, rhs: IdSpan) -> Bool {
         if lhs.peer != rhs.peer {
@@ -9846,7 +9846,7 @@ public struct ImportStatus {
 }
 
 
-
+extension ImportStatus: Sendable {} 
 extension ImportStatus: Equatable, Hashable {
     public static func ==(lhs: ImportStatus, rhs: ImportStatus) -> Bool {
         if lhs.success != rhs.success {
@@ -9956,7 +9956,7 @@ public struct PathItem {
 }
 
 
-
+extension PathItem: Sendable {} 
 extension PathItem: Equatable, Hashable {
     public static func ==(lhs: PathItem, rhs: PathItem) -> Bool {
         if lhs.container != rhs.container {
@@ -10024,7 +10024,7 @@ public struct PeerInfo {
 }
 
 
-
+extension PeerInfo: Sendable {} 
 extension PeerInfo: Equatable, Hashable {
     public static func ==(lhs: PeerInfo, rhs: PeerInfo) -> Bool {
         if lhs.state != rhs.state {
@@ -10142,7 +10142,7 @@ public struct StyleConfig {
 }
 
 
-
+extension StyleConfig: Sendable {} 
 extension StyleConfig: Equatable, Hashable {
     public static func ==(lhs: StyleConfig, rhs: StyleConfig) -> Bool {
         if lhs.expand != rhs.expand {
@@ -10200,7 +10200,7 @@ public struct TreeDiff {
 }
 
 
-
+extension TreeDiff: Sendable {} 
 extension TreeDiff: Equatable, Hashable {
     public static func ==(lhs: TreeDiff, rhs: TreeDiff) -> Bool {
         if lhs.diff != rhs.diff {
@@ -10260,7 +10260,7 @@ public struct TreeDiffItem {
 }
 
 
-
+extension TreeDiffItem: Sendable {} 
 extension TreeDiffItem: Equatable, Hashable {
     public static func ==(lhs: TreeDiffItem, rhs: TreeDiffItem) -> Bool {
         if lhs.target != rhs.target {
@@ -10326,7 +10326,7 @@ public struct TreeId {
 }
 
 
-
+extension TreeId: Sendable {} 
 extension TreeId: Equatable, Hashable {
     public static func ==(lhs: TreeId, rhs: TreeId) -> Bool {
         if lhs.peer != rhs.peer {
@@ -10440,7 +10440,7 @@ public struct UpdateOptions {
 }
 
 
-
+extension UpdateOptions: Sendable {} 
 extension UpdateOptions: Equatable, Hashable {
     public static func ==(lhs: UpdateOptions, rhs: UpdateOptions) -> Bool {
         if lhs.timeoutMs != rhs.timeoutMs {
@@ -10518,7 +10518,7 @@ public struct VersionVectorDiff {
 }
 
 
-
+extension VersionVectorDiff: Sendable {} 
 extension VersionVectorDiff: Equatable, Hashable {
     public static func ==(lhs: VersionVectorDiff, rhs: VersionVectorDiff) -> Bool {
         if lhs.retreat != rhs.retreat {
@@ -10772,7 +10772,7 @@ public func FfiConverterTypeContainerID_lower(_ value: ContainerId) -> RustBuffe
 }
 
 
-
+extension ContainerId: Sendable {} 
 extension ContainerId: Equatable, Hashable {}
 
 
@@ -10874,7 +10874,7 @@ public func FfiConverterTypeContainerType_lower(_ value: ContainerType) -> RustB
 }
 
 
-
+extension ContainerType: Sendable {} 
 extension ContainerType: Equatable, Hashable {}
 
 
@@ -11061,7 +11061,7 @@ public func FfiConverterTypeEventTriggerKind_lower(_ value: EventTriggerKind) ->
 }
 
 
-
+extension EventTriggerKind: Sendable {} 
 extension EventTriggerKind: Equatable, Hashable {}
 
 
@@ -11139,7 +11139,7 @@ public func FfiConverterTypeExpandType_lower(_ value: ExpandType) -> RustBuffer 
 }
 
 
-
+extension ExpandType: Sendable {} 
 extension ExpandType: Equatable, Hashable {}
 
 
@@ -11219,7 +11219,7 @@ public func FfiConverterTypeIndex_lower(_ value: Index) -> RustBuffer {
 }
 
 
-
+extension Index: Sendable {} 
 extension Index: Equatable, Hashable {}
 
 
@@ -11922,7 +11922,7 @@ public func FfiConverterTypeLoroValue_lower(_ value: LoroValue) -> RustBuffer {
 }
 
 
-
+extension LoroValue: Sendable {} 
 extension LoroValue: Equatable, Hashable {}
 
 
@@ -11993,7 +11993,7 @@ public func FfiConverterTypeOrdering_lower(_ value: Ordering) -> RustBuffer {
 }
 
 
-
+extension Ordering: Sendable {} 
 extension Ordering: Equatable, Hashable {}
 
 
@@ -12064,7 +12064,7 @@ public func FfiConverterTypeSide_lower(_ value: Side) -> RustBuffer {
 }
 
 
-
+extension Side: Sendable {} 
 extension Side: Equatable, Hashable {}
 
 
@@ -12146,7 +12146,7 @@ public func FfiConverterTypeTextDelta_lower(_ value: TextDelta) -> RustBuffer {
 }
 
 
-
+extension TextDelta: Sendable {} 
 extension TextDelta: Equatable, Hashable {}
 
 
@@ -12233,7 +12233,7 @@ public func FfiConverterTypeTreeExternalDiff_lower(_ value: TreeExternalDiff) ->
 }
 
 
-
+extension TreeExternalDiff: Sendable {} 
 extension TreeExternalDiff: Equatable, Hashable {}
 
 
@@ -12314,7 +12314,7 @@ public func FfiConverterTypeTreeParentId_lower(_ value: TreeParentId) -> RustBuf
 }
 
 
-
+extension TreeParentId: Sendable {} 
 extension TreeParentId: Equatable, Hashable {}
 
 
@@ -12378,7 +12378,7 @@ public func FfiConverterTypeUndoOrRedo_lower(_ value: UndoOrRedo) -> RustBuffer 
 }
 
 
-
+extension UndoOrRedo: Sendable {} 
 extension UndoOrRedo: Equatable, Hashable {}
 
 
