@@ -129,8 +129,6 @@ extension LoroMovableList: ContainerLike{
         return typedResult
     }
 }
-extension LoroCounter: ContainerLike{}
-extension LoroUnknown: ContainerLike{}
 
 
 extension LoroList: ContainerLike{
@@ -163,5 +161,31 @@ extension LoroList: ContainerLike{
     }
 }
 
+extension LoroCounter: ContainerLike{}
+extension LoroUnknown: ContainerLike{}
 
+// Extension for handling nil input
+// Although we extend Optional, we still need to specify the type explicitly
+// e.g. `nil as String?`. This is not convenient in some scenarios.
+extension LoroList{
+    public func insert(pos: UInt32, v: LoroValueLike?) throws {
+        try self.insert(pos: pos, v: v?.asLoroValue() ?? .null)
+    }
+}
+
+extension LoroMap{
+    public func insert(key: String, v: LoroValueLike?) throws {
+        try self.insert(key: key, v: v?.asLoroValue() ?? .null)
+    }
+}
+
+extension LoroMovableList{
+    public func insert(pos: UInt32, v: LoroValueLike?) throws {
+        try self.insert(pos: pos, v: v?.asLoroValue() ?? .null)
+    }
+
+    public func set(pos: UInt32, v: LoroValueLike?) throws {
+        try self.set(pos: pos, value: v?.asLoroValue() ?? .null)
+    }
+}
 

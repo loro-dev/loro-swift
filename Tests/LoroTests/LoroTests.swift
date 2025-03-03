@@ -14,6 +14,21 @@ final class LoroTests: XCTestCase {
         sub.detach()
         XCTAssertEqual(num, 1)
     }
+
+    func testOptional(){
+        let doc = LoroDoc()
+        let list = doc.getList(id: "list")
+        try! list.insert(pos: 0, v: nil)
+        let map = doc.getMap(id: "map")
+        try! map.insert(key: "key", v: nil)
+        let movableList = doc.getMovableList(id: "movableList")
+        try! movableList.insert(pos: 0, v: nil)
+        try! movableList.set(pos: 0, v: nil)
+        doc.commit()
+        XCTAssertEqual(list.get(index: 0)!.asValue()!, LoroValue.null)
+        XCTAssertEqual(map.get(key: "key")!.asValue()!, LoroValue.null)
+        XCTAssertEqual(movableList.get(index: 0)!.asValue()!, LoroValue.null)
+    }
     
     func testText(){
         let doc = LoroDoc()
