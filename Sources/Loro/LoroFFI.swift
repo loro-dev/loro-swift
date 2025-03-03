@@ -2339,6 +2339,11 @@ public protocol LoroDocProtocol : AnyObject {
     func checkoutToLatest() 
     
     /**
+     * Clear the options of the next commit.
+     */
+    func clearNextCommitOptions() 
+    
+    /**
      * Compare the frontiers with the current OpLog's version.
      *
      * If `other` contains any version that's not contained in the current OpLog, return [Ordering::Less].
@@ -2371,6 +2376,18 @@ public protocol LoroDocProtocol : AnyObject {
      * Get the configurations of the document.
      */
     func config()  -> Configure
+    
+    /**
+     * Configures the default text style for the document.
+     *
+     * This method sets the default text style configuration for the document when using LoroText.
+     * If `None` is provided, the default style is reset.
+     *
+     * # Parameters
+     *
+     * - `text_style`: The style configuration to set as the default. `None` to reset.
+     */
+    func configDefaultTextStyle(textStyle: StyleConfig?) 
     
     /**
      * Set the rich text format configuration of the document.
@@ -2637,6 +2654,14 @@ public protocol LoroDocProtocol : AnyObject {
      */
     func getValue()  -> LoroValue
     
+    /**
+     * Check if the doc contains the target container.
+     *
+     * A root container always exists, while a normal container exists
+     * if it has ever been created on the doc.
+     */
+    func hasContainer(id: ContainerId)  -> Bool
+    
     func hasHistoryCache()  -> Bool
     
     /**
@@ -2766,6 +2791,28 @@ public protocol LoroDocProtocol : AnyObject {
      * It will be persisted.
      */
     func setNextCommitMessage(msg: String) 
+    
+    /**
+     * Set the options of the next commit.
+     *
+     * It will be used when the next commit is performed.
+     */
+    func setNextCommitOptions(options: CommitOptions) 
+    
+    /**
+     * Set `origin` for the current uncommitted changes, it can be used to track the source of changes in an event.
+     *
+     * It will NOT be persisted.
+     */
+    func setNextCommitOrigin(origin: String) 
+    
+    /**
+     * Set the timestamp of the next commit.
+     *
+     * It will be persisted and stored in the `OpLog`.
+     * You can get the timestamp from the [`Change`] type.
+     */
+    func setNextCommitTimestamp(timestamp: Int64) 
     
     /**
      * Change the PeerID
@@ -2993,6 +3040,15 @@ open func checkoutToLatest() {try! rustCall() {
 }
     
     /**
+     * Clear the options of the next commit.
+     */
+open func clearNextCommitOptions() {try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_clear_next_commit_options(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+    /**
      * Compare the frontiers with the current OpLog's version.
      *
      * If `other` contains any version that's not contained in the current OpLog, return [Ordering::Less].
@@ -3048,6 +3104,23 @@ open func config() -> Configure {
     uniffi_loro_fn_method_lorodoc_config(self.uniffiClonePointer(),$0
     )
 })
+}
+    
+    /**
+     * Configures the default text style for the document.
+     *
+     * This method sets the default text style configuration for the document when using LoroText.
+     * If `None` is provided, the default style is reset.
+     *
+     * # Parameters
+     *
+     * - `text_style`: The style configuration to set as the default. `None` to reset.
+     */
+open func configDefaultTextStyle(textStyle: StyleConfig?) {try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_config_default_text_style(self.uniffiClonePointer(),
+        FfiConverterOptionTypeStyleConfig.lower(textStyle),$0
+    )
+}
 }
     
     /**
@@ -3511,6 +3584,20 @@ open func getValue() -> LoroValue {
 })
 }
     
+    /**
+     * Check if the doc contains the target container.
+     *
+     * A root container always exists, while a normal container exists
+     * if it has ever been created on the doc.
+     */
+open func hasContainer(id: ContainerId) -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_has_container(self.uniffiClonePointer(),
+        FfiConverterTypeContainerID.lower(id),$0
+    )
+})
+}
+    
 open func hasHistoryCache() -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_has_history_cache(self.uniffiClonePointer(),$0
@@ -3733,6 +3820,43 @@ open func setChangeMergeInterval(interval: Int64) {try! rustCall() {
 open func setNextCommitMessage(msg: String) {try! rustCall() {
     uniffi_loro_fn_method_lorodoc_set_next_commit_message(self.uniffiClonePointer(),
         FfiConverterString.lower(msg),$0
+    )
+}
+}
+    
+    /**
+     * Set the options of the next commit.
+     *
+     * It will be used when the next commit is performed.
+     */
+open func setNextCommitOptions(options: CommitOptions) {try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_set_next_commit_options(self.uniffiClonePointer(),
+        FfiConverterTypeCommitOptions.lower(options),$0
+    )
+}
+}
+    
+    /**
+     * Set `origin` for the current uncommitted changes, it can be used to track the source of changes in an event.
+     *
+     * It will NOT be persisted.
+     */
+open func setNextCommitOrigin(origin: String) {try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_set_next_commit_origin(self.uniffiClonePointer(),
+        FfiConverterString.lower(origin),$0
+    )
+}
+}
+    
+    /**
+     * Set the timestamp of the next commit.
+     *
+     * It will be persisted and stored in the `OpLog`.
+     * You can get the timestamp from the [`Change`] type.
+     */
+open func setNextCommitTimestamp(timestamp: Int64) {try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_set_next_commit_timestamp(self.uniffiClonePointer(),
+        FfiConverterInt64.lower(timestamp),$0
     )
 }
 }
@@ -13818,6 +13942,12 @@ public func decodeImportBlobMeta(bytes: Data, checkChecksum: Bool)throws  -> Imp
     )
 })
 }
+public func getVersion() -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_loro_fn_func_get_version($0
+    )
+})
+}
 
 private enum InitializationResult {
     case ok
@@ -13835,6 +13965,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.contractVersionMismatch
     }
     if (uniffi_loro_checksum_func_decode_import_blob_meta() != 2769) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_func_get_version() != 3250) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_awareness_apply() != 41900) {
@@ -13942,6 +14075,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_checkout_to_latest() != 2349) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorodoc_clear_next_commit_options() != 45217) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorodoc_cmp_with_frontiers() != 31942) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -13955,6 +14091,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_config() != 3400) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_config_default_text_style() != 15083) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_config_text_style() != 52393) {
@@ -14059,6 +14198,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_get_value() != 29857) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorodoc_has_container() != 41856) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorodoc_has_history_cache() != 53741) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -14111,6 +14253,15 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_set_next_commit_message() != 18940) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_set_next_commit_options() != 13250) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_set_next_commit_origin() != 27549) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_set_next_commit_timestamp() != 30492) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_set_peer_id() != 29379) {
