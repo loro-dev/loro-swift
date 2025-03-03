@@ -12,6 +12,16 @@ extension LoroValue: LoroValueLike {
     }
 }
 
+extension Optional: LoroValueLike where Wrapped: LoroValueLike {
+    public func asLoroValue() -> LoroValue {
+        if let value = self {
+            return value.asLoroValue()
+        } else {
+            return .null
+        }
+    }
+}
+
 extension Bool: LoroValueLike{
     public func asLoroValue() -> LoroValue {
         return LoroValue.bool(value: self)
