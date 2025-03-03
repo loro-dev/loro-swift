@@ -171,6 +171,10 @@ extension LoroList{
     public func insert(pos: UInt32, v: LoroValueLike?) throws {
         try self.insert(pos: pos, v: v?.asLoroValue() ?? .null)
     }
+
+    public func push(v: LoroValueLike?) throws {
+        try self.push(v: v?.asLoroValue() ?? .null)
+    }
 }
 
 extension LoroMap{
@@ -184,8 +188,23 @@ extension LoroMovableList{
         try self.insert(pos: pos, v: v?.asLoroValue() ?? .null)
     }
 
+    public func push(v: LoroValueLike?) throws {
+        try self.push(v: v?.asLoroValue() ?? .null)
+    }
+
     public func set(pos: UInt32, v: LoroValueLike?) throws {
         try self.set(pos: pos, value: v?.asLoroValue() ?? .null)
     }
 }
 
+extension LoroText{
+    public func mark(from: UInt32, to: UInt32, key: String, value: LoroValueLike?) throws {
+        try self.mark(from: from, to: to, key: key, value: value?.asLoroValue() ?? .null)
+    }
+}
+
+extension Awareness{
+    public func setLocalState(value: LoroValueLike?){
+        self.setLocalState(value: value?.asLoroValue() ?? .null)
+    }
+}
