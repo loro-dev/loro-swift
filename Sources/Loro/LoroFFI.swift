@@ -578,6 +578,9 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 
 
 
+/**
+ * Deprecated, use `EphemeralStore` instead. 
+ */
 public protocol AwarenessProtocol : AnyObject {
     
     func apply(encodedPeersInfo: Data)  -> AwarenessPeerUpdate
@@ -598,6 +601,9 @@ public protocol AwarenessProtocol : AnyObject {
     
 }
 
+/**
+ * Deprecated, use `EphemeralStore` instead. 
+ */
 open class Awareness:
     AwarenessProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
@@ -942,6 +948,135 @@ public func FfiConverterTypeChangeAncestorsTraveler_lift(_ pointer: UnsafeMutabl
 #endif
 public func FfiConverterTypeChangeAncestorsTraveler_lower(_ value: ChangeAncestorsTraveler) -> UnsafeMutableRawPointer {
     return FfiConverterTypeChangeAncestorsTraveler.lower(value)
+}
+
+
+
+
+public protocol ChangeModifierProtocol : AnyObject {
+    
+    func setMessage(msg: String) 
+    
+    func setTimestamp(timestamp: Int64) 
+    
+}
+
+open class ChangeModifier:
+    ChangeModifierProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_fn_clone_changemodifier(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_fn_free_changemodifier(pointer, $0) }
+    }
+
+    
+
+    
+open func setMessage(msg: String) {try! rustCall() {
+    uniffi_loro_fn_method_changemodifier_set_message(self.uniffiClonePointer(),
+        FfiConverterString.lower(msg),$0
+    )
+}
+}
+    
+open func setTimestamp(timestamp: Int64) {try! rustCall() {
+    uniffi_loro_fn_method_changemodifier_set_timestamp(self.uniffiClonePointer(),
+        FfiConverterInt64.lower(timestamp),$0
+    )
+}
+}
+    
+
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeChangeModifier: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = ChangeModifier
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> ChangeModifier {
+        return ChangeModifier(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: ChangeModifier) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ChangeModifier {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: ChangeModifier, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeChangeModifier_lift(_ pointer: UnsafeMutableRawPointer) throws -> ChangeModifier {
+    return try FfiConverterTypeChangeModifier.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeChangeModifier_lower(_ value: ChangeModifier) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeChangeModifier.lower(value)
 }
 
 
@@ -1569,6 +1704,564 @@ public func FfiConverterTypeDiffBatch_lower(_ value: DiffBatch) -> UnsafeMutable
 
 
 
+public protocol EphemeralStoreProtocol : AnyObject {
+    
+    func apply(data: Data) 
+    
+    func delete(key: String) 
+    
+    func encode(key: String)  -> Data
+    
+    func encodeAll()  -> Data
+    
+    func get(key: String)  -> LoroValue?
+    
+    func getAllStates()  -> [String: LoroValue]
+    
+    func keys()  -> [String]
+    
+    func removeOutdated() 
+    
+    func set(key: String, value: LoroValueLike) 
+    
+    func subscribe(listener: EphemeralSubscriber)  -> Subscription
+    
+    func subscribeLocalUpdate(listener: LocalEphemeralListener)  -> Subscription
+    
+}
+
+open class EphemeralStore:
+    EphemeralStoreProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_fn_clone_ephemeralstore(self.pointer, $0) }
+    }
+public convenience init(timeout: Int64) {
+    let pointer =
+        try! rustCall() {
+    uniffi_loro_fn_constructor_ephemeralstore_new(
+        FfiConverterInt64.lower(timeout),$0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_fn_free_ephemeralstore(pointer, $0) }
+    }
+
+    
+
+    
+open func apply(data: Data) {try! rustCall() {
+    uniffi_loro_fn_method_ephemeralstore_apply(self.uniffiClonePointer(),
+        FfiConverterData.lower(data),$0
+    )
+}
+}
+    
+open func delete(key: String) {try! rustCall() {
+    uniffi_loro_fn_method_ephemeralstore_delete(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),$0
+    )
+}
+}
+    
+open func encode(key: String) -> Data {
+    return try!  FfiConverterData.lift(try! rustCall() {
+    uniffi_loro_fn_method_ephemeralstore_encode(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),$0
+    )
+})
+}
+    
+open func encodeAll() -> Data {
+    return try!  FfiConverterData.lift(try! rustCall() {
+    uniffi_loro_fn_method_ephemeralstore_encode_all(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func get(key: String) -> LoroValue? {
+    return try!  FfiConverterOptionTypeLoroValue.lift(try! rustCall() {
+    uniffi_loro_fn_method_ephemeralstore_get(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),$0
+    )
+})
+}
+    
+open func getAllStates() -> [String: LoroValue] {
+    return try!  FfiConverterDictionaryStringTypeLoroValue.lift(try! rustCall() {
+    uniffi_loro_fn_method_ephemeralstore_get_all_states(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func keys() -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_loro_fn_method_ephemeralstore_keys(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func removeOutdated() {try! rustCall() {
+    uniffi_loro_fn_method_ephemeralstore_remove_outdated(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+open func set(key: String, value: LoroValueLike) {try! rustCall() {
+    uniffi_loro_fn_method_ephemeralstore_set(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),
+        FfiConverterTypeLoroValueLike.lower(value),$0
+    )
+}
+}
+    
+open func subscribe(listener: EphemeralSubscriber) -> Subscription {
+    return try!  FfiConverterTypeSubscription.lift(try! rustCall() {
+    uniffi_loro_fn_method_ephemeralstore_subscribe(self.uniffiClonePointer(),
+        FfiConverterTypeEphemeralSubscriber.lower(listener),$0
+    )
+})
+}
+    
+open func subscribeLocalUpdate(listener: LocalEphemeralListener) -> Subscription {
+    return try!  FfiConverterTypeSubscription.lift(try! rustCall() {
+    uniffi_loro_fn_method_ephemeralstore_subscribe_local_update(self.uniffiClonePointer(),
+        FfiConverterTypeLocalEphemeralListener.lower(listener),$0
+    )
+})
+}
+    
+
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeEphemeralStore: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = EphemeralStore
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> EphemeralStore {
+        return EphemeralStore(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: EphemeralStore) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> EphemeralStore {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: EphemeralStore, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeEphemeralStore_lift(_ pointer: UnsafeMutableRawPointer) throws -> EphemeralStore {
+    return try FfiConverterTypeEphemeralStore.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeEphemeralStore_lower(_ value: EphemeralStore) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeEphemeralStore.lower(value)
+}
+
+
+
+
+public protocol EphemeralSubscriber : AnyObject {
+    
+    func onEphemeralEvent(event: EphemeralStoreEvent) 
+    
+}
+
+open class EphemeralSubscriberImpl:
+    EphemeralSubscriber {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_fn_clone_ephemeralsubscriber(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_fn_free_ephemeralsubscriber(pointer, $0) }
+    }
+
+    
+
+    
+open func onEphemeralEvent(event: EphemeralStoreEvent) {try! rustCall() {
+    uniffi_loro_fn_method_ephemeralsubscriber_on_ephemeral_event(self.uniffiClonePointer(),
+        FfiConverterTypeEphemeralStoreEvent.lower(event),$0
+    )
+}
+}
+    
+
+}
+
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfaceEphemeralSubscriber {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfaceEphemeralSubscriber = UniffiVTableCallbackInterfaceEphemeralSubscriber(
+        onEphemeralEvent: { (
+            uniffiHandle: UInt64,
+            event: RustBuffer,
+            uniffiOutReturn: UnsafeMutableRawPointer,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> () in
+                guard let uniffiObj = try? FfiConverterTypeEphemeralSubscriber.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.onEphemeralEvent(
+                     event: try FfiConverterTypeEphemeralStoreEvent.lift(event)
+                )
+            }
+
+            
+            let writeReturn = { () }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            let result = try? FfiConverterTypeEphemeralSubscriber.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface EphemeralSubscriber: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitEphemeralSubscriber() {
+    uniffi_loro_fn_init_callback_vtable_ephemeralsubscriber(&UniffiCallbackInterfaceEphemeralSubscriber.vtable)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeEphemeralSubscriber: FfiConverter {
+    fileprivate static var handleMap = UniffiHandleMap<EphemeralSubscriber>()
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = EphemeralSubscriber
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> EphemeralSubscriber {
+        return EphemeralSubscriberImpl(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: EphemeralSubscriber) -> UnsafeMutableRawPointer {
+        guard let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: handleMap.insert(obj: value))) else {
+            fatalError("Cast to UnsafeMutableRawPointer failed")
+        }
+        return ptr
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> EphemeralSubscriber {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: EphemeralSubscriber, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeEphemeralSubscriber_lift(_ pointer: UnsafeMutableRawPointer) throws -> EphemeralSubscriber {
+    return try FfiConverterTypeEphemeralSubscriber.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeEphemeralSubscriber_lower(_ value: EphemeralSubscriber) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeEphemeralSubscriber.lower(value)
+}
+
+
+
+
+public protocol FirstCommitFromPeerCallback : AnyObject {
+    
+    func onFirstCommitFromPeer(payload: FirstCommitFromPeerPayload) 
+    
+}
+
+open class FirstCommitFromPeerCallbackImpl:
+    FirstCommitFromPeerCallback {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_fn_clone_firstcommitfrompeercallback(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_fn_free_firstcommitfrompeercallback(pointer, $0) }
+    }
+
+    
+
+    
+open func onFirstCommitFromPeer(payload: FirstCommitFromPeerPayload) {try! rustCall() {
+    uniffi_loro_fn_method_firstcommitfrompeercallback_on_first_commit_from_peer(self.uniffiClonePointer(),
+        FfiConverterTypeFirstCommitFromPeerPayload.lower(payload),$0
+    )
+}
+}
+    
+
+}
+
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfaceFirstCommitFromPeerCallback {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfaceFirstCommitFromPeerCallback = UniffiVTableCallbackInterfaceFirstCommitFromPeerCallback(
+        onFirstCommitFromPeer: { (
+            uniffiHandle: UInt64,
+            payload: RustBuffer,
+            uniffiOutReturn: UnsafeMutableRawPointer,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> () in
+                guard let uniffiObj = try? FfiConverterTypeFirstCommitFromPeerCallback.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.onFirstCommitFromPeer(
+                     payload: try FfiConverterTypeFirstCommitFromPeerPayload.lift(payload)
+                )
+            }
+
+            
+            let writeReturn = { () }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            let result = try? FfiConverterTypeFirstCommitFromPeerCallback.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface FirstCommitFromPeerCallback: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitFirstCommitFromPeerCallback() {
+    uniffi_loro_fn_init_callback_vtable_firstcommitfrompeercallback(&UniffiCallbackInterfaceFirstCommitFromPeerCallback.vtable)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFirstCommitFromPeerCallback: FfiConverter {
+    fileprivate static var handleMap = UniffiHandleMap<FirstCommitFromPeerCallback>()
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = FirstCommitFromPeerCallback
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> FirstCommitFromPeerCallback {
+        return FirstCommitFromPeerCallbackImpl(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: FirstCommitFromPeerCallback) -> UnsafeMutableRawPointer {
+        guard let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: handleMap.insert(obj: value))) else {
+            fatalError("Cast to UnsafeMutableRawPointer failed")
+        }
+        return ptr
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FirstCommitFromPeerCallback {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: FirstCommitFromPeerCallback, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFirstCommitFromPeerCallback_lift(_ pointer: UnsafeMutableRawPointer) throws -> FirstCommitFromPeerCallback {
+    return try FfiConverterTypeFirstCommitFromPeerCallback.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFirstCommitFromPeerCallback_lower(_ value: FirstCommitFromPeerCallback) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeFirstCommitFromPeerCallback.lower(value)
+}
+
+
+
+
 public protocol FractionalIndexProtocol : AnyObject {
     
     func toString()  -> String
@@ -1861,6 +2554,174 @@ public func FfiConverterTypeFrontiers_lift(_ pointer: UnsafeMutableRawPointer) t
 #endif
 public func FfiConverterTypeFrontiers_lower(_ value: Frontiers) -> UnsafeMutableRawPointer {
     return FfiConverterTypeFrontiers.lower(value)
+}
+
+
+
+
+public protocol LocalEphemeralListener : AnyObject {
+    
+    func onEphemeralUpdate(update: Data) 
+    
+}
+
+open class LocalEphemeralListenerImpl:
+    LocalEphemeralListener {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_fn_clone_localephemerallistener(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_fn_free_localephemerallistener(pointer, $0) }
+    }
+
+    
+
+    
+open func onEphemeralUpdate(update: Data) {try! rustCall() {
+    uniffi_loro_fn_method_localephemerallistener_on_ephemeral_update(self.uniffiClonePointer(),
+        FfiConverterData.lower(update),$0
+    )
+}
+}
+    
+
+}
+
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfaceLocalEphemeralListener {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfaceLocalEphemeralListener = UniffiVTableCallbackInterfaceLocalEphemeralListener(
+        onEphemeralUpdate: { (
+            uniffiHandle: UInt64,
+            update: RustBuffer,
+            uniffiOutReturn: UnsafeMutableRawPointer,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> () in
+                guard let uniffiObj = try? FfiConverterTypeLocalEphemeralListener.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.onEphemeralUpdate(
+                     update: try FfiConverterData.lift(update)
+                )
+            }
+
+            
+            let writeReturn = { () }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            let result = try? FfiConverterTypeLocalEphemeralListener.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface LocalEphemeralListener: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitLocalEphemeralListener() {
+    uniffi_loro_fn_init_callback_vtable_localephemerallistener(&UniffiCallbackInterfaceLocalEphemeralListener.vtable)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeLocalEphemeralListener: FfiConverter {
+    fileprivate static var handleMap = UniffiHandleMap<LocalEphemeralListener>()
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = LocalEphemeralListener
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> LocalEphemeralListener {
+        return LocalEphemeralListenerImpl(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: LocalEphemeralListener) -> UnsafeMutableRawPointer {
+        guard let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: handleMap.insert(obj: value))) else {
+            fatalError("Cast to UnsafeMutableRawPointer failed")
+        }
+        return ptr
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LocalEphemeralListener {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: LocalEphemeralListener, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLocalEphemeralListener_lift(_ pointer: UnsafeMutableRawPointer) throws -> LocalEphemeralListener {
+    return try FfiConverterTypeLocalEphemeralListener.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLocalEphemeralListener_lower(_ value: LocalEphemeralListener) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeLocalEphemeralListener.lower(value)
 }
 
 
@@ -2415,7 +3276,14 @@ public protocol LoroDocProtocol : AnyObject {
     func diff(a: Frontiers, b: Frontiers) throws  -> DiffBatch
     
     /**
-     * Export the readable [`Change`]s in the given [`IdSpan`]
+     * Exports changes within the specified ID span to JSON schema format.
+     *
+     * The JSON schema format produced by this method is identical to the one generated by `export_json_updates`.
+     * It ensures deterministic output, making it ideal for hash calculations and integrity checks.
+     *
+     * This method can also export pending changes from the uncommitted transaction that have not yet been applied to the OpLog.
+     *
+     * This method will NOT trigger a new commit implicitly.
      */
     func exportJsonInIdSpan(idSpan: IdSpan)  -> [String]
     
@@ -2870,9 +3738,26 @@ public protocol LoroDocProtocol : AnyObject {
     func subscribe(containerId: ContainerId, subscriber: Subscriber)  -> Subscription
     
     /**
+     * Subscribe to the first commit from a peer. Operations performed on the `LoroDoc` within this callback
+     * will be merged into the current commit.
+     *
+     * This is useful for managing the relationship between `PeerID` and user information.
+     * For example, you could store user names in a `LoroMap` using `PeerID` as the key and the `UserID` as the value.
+     */
+    func subscribeFirstCommitFromPeer(callback: FirstCommitFromPeerCallback)  -> Subscription
+    
+    /**
      * Subscribe the local update of the document.
      */
     func subscribeLocalUpdate(callback: LocalUpdateCallback)  -> Subscription
+    
+    /**
+     * Subscribe to the pre-commit event.
+     *
+     * The callback will be called when the changes are committed but not yet applied to the OpLog.
+     * You can modify the commit message and timestamp in the callback by [`ChangeModifier`].
+     */
+    func subscribePreCommit(callback: PreCommitCallback)  -> Subscription
     
     /**
      * Subscribe all the events.
@@ -3165,7 +4050,14 @@ open func diff(a: Frontiers, b: Frontiers)throws  -> DiffBatch {
 }
     
     /**
-     * Export the readable [`Change`]s in the given [`IdSpan`]
+     * Exports changes within the specified ID span to JSON schema format.
+     *
+     * The JSON schema format produced by this method is identical to the one generated by `export_json_updates`.
+     * It ensures deterministic output, making it ideal for hash calculations and integrity checks.
+     *
+     * This method can also export pending changes from the uncommitted transaction that have not yet been applied to the OpLog.
+     *
+     * This method will NOT trigger a new commit implicitly.
      */
 open func exportJsonInIdSpan(idSpan: IdSpan) -> [String] {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
@@ -3949,12 +4841,41 @@ open func subscribe(containerId: ContainerId, subscriber: Subscriber) -> Subscri
 }
     
     /**
+     * Subscribe to the first commit from a peer. Operations performed on the `LoroDoc` within this callback
+     * will be merged into the current commit.
+     *
+     * This is useful for managing the relationship between `PeerID` and user information.
+     * For example, you could store user names in a `LoroMap` using `PeerID` as the key and the `UserID` as the value.
+     */
+open func subscribeFirstCommitFromPeer(callback: FirstCommitFromPeerCallback) -> Subscription {
+    return try!  FfiConverterTypeSubscription.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_subscribe_first_commit_from_peer(self.uniffiClonePointer(),
+        FfiConverterTypeFirstCommitFromPeerCallback.lower(callback),$0
+    )
+})
+}
+    
+    /**
      * Subscribe the local update of the document.
      */
 open func subscribeLocalUpdate(callback: LocalUpdateCallback) -> Subscription {
     return try!  FfiConverterTypeSubscription.lift(try! rustCall() {
     uniffi_loro_fn_method_lorodoc_subscribe_local_update(self.uniffiClonePointer(),
         FfiConverterTypeLocalUpdateCallback.lower(callback),$0
+    )
+})
+}
+    
+    /**
+     * Subscribe to the pre-commit event.
+     *
+     * The callback will be called when the changes are committed but not yet applied to the OpLog.
+     * You can modify the commit message and timestamp in the callback by [`ChangeModifier`].
+     */
+open func subscribePreCommit(callback: PreCommitCallback) -> Subscription {
+    return try!  FfiConverterTypeSubscription.lift(try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_subscribe_pre_commit(self.uniffiClonePointer(),
+        FfiConverterTypePreCommitCallback.lower(callback),$0
     )
 })
 }
@@ -7534,6 +8455,174 @@ public func FfiConverterTypeOnPush_lower(_ value: OnPush) -> UnsafeMutableRawPoi
 
 
 
+public protocol PreCommitCallback : AnyObject {
+    
+    func onPreCommit(payload: PreCommitCallbackPayload) 
+    
+}
+
+open class PreCommitCallbackImpl:
+    PreCommitCallback {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_fn_clone_precommitcallback(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_fn_free_precommitcallback(pointer, $0) }
+    }
+
+    
+
+    
+open func onPreCommit(payload: PreCommitCallbackPayload) {try! rustCall() {
+    uniffi_loro_fn_method_precommitcallback_on_pre_commit(self.uniffiClonePointer(),
+        FfiConverterTypePreCommitCallbackPayload.lower(payload),$0
+    )
+}
+}
+    
+
+}
+
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfacePreCommitCallback {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfacePreCommitCallback = UniffiVTableCallbackInterfacePreCommitCallback(
+        onPreCommit: { (
+            uniffiHandle: UInt64,
+            payload: RustBuffer,
+            uniffiOutReturn: UnsafeMutableRawPointer,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> () in
+                guard let uniffiObj = try? FfiConverterTypePreCommitCallback.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.onPreCommit(
+                     payload: try FfiConverterTypePreCommitCallbackPayload.lift(payload)
+                )
+            }
+
+            
+            let writeReturn = { () }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            let result = try? FfiConverterTypePreCommitCallback.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface PreCommitCallback: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitPreCommitCallback() {
+    uniffi_loro_fn_init_callback_vtable_precommitcallback(&UniffiCallbackInterfacePreCommitCallback.vtable)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePreCommitCallback: FfiConverter {
+    fileprivate static var handleMap = UniffiHandleMap<PreCommitCallback>()
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = PreCommitCallback
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> PreCommitCallback {
+        return PreCommitCallbackImpl(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: PreCommitCallback) -> UnsafeMutableRawPointer {
+        guard let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: handleMap.insert(obj: value))) else {
+            fatalError("Cast to UnsafeMutableRawPointer failed")
+        }
+        return ptr
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PreCommitCallback {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: PreCommitCallback, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePreCommitCallback_lift(_ pointer: UnsafeMutableRawPointer) throws -> PreCommitCallback {
+    return try FfiConverterTypePreCommitCallback.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePreCommitCallback_lower(_ value: PreCommitCallback) -> UnsafeMutableRawPointer {
+    return FfiConverterTypePreCommitCallback.lower(value)
+}
+
+
+
+
 public protocol StyleConfigMapProtocol : AnyObject {
     
     func get(key: String)  -> StyleConfig?
@@ -9615,6 +10704,146 @@ public func FfiConverterTypeDiffEvent_lower(_ value: DiffEvent) -> RustBuffer {
 }
 
 
+public struct EphemeralStoreEvent {
+    public var by: EphemeralEventTrigger
+    public var added: [String]
+    public var removed: [String]
+    public var updated: [String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(by: EphemeralEventTrigger, added: [String], removed: [String], updated: [String]) {
+        self.by = by
+        self.added = added
+        self.removed = removed
+        self.updated = updated
+    }
+}
+
+
+extension EphemeralStoreEvent: Sendable {} 
+extension EphemeralStoreEvent: Equatable, Hashable {
+    public static func ==(lhs: EphemeralStoreEvent, rhs: EphemeralStoreEvent) -> Bool {
+        if lhs.by != rhs.by {
+            return false
+        }
+        if lhs.added != rhs.added {
+            return false
+        }
+        if lhs.removed != rhs.removed {
+            return false
+        }
+        if lhs.updated != rhs.updated {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(by)
+        hasher.combine(added)
+        hasher.combine(removed)
+        hasher.combine(updated)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeEphemeralStoreEvent: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> EphemeralStoreEvent {
+        return
+            try EphemeralStoreEvent(
+                by: FfiConverterTypeEphemeralEventTrigger.read(from: &buf), 
+                added: FfiConverterSequenceString.read(from: &buf), 
+                removed: FfiConverterSequenceString.read(from: &buf), 
+                updated: FfiConverterSequenceString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: EphemeralStoreEvent, into buf: inout [UInt8]) {
+        FfiConverterTypeEphemeralEventTrigger.write(value.by, into: &buf)
+        FfiConverterSequenceString.write(value.added, into: &buf)
+        FfiConverterSequenceString.write(value.removed, into: &buf)
+        FfiConverterSequenceString.write(value.updated, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeEphemeralStoreEvent_lift(_ buf: RustBuffer) throws -> EphemeralStoreEvent {
+    return try FfiConverterTypeEphemeralStoreEvent.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeEphemeralStoreEvent_lower(_ value: EphemeralStoreEvent) -> RustBuffer {
+    return FfiConverterTypeEphemeralStoreEvent.lower(value)
+}
+
+
+public struct FirstCommitFromPeerPayload {
+    public var peer: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(peer: UInt64) {
+        self.peer = peer
+    }
+}
+
+
+extension FirstCommitFromPeerPayload: Sendable {} 
+extension FirstCommitFromPeerPayload: Equatable, Hashable {
+    public static func ==(lhs: FirstCommitFromPeerPayload, rhs: FirstCommitFromPeerPayload) -> Bool {
+        if lhs.peer != rhs.peer {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(peer)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFirstCommitFromPeerPayload: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FirstCommitFromPeerPayload {
+        return
+            try FirstCommitFromPeerPayload(
+                peer: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FirstCommitFromPeerPayload, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.peer, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFirstCommitFromPeerPayload_lift(_ buf: RustBuffer) throws -> FirstCommitFromPeerPayload {
+    return try FfiConverterTypeFirstCommitFromPeerPayload.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFirstCommitFromPeerPayload_lower(_ value: FirstCommitFromPeerPayload) -> RustBuffer {
+    return FfiConverterTypeFirstCommitFromPeerPayload.lower(value)
+}
+
+
 public struct FrontiersOrId {
     public var frontiers: Frontiers?
     public var id: Id?
@@ -10252,6 +11481,58 @@ public func FfiConverterTypePosQueryResult_lift(_ buf: RustBuffer) throws -> Pos
 #endif
 public func FfiConverterTypePosQueryResult_lower(_ value: PosQueryResult) -> RustBuffer {
     return FfiConverterTypePosQueryResult.lower(value)
+}
+
+
+public struct PreCommitCallbackPayload {
+    public var changeMeta: ChangeMeta
+    public var origin: String
+    public var modifier: ChangeModifier
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(changeMeta: ChangeMeta, origin: String, modifier: ChangeModifier) {
+        self.changeMeta = changeMeta
+        self.origin = origin
+        self.modifier = modifier
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePreCommitCallbackPayload: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PreCommitCallbackPayload {
+        return
+            try PreCommitCallbackPayload(
+                changeMeta: FfiConverterTypeChangeMeta.read(from: &buf), 
+                origin: FfiConverterString.read(from: &buf), 
+                modifier: FfiConverterTypeChangeModifier.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PreCommitCallbackPayload, into buf: inout [UInt8]) {
+        FfiConverterTypeChangeMeta.write(value.changeMeta, into: &buf)
+        FfiConverterString.write(value.origin, into: &buf)
+        FfiConverterTypeChangeModifier.write(value.modifier, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePreCommitCallbackPayload_lift(_ buf: RustBuffer) throws -> PreCommitCallbackPayload {
+    return try FfiConverterTypePreCommitCallbackPayload.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePreCommitCallbackPayload_lower(_ value: PreCommitCallbackPayload) -> RustBuffer {
+    return FfiConverterTypePreCommitCallbackPayload.lower(value)
 }
 
 
@@ -11104,6 +12385,77 @@ public func FfiConverterTypeDiff_lower(_ value: Diff) -> RustBuffer {
     return FfiConverterTypeDiff.lower(value)
 }
 
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum EphemeralEventTrigger {
+    
+    case local
+    case `import`
+    case timeout
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeEphemeralEventTrigger: FfiConverterRustBuffer {
+    typealias SwiftType = EphemeralEventTrigger
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> EphemeralEventTrigger {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .local
+        
+        case 2: return .`import`
+        
+        case 3: return .timeout
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: EphemeralEventTrigger, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .local:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .`import`:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .timeout:
+            writeInt(&buf, Int32(3))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeEphemeralEventTrigger_lift(_ buf: RustBuffer) throws -> EphemeralEventTrigger {
+    return try FfiConverterTypeEphemeralEventTrigger.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeEphemeralEventTrigger_lower(_ value: EphemeralEventTrigger) -> RustBuffer {
+    return FfiConverterTypeEphemeralEventTrigger.lower(value)
+}
+
+
+extension EphemeralEventTrigger: Sendable {} 
+extension EphemeralEventTrigger: Equatable, Hashable {}
 
 
 
@@ -13997,6 +15349,12 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_changeancestorstraveler_travel() != 17239) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_changemodifier_set_message() != 44190) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_changemodifier_set_timestamp() != 6652) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_configure_fork() != 57176) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -14024,6 +15382,45 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_diffbatch_push() != 56678) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_ephemeralstore_apply() != 27412) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_ephemeralstore_delete() != 37001) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_ephemeralstore_encode() != 35731) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_ephemeralstore_encode_all() != 1587) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_ephemeralstore_get() != 37668) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_ephemeralstore_get_all_states() != 11717) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_ephemeralstore_keys() != 27585) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_ephemeralstore_remove_outdated() != 35095) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_ephemeralstore_set() != 21774) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_ephemeralstore_subscribe() != 54930) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_ephemeralstore_subscribe_local_update() != 54586) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_ephemeralsubscriber_on_ephemeral_event() != 33183) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_firstcommitfrompeercallback_on_first_commit_from_peer() != 51977) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_fractionalindex_to_string() != 57024) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -14031,6 +15428,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_frontiers_eq() != 20207) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_localephemerallistener_on_ephemeral_update() != 59317) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_localupdatecallback_on_local_update() != 21789) {
@@ -14282,7 +15682,13 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_subscribe() != 7981) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorodoc_subscribe_first_commit_from_peer() != 45629) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorodoc_subscribe_local_update() != 58652) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_subscribe_pre_commit() != 54832) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_subscribe_root() != 16564) {
@@ -14723,6 +16129,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_onpush_on_push() != 46111) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_precommitcallback_on_pre_commit() != 58911) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_styleconfigmap_get() != 25442) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -14855,6 +16264,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_constructor_diffbatch_new() != 62583) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_constructor_ephemeralstore_new() != 60190) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_constructor_fractionalindex_from_bytes() != 35415) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -14912,10 +16324,14 @@ private var initializationResult: InitializationResult = {
 
     uniffiCallbackInitChangeAncestorsTraveler()
     uniffiCallbackInitContainerIdLike()
+    uniffiCallbackInitEphemeralSubscriber()
+    uniffiCallbackInitFirstCommitFromPeerCallback()
+    uniffiCallbackInitLocalEphemeralListener()
     uniffiCallbackInitLocalUpdateCallback()
     uniffiCallbackInitLoroValueLike()
     uniffiCallbackInitOnPop()
     uniffiCallbackInitOnPush()
+    uniffiCallbackInitPreCommitCallback()
     uniffiCallbackInitSubscriber()
     uniffiCallbackInitUnsubscriber()
     return InitializationResult.ok
