@@ -111,4 +111,33 @@ final class LoroTests: XCTestCase {
         let s = text.toString()
         XCTAssertEqual(s, "bcdef")
     }
+
+    func testOrigin(){
+        do{
+            let localDoc = LoroDoc()
+            let remoteDoc = LoroDoc()
+            try localDoc.setPeerId(peer: 1)
+            let localMap = localDoc.getMap(id: "properties")
+            try localMap.insert(key: "x", v: "42")
+
+            // Take a snapshot of the localDoc's content.
+            let snapshot = try localDoc.exportSnapshot()
+
+            // Set up and watch for changes in an initially empty remoteDoc.
+            try remoteDoc.setPeerId(peer: 2)
+            let expectedOriginString = "expectedOriginString"
+            let subscription = remoteDoc.subscribeRoot { event in
+                // Apparent bug: The event carries an empty origin string, instead of the origin string we passed into importWith(bytes:origin:).
+                print("Got event for remoteDoc, with event.origin=\"\(event.origin)\"")
+                if event.origin != expectedOriginString {
+                    XCTFail("Expected origin '\(expectedOriginString)' but got '\(event.origin)'")
+                }
+            }
+            // Import the snapshot into a new LoroDoc, specifying an origin string.  THis should the closure we registeredd with subscribeRoot, above, to be invoked.
+            let _ = try remoteDoc.importWith(bytes: snapshot, origin: expectedOriginString)
+            subscription.detach()
+        }catch {
+            print("ERROR: \(error)")
+        }
+    }
 }
