@@ -618,6 +618,22 @@ interface LoroDoc{
     /// The callback will be called when the changes are committed but not yet applied to the OpLog.
     /// You can modify the commit message and timestamp in the callback by [`ChangeModifier`].
     Subscription subscribe_pre_commit(PreCommitCallback callback);
+
+    // TODO: version range
+    // [Throws=LoroError]
+    // string redact_json_updates([ByRef] string json, VersionRange version_range);
+
+    /// Set whether to hide empty root containers.
+    void set_hide_empty_root_containers(boolean hide);
+
+    /// Delete all content from a root container and hide it from the document.
+    ///
+    /// When a root container is empty and hidden:
+    /// - It won't show up in `get_deep_value()` results
+    /// - It won't be included in document snapshots
+    ///
+    /// Only works on root containers (containers without parents).
+    void delete_root_container(ContainerID cid);
 };
 
 dictionary ContainerPath{
@@ -1518,6 +1534,9 @@ interface UndoManager{
     /// Whether the undo manager can redo.
     boolean can_redo();
 
+    // TODO: undo count
+    // TODO: redo count
+
     /// If a local event's origin matches the given prefix, it will not be recorded in the
     /// undo stack.
     void add_exclude_origin_prefix([ByRef] string prefix);
@@ -1818,6 +1837,7 @@ enum LoroError {
     "ConcurrentOpsWithSamePeerID",
     "InvalidPeerID",
     "ContainersNotFound",
+    "UndoGroupAlreadyStarted",
 };
 
 [Error]

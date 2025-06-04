@@ -3262,6 +3262,17 @@ public protocol LoroDocProtocol : AnyObject {
     func configTextStyle(textStyle: StyleConfigMap) 
     
     /**
+     * Delete all content from a root container and hide it from the document.
+     *
+     * When a root container is empty and hidden:
+     * - It won't show up in `get_deep_value()` results
+     * - It won't be included in document snapshots
+     *
+     * Only works on root containers (containers without parents).
+     */
+    func deleteRootContainer(cid: ContainerId) 
+    
+    /**
      * Force the document enter the detached mode.
      *
      * In this mode, when you importing new updates, the [loro_internal::DocState] will not be changed.
@@ -3654,6 +3665,11 @@ public protocol LoroDocProtocol : AnyObject {
     func setChangeMergeInterval(interval: Int64) 
     
     /**
+     * Set whether to hide empty root containers.
+     */
+    func setHideEmptyRootContainers(hide: Bool) 
+    
+    /**
      * Set commit message for the current uncommitted changes
      *
      * It will be persisted.
@@ -4020,6 +4036,22 @@ open func configDefaultTextStyle(textStyle: StyleConfig?) {try! rustCall() {
 open func configTextStyle(textStyle: StyleConfigMap) {try! rustCall() {
     uniffi_loro_fn_method_lorodoc_config_text_style(self.uniffiClonePointer(),
         FfiConverterTypeStyleConfigMap.lower(textStyle),$0
+    )
+}
+}
+    
+    /**
+     * Delete all content from a root container and hide it from the document.
+     *
+     * When a root container is empty and hidden:
+     * - It won't show up in `get_deep_value()` results
+     * - It won't be included in document snapshots
+     *
+     * Only works on root containers (containers without parents).
+     */
+open func deleteRootContainer(cid: ContainerId) {try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_delete_root_container(self.uniffiClonePointer(),
+        FfiConverterTypeContainerID.lower(cid),$0
     )
 }
 }
@@ -4700,6 +4732,16 @@ open func revertTo(version: Frontiers)throws  {try rustCallWithError(FfiConverte
 open func setChangeMergeInterval(interval: Int64) {try! rustCall() {
     uniffi_loro_fn_method_lorodoc_set_change_merge_interval(self.uniffiClonePointer(),
         FfiConverterInt64.lower(interval),$0
+    )
+}
+}
+    
+    /**
+     * Set whether to hide empty root containers.
+     */
+open func setHideEmptyRootContainers(hide: Bool) {try! rustCall() {
+    uniffi_loro_fn_method_lorodoc_set_hide_empty_root_containers(self.uniffiClonePointer(),
+        FfiConverterBool.lower(hide),$0
     )
 }
 }
@@ -13002,6 +13044,8 @@ public enum LoroError {
     
     case ContainersNotFound(message: String)
     
+    case UndoGroupAlreadyStarted(message: String)
+    
 }
 
 
@@ -13166,6 +13210,10 @@ public struct FfiConverterTypeLoroError: FfiConverterRustBuffer {
             message: try FfiConverterString.read(from: &buf)
         )
         
+        case 38: return .UndoGroupAlreadyStarted(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -13251,6 +13299,8 @@ public struct FfiConverterTypeLoroError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(36))
         case .ContainersNotFound(_ /* message is ignored*/):
             writeInt(&buf, Int32(37))
+        case .UndoGroupAlreadyStarted(_ /* message is ignored*/):
+            writeInt(&buf, Int32(38))
 
         
         }
@@ -15499,6 +15549,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_checksum_method_lorodoc_config_text_style() != 52393) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_checksum_method_lorodoc_delete_root_container() != 40125) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_checksum_method_lorodoc_detach() != 61399) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -15650,6 +15703,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_set_change_merge_interval() != 55133) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_checksum_method_lorodoc_set_hide_empty_root_containers() != 34137) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_checksum_method_lorodoc_set_next_commit_message() != 18940) {
