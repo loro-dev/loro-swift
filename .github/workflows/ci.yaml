@@ -16,7 +16,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.80.0
+          toolchain: 1.82.0
           default: true
       - name: get xcode information
         run: |
