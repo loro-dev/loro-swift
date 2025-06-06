@@ -11,10 +11,12 @@ jobs:
       DEVELOPER_DIR: /Applications/Xcode_15.4.app
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.80.0
+          toolchain: 1.82.0
           default: true
       - name: get xcode information
         run: |
