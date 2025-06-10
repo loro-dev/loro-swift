@@ -6,7 +6,7 @@
 
 set -euxo pipefail
 THIS_SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-LIB_NAME="libloro.a"
+LIB_NAME="libloro_ffi.a"
 RUST_FOLDER="$THIS_SCRIPT_DIR/../loro-ffi"
 FRAMEWORK_NAME="loroFFI"
 
@@ -26,12 +26,12 @@ rm -rf "${XCFRAMEWORK_FOLDER}"
 rm -rf "${SWIFT_FOLDER}"
 mkdir -p "${SWIFT_FOLDER}"
 echo "▸ Generate Swift Scaffolding Code"
-cargo run --manifest-path "$RUST_FOLDER/Cargo.toml"  \
+cargo run -r --manifest-path "$RUST_FOLDER/Cargo.toml"  \
     --features=cli \
     --bin uniffi-bindgen generate \
     "$RUST_FOLDER/src/loro.udl" \
     --language swift \
-    --out-dir "${SWIFT_FOLDER}"
+    --out-dir "${SWIFT_FOLDER}" \
 
 bash "${THIS_SCRIPT_DIR}/refine_trait.sh"
 
