@@ -6,8 +6,8 @@
 
 set -euxo pipefail
 THIS_SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-LIB_NAME="libloro_ffi.a"
-RUST_FOLDER="$THIS_SCRIPT_DIR/../loro-ffi"
+LIB_NAME="libloro_swift.a"
+RUST_FOLDER="$THIS_SCRIPT_DIR/../loro-swift"
 FRAMEWORK_NAME="loroFFI"
 
 SWIFT_FOLDER="$THIS_SCRIPT_DIR/../gen-swift"
@@ -19,19 +19,22 @@ XCFRAMEWORK_FOLDER="$THIS_SCRIPT_DIR/../${FRAMEWORK_NAME}.xcframework"
 echo "▸ Install toolchains"
 rustup target add aarch64-apple-darwin # macOS ARM/M1
 rustup target add x86_64-apple-darwin # macOS Intel/x86
-cargo_build="cargo build --manifest-path $RUST_FOLDER/Cargo.toml"
-
+cargo_build="cargo build --manifest-path $RUST_FOLDER/Cargo.toml --features cli"
 echo "▸ Clean state"
 rm -rf "${XCFRAMEWORK_FOLDER}"
 rm -rf "${SWIFT_FOLDER}"
 mkdir -p "${SWIFT_FOLDER}"
 echo "▸ Generate Swift Scaffolding Code"
+cd loro-swift
+echo "▸ Build dylib"
+$cargo_build -r
 cargo run -r --manifest-path "$RUST_FOLDER/Cargo.toml"  \
     --features=cli \
     --bin uniffi-bindgen generate \
-    "$RUST_FOLDER/src/loro.udl" \
+    --library "$RUST_FOLDER/target/release/libloro_swift.dylib" \
     --language swift \
-    --out-dir "${SWIFT_FOLDER}" \
+    --out-dir "${SWIFT_FOLDER}"
+cd ..
 
 bash "${THIS_SCRIPT_DIR}/refine_trait.sh"
 

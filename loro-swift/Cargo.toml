@@ -1,0 +1,21 @@
+[package]
+name = "loro-swift"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/uniffi-bindgen.rs"
+
+[dependencies]
+loro-ffi = { version = "1.5.9" }
+uniffi = { version = "0.28.3" }
+
+[build-dependencies]
+uniffi = { version = "0.28.3", features = ["build"] }
+
+[features]
+cli = ["uniffi/cli"]
