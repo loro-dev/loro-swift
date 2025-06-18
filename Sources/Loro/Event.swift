@@ -46,7 +46,7 @@ extension LoroDoc{
      * - `doc.import(data)` is called.
      * - `doc.checkout(version)` is called.
      */
-     public func subscribe(containerId: ContainerId, callback: @escaping (DiffEvent)->Void) -> Subscription {
+    public func subscribe(containerId: ContainerId, callback: @escaping (DiffEvent)->Void) -> Subscription {
         let closureSubscriber = ClosureSubscriber(closure: callback)
         return self.subscribe(containerId: containerId, subscriber: closureSubscriber)
     }
@@ -57,5 +57,113 @@ extension LoroDoc{
     public func subscribeLocalUpdate(callback: @escaping (Data)->Void)->Subscription{
         let closureLocalUpdate = ClosureLocalUpdate(closure: callback)
         return self.subscribeLocalUpdate(callback: closureLocalUpdate)
+    }
+}
+
+extension LoroText{
+    /** Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription id that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     * - `doc.commit()` is called.
+     * - `doc.exportFrom(version)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+    public func subscribe(callback: @escaping (DiffEvent)->Void) -> Subscription? {
+        let closureSubscriber = ClosureSubscriber(closure: callback)
+        return self.subscribe(subscriber: closureSubscriber)
+    }
+}
+
+extension LoroList{
+    /** Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription id that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     * - `doc.commit()` is called.
+     * - `doc.exportFrom(version)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+    public func subscribe(callback: @escaping (DiffEvent)->Void) -> Subscription? {
+        let closureSubscriber = ClosureSubscriber(closure: callback)
+        return self.subscribe(subscriber: closureSubscriber)
+    }
+}
+
+extension LoroMap{
+    /** Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription id that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     * - `doc.commit()` is called.
+     * - `doc.exportFrom(version)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+    public func subscribe(callback: @escaping (DiffEvent)->Void) -> Subscription? {
+        let closureSubscriber = ClosureSubscriber(closure: callback)
+        return self.subscribe(subscriber: closureSubscriber)
+    }
+}
+
+extension LoroTree{
+    /** Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription id that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     * - `doc.commit()` is called.
+     * - `doc.exportFrom(version)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+    public func subscribe(callback: @escaping (DiffEvent)->Void) -> Subscription? {
+        let closureSubscriber = ClosureSubscriber(closure: callback)
+        return self.subscribe(subscriber: closureSubscriber)
+    }
+}
+
+extension LoroMovableList{
+    /** Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription id that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     * - `doc.commit()` is called.
+     * - `doc.exportFrom(version)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+    public func subscribe(callback: @escaping (DiffEvent)->Void) -> Subscription? {
+        let closureSubscriber = ClosureSubscriber(closure: callback)
+        return self.subscribe(subscriber: closureSubscriber)
+    }
+}
+
+extension LoroCounter{
+    /** Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription id that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     * - `doc.commit()` is called.
+     * - `doc.exportFrom(version)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+    public func subscribe(callback: @escaping (DiffEvent)->Void) -> Subscription? {
+        let closureSubscriber = ClosureSubscriber(closure: callback)
+        return self.subscribe(subscriber: closureSubscriber)
     }
 }

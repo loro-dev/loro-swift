@@ -1418,6 +1418,8 @@ public func FfiConverterTypeContainerIdLike_lower(_ value: ContainerIdLike) -> U
 
 public protocol CursorProtocol : AnyObject {
     
+    func encode()  -> Data
+    
 }
 
 open class Cursor:
@@ -1479,7 +1481,22 @@ public convenience init(id: Id?, container: ContainerId, side: Side, originPos: 
     }
 
     
+public static func decode(data: Data)throws  -> Cursor {
+    return try  FfiConverterTypeCursor.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_ffi_fn_constructor_cursor_decode(
+        FfiConverterData.lower(data),$0
+    )
+})
+}
+    
 
+    
+open func encode() -> Data {
+    return try!  FfiConverterData.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_cursor_encode(self.uniffiClonePointer(),$0
+    )
+})
+}
     
 
 }
@@ -2940,6 +2957,21 @@ public protocol LoroCounterProtocol : AnyObject {
      */
     func isDeleted()  -> Bool
     
+    /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+    func subscribe(subscriber: Subscriber)  -> Subscription?
+    
 }
 
 open class LoroCounter:
@@ -3081,6 +3113,27 @@ open func isAttached() -> Bool {
 open func isDeleted() -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_loro_ffi_fn_method_lorocounter_is_deleted(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+open func subscribe(subscriber: Subscriber) -> Subscription? {
+    return try!  FfiConverterOptionTypeSubscription.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_lorocounter_subscribe(self.uniffiClonePointer(),
+        FfiConverterTypeSubscriber.lower(subscriber),$0
     )
 })
 }
@@ -3643,6 +3696,22 @@ public protocol LoroDocProtocol : AnyObject {
      * Get the PeerID
      */
     func peerId()  -> UInt64
+    
+    /**
+     * Redacts sensitive content in JSON updates within the specified version range.
+     *
+     * This function allows you to share document history while removing potentially sensitive content.
+     * It preserves the document structure and collaboration capabilities while replacing content with
+     * placeholders according to these redaction rules:
+     *
+     * - Preserves delete and move operations
+     * - Replaces text insertion content with the Unicode replacement character
+     * - Substitutes list and map insert values with null
+     * - Maintains structure of child containers
+     * - Replaces text mark values with null
+     * - Preserves map keys and text annotation keys
+     */
+    func redactJsonUpdates(json: String, versionRange: VersionRange) throws  -> String
     
     /**
      * Revert the current document state back to the target version
@@ -4707,6 +4776,29 @@ open func peerId() -> UInt64 {
 }
     
     /**
+     * Redacts sensitive content in JSON updates within the specified version range.
+     *
+     * This function allows you to share document history while removing potentially sensitive content.
+     * It preserves the document structure and collaboration capabilities while replacing content with
+     * placeholders according to these redaction rules:
+     *
+     * - Preserves delete and move operations
+     * - Replaces text insertion content with the Unicode replacement character
+     * - Substitutes list and map insert values with null
+     * - Maintains structure of child containers
+     * - Replaces text mark values with null
+     * - Preserves map keys and text annotation keys
+     */
+open func redactJsonUpdates(json: String, versionRange: VersionRange)throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_ffi_fn_method_lorodoc_redact_json_updates(self.uniffiClonePointer(),
+        FfiConverterString.lower(json),
+        FfiConverterTypeVersionRange.lower(versionRange),$0
+    )
+})
+}
+    
+    /**
      * Revert the current document state back to the target version
      *
      * Internally, it will generate a series of local operations that can revert the
@@ -5116,6 +5208,21 @@ public protocol LoroListProtocol : AnyObject {
     func push(v: LoroValueLike) throws 
     
     /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+    func subscribe(subscriber: Subscriber)  -> Subscription?
+    
+    /**
      * Converts the LoroList to a Vec of LoroValue.
      *
      * This method unwraps the internal Arc and clones the data if necessary,
@@ -5411,6 +5518,27 @@ open func push(v: LoroValueLike)throws  {try rustCallWithError(FfiConverterTypeL
 }
     
     /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+open func subscribe(subscriber: Subscriber) -> Subscription? {
+    return try!  FfiConverterOptionTypeSubscription.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_lorolist_subscribe(self.uniffiClonePointer(),
+        FfiConverterTypeSubscriber.lower(subscriber),$0
+    )
+})
+}
+    
+    /**
      * Converts the LoroList to a Vec of LoroValue.
      *
      * This method unwraps the internal Arc and clones the data if necessary,
@@ -5587,6 +5715,21 @@ public protocol LoroMapProtocol : AnyObject {
      * Get the length of the map.
      */
     func len()  -> UInt32
+    
+    /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+    func subscribe(subscriber: Subscriber)  -> Subscription?
     
     /**
      * Get the values of the map.
@@ -5926,6 +6069,27 @@ open func len() -> UInt32 {
 }
     
     /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+open func subscribe(subscriber: Subscriber) -> Subscription? {
+    return try!  FfiConverterOptionTypeSubscription.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_loromap_subscribe(self.uniffiClonePointer(),
+        FfiConverterTypeSubscriber.lower(subscriber),$0
+    )
+})
+}
+    
+    /**
      * Get the values of the map.
      */
 open func values() -> [ValueOrContainer] {
@@ -6127,6 +6291,21 @@ public protocol LoroMovableListProtocol : AnyObject {
     func setTextContainer(pos: UInt32, child: LoroText) throws  -> LoroText
     
     func setTreeContainer(pos: UInt32, child: LoroTree) throws  -> LoroTree
+    
+    /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+    func subscribe(subscriber: Subscriber)  -> Subscription?
     
     /**
      * Get the elements of the list as a vector of LoroValues.
@@ -6535,6 +6714,27 @@ open func setTreeContainer(pos: UInt32, child: LoroTree)throws  -> LoroTree {
 }
     
     /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+open func subscribe(subscriber: Subscriber) -> Subscription? {
+    return try!  FfiConverterOptionTypeSubscription.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_loromovablelist_subscribe(self.uniffiClonePointer(),
+        FfiConverterTypeSubscriber.lower(subscriber),$0
+    )
+})
+}
+    
+    /**
      * Get the elements of the list as a vector of LoroValues.
      *
      * This method returns a vector containing all the elements in the list as LoroValues.
@@ -6611,6 +6811,11 @@ public protocol LoroTextProtocol : AnyObject {
      * Apply a [delta](https://quilljs.com/docs/delta/) to the text container.
      */
     func applyDelta(delta: [TextDelta]) throws 
+    
+    /**
+     * Get the characters at given unicode position.
+     */
+    func charAt(pos: UInt32) throws  -> String
     
     /**
      * Delete a range of text at the given unicode position with unicode length.
@@ -6741,6 +6946,21 @@ public protocol LoroTextProtocol : AnyObject {
     func splice(pos: UInt32, len: UInt32, s: String) throws  -> String
     
     /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+    func subscribe(subscriber: Subscriber)  -> Subscription?
+    
+    /**
      * Get the text in [Delta](https://quilljs.com/docs/delta/) format.
      */
     func toDelta()  -> [TextDelta]
@@ -6861,6 +7081,17 @@ open func applyDelta(delta: [TextDelta])throws  {try rustCallWithError(FfiConver
         FfiConverterSequenceTypeTextDelta.lower(delta),$0
     )
 }
+}
+    
+    /**
+     * Get the characters at given unicode position.
+     */
+open func charAt(pos: UInt32)throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_ffi_fn_method_lorotext_char_at(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(pos),$0
+    )
+})
 }
     
     /**
@@ -7102,6 +7333,27 @@ open func splice(pos: UInt32, len: UInt32, s: String)throws  -> String {
         FfiConverterUInt32.lower(pos),
         FfiConverterUInt32.lower(len),
         FfiConverterString.lower(s),$0
+    )
+})
+}
+    
+    /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+open func subscribe(subscriber: Subscriber) -> Subscription? {
+    return try!  FfiConverterOptionTypeSubscription.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_lorotext_subscribe(self.uniffiClonePointer(),
+        FfiConverterTypeSubscriber.lower(subscriber),$0
     )
 })
 }
@@ -7412,6 +7664,21 @@ public protocol LoroTreeProtocol : AnyObject {
      * Get the root nodes of the forest.
      */
     func roots()  -> [TreeId]
+    
+    /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+    func subscribe(subscriber: Subscriber)  -> Subscription?
     
 }
 
@@ -7795,6 +8062,27 @@ open func parent(target: TreeId)throws  -> TreeParentId {
 open func roots() -> [TreeId] {
     return try!  FfiConverterSequenceTypeTreeID.lift(try! rustCall() {
     uniffi_loro_ffi_fn_method_lorotree_roots(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Subscribe the events of a container.
+     *
+     * The callback will be invoked when the container is changed.
+     * Returns a subscription that can be used to unsubscribe.
+     *
+     * The events will be emitted after a transaction is committed. A transaction is committed when:
+     *
+     * - `doc.commit()` is called.
+     * - `doc.export(mode)` is called.
+     * - `doc.import(data)` is called.
+     * - `doc.checkout(version)` is called.
+     */
+open func subscribe(subscriber: Subscriber) -> Subscription? {
+    return try!  FfiConverterOptionTypeSubscription.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_lorotree_subscribe(self.uniffiClonePointer(),
+        FfiConverterTypeSubscriber.lower(subscriber),$0
     )
 })
 }
@@ -9158,6 +9446,11 @@ public protocol UndoManagerProtocol : AnyObject {
     func redo() throws  -> Bool
     
     /**
+     * How many times the undo manager can redo.
+     */
+    func redoCount()  -> UInt32
+    
+    /**
      * Set the maximum number of undo steps. The default value is 100.
      */
     func setMaxUndoSteps(size: UInt32) 
@@ -9183,6 +9476,11 @@ public protocol UndoManagerProtocol : AnyObject {
      * Undo the last change made by the peer.
      */
     func undo() throws  -> Bool
+    
+    /**
+     * How many times the undo manager can undo.
+     */
+    func undoCount()  -> UInt32
     
 }
 
@@ -9298,6 +9596,16 @@ open func redo()throws  -> Bool {
 }
     
     /**
+     * How many times the undo manager can redo.
+     */
+open func redoCount() -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_undomanager_redo_count(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
      * Set the maximum number of undo steps. The default value is 100.
      */
 open func setMaxUndoSteps(size: UInt32) {try! rustCall() {
@@ -9345,6 +9653,16 @@ open func setOnPush(onPush: OnPush?) {try! rustCall() {
 open func undo()throws  -> Bool {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
     uniffi_loro_ffi_fn_method_undomanager_undo(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * How many times the undo manager can undo.
+     */
+open func undoCount() -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_undomanager_undo_count(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -9785,6 +10103,309 @@ public func FfiConverterTypeValueOrContainer_lift(_ pointer: UnsafeMutableRawPoi
 #endif
 public func FfiConverterTypeValueOrContainer_lower(_ value: ValueOrContainer) -> UnsafeMutableRawPointer {
     return FfiConverterTypeValueOrContainer.lower(value)
+}
+
+
+
+
+public protocol VersionRangeProtocol : AnyObject {
+    
+    /**
+     * Clear all ranges in the VersionRange
+     */
+    func clear() 
+    
+    /**
+     * Check if this VersionRange contains a specific ID
+     */
+    func containsId(id: Id)  -> Bool
+    
+    /**
+     * Check if this VersionRange contains a specific ID span
+     */
+    func containsIdSpan(span: IdSpan)  -> Bool
+    
+    /**
+     * Check if this VersionRange contains operations between two VersionVectors
+     */
+    func containsOpsBetween(vvA: VersionVector, vvB: VersionVector)  -> Bool
+    
+    /**
+     * Extend this VersionRange to include the given ID span
+     */
+    func extendsToIncludeIdSpan(span: IdSpan) 
+    
+    /**
+     * Get the counter range for a specific peer
+     * Returns the counter range if the peer exists, null otherwise
+     */
+    func get(peer: UInt64)  -> CounterSpan?
+    
+    /**
+     * Get all ranges as a list of (peer, start, end) tuples
+     */
+    func getAllRanges()  -> [VersionRangeItem]
+    
+    /**
+     * Get all peer IDs in this VersionRange
+     */
+    func getPeers()  -> [UInt64]
+    
+    /**
+     * Check if this VersionRange has overlap with the given ID span
+     */
+    func hasOverlapWith(span: IdSpan)  -> Bool
+    
+    /**
+     * Insert a counter range for a specific peer
+     */
+    func insert(peer: UInt64, start: Int32, end: Int32) 
+    
+    /**
+     * Check if the VersionRange is empty
+     */
+    func isEmpty()  -> Bool
+    
+}
+
+open class VersionRange:
+    VersionRangeProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_ffi_fn_clone_versionrange(self.pointer, $0) }
+    }
+public convenience init() {
+    let pointer =
+        try! rustCall() {
+    uniffi_loro_ffi_fn_constructor_versionrange_new($0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_ffi_fn_free_versionrange(pointer, $0) }
+    }
+
+    
+    /**
+     * Create a VersionRange from a VersionVector
+     */
+public static func fromVv(vv: VersionVector) -> VersionRange {
+    return try!  FfiConverterTypeVersionRange.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_constructor_versionrange_from_vv(
+        FfiConverterTypeVersionVector.lower(vv),$0
+    )
+})
+}
+    
+
+    
+    /**
+     * Clear all ranges in the VersionRange
+     */
+open func clear() {try! rustCall() {
+    uniffi_loro_ffi_fn_method_versionrange_clear(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+    /**
+     * Check if this VersionRange contains a specific ID
+     */
+open func containsId(id: Id) -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_versionrange_contains_id(self.uniffiClonePointer(),
+        FfiConverterTypeID.lower(id),$0
+    )
+})
+}
+    
+    /**
+     * Check if this VersionRange contains a specific ID span
+     */
+open func containsIdSpan(span: IdSpan) -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_versionrange_contains_id_span(self.uniffiClonePointer(),
+        FfiConverterTypeIdSpan.lower(span),$0
+    )
+})
+}
+    
+    /**
+     * Check if this VersionRange contains operations between two VersionVectors
+     */
+open func containsOpsBetween(vvA: VersionVector, vvB: VersionVector) -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_versionrange_contains_ops_between(self.uniffiClonePointer(),
+        FfiConverterTypeVersionVector.lower(vvA),
+        FfiConverterTypeVersionVector.lower(vvB),$0
+    )
+})
+}
+    
+    /**
+     * Extend this VersionRange to include the given ID span
+     */
+open func extendsToIncludeIdSpan(span: IdSpan) {try! rustCall() {
+    uniffi_loro_ffi_fn_method_versionrange_extends_to_include_id_span(self.uniffiClonePointer(),
+        FfiConverterTypeIdSpan.lower(span),$0
+    )
+}
+}
+    
+    /**
+     * Get the counter range for a specific peer
+     * Returns the counter range if the peer exists, null otherwise
+     */
+open func get(peer: UInt64) -> CounterSpan? {
+    return try!  FfiConverterOptionTypeCounterSpan.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_versionrange_get(self.uniffiClonePointer(),
+        FfiConverterUInt64.lower(peer),$0
+    )
+})
+}
+    
+    /**
+     * Get all ranges as a list of (peer, start, end) tuples
+     */
+open func getAllRanges() -> [VersionRangeItem] {
+    return try!  FfiConverterSequenceTypeVersionRangeItem.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_versionrange_get_all_ranges(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get all peer IDs in this VersionRange
+     */
+open func getPeers() -> [UInt64] {
+    return try!  FfiConverterSequenceUInt64.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_versionrange_get_peers(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Check if this VersionRange has overlap with the given ID span
+     */
+open func hasOverlapWith(span: IdSpan) -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_versionrange_has_overlap_with(self.uniffiClonePointer(),
+        FfiConverterTypeIdSpan.lower(span),$0
+    )
+})
+}
+    
+    /**
+     * Insert a counter range for a specific peer
+     */
+open func insert(peer: UInt64, start: Int32, end: Int32) {try! rustCall() {
+    uniffi_loro_ffi_fn_method_versionrange_insert(self.uniffiClonePointer(),
+        FfiConverterUInt64.lower(peer),
+        FfiConverterInt32.lower(start),
+        FfiConverterInt32.lower(end),$0
+    )
+}
+}
+    
+    /**
+     * Check if the VersionRange is empty
+     */
+open func isEmpty() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_versionrange_is_empty(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeVersionRange: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = VersionRange
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> VersionRange {
+        return VersionRange(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: VersionRange) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> VersionRange {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: VersionRange, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeVersionRange_lift(_ pointer: UnsafeMutableRawPointer) throws -> VersionRange {
+    return try FfiConverterTypeVersionRange.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeVersionRange_lower(_ value: VersionRange) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeVersionRange.lower(value)
 }
 
 
@@ -11937,6 +12558,80 @@ public func FfiConverterTypeUpdateOptions_lift(_ buf: RustBuffer) throws -> Upda
 #endif
 public func FfiConverterTypeUpdateOptions_lower(_ value: UpdateOptions) -> RustBuffer {
     return FfiConverterTypeUpdateOptions.lower(value)
+}
+
+
+public struct VersionRangeItem {
+    public var peer: UInt64
+    public var start: Int32
+    public var end: Int32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(peer: UInt64, start: Int32, end: Int32) {
+        self.peer = peer
+        self.start = start
+        self.end = end
+    }
+}
+
+
+extension VersionRangeItem: Sendable {} 
+extension VersionRangeItem: Equatable, Hashable {
+    public static func ==(lhs: VersionRangeItem, rhs: VersionRangeItem) -> Bool {
+        if lhs.peer != rhs.peer {
+            return false
+        }
+        if lhs.start != rhs.start {
+            return false
+        }
+        if lhs.end != rhs.end {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(peer)
+        hasher.combine(start)
+        hasher.combine(end)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeVersionRangeItem: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> VersionRangeItem {
+        return
+            try VersionRangeItem(
+                peer: FfiConverterUInt64.read(from: &buf), 
+                start: FfiConverterInt32.read(from: &buf), 
+                end: FfiConverterInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: VersionRangeItem, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.peer, into: &buf)
+        FfiConverterInt32.write(value.start, into: &buf)
+        FfiConverterInt32.write(value.end, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeVersionRangeItem_lift(_ buf: RustBuffer) throws -> VersionRangeItem {
+    return try FfiConverterTypeVersionRangeItem.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeVersionRangeItem_lower(_ value: VersionRangeItem) -> RustBuffer {
+    return FfiConverterTypeVersionRangeItem.lower(value)
 }
 
 
@@ -14399,6 +15094,30 @@ fileprivate struct FfiConverterOptionTypeOnPush: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeSubscription: FfiConverterRustBuffer {
+    typealias SwiftType = Subscription?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeSubscription.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeSubscription.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeValueOrContainer: FfiConverterRustBuffer {
     typealias SwiftType = ValueOrContainer?
 
@@ -15108,6 +15827,31 @@ fileprivate struct FfiConverterSequenceTypeTreeID: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeVersionRangeItem: FfiConverterRustBuffer {
+    typealias SwiftType = [VersionRangeItem]
+
+    public static func write(_ value: [VersionRangeItem], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeVersionRangeItem.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [VersionRangeItem] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [VersionRangeItem]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeVersionRangeItem.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeContainerID: FfiConverterRustBuffer {
     typealias SwiftType = [ContainerId]
 
@@ -15426,6 +16170,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_ffi_checksum_method_containeridlike_as_container_id() != 5805) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_ffi_checksum_method_cursor_encode() != 36128) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_ffi_checksum_method_diffbatch_get_diff() != 5540) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -15508,6 +16255,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorocounter_is_deleted() != 38594) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_lorocounter_subscribe() != 60261) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorodoc_apply_diff() != 15296) {
@@ -15699,6 +16449,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_ffi_checksum_method_lorodoc_peer_id() != 5346) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_ffi_checksum_method_lorodoc_redact_json_updates() != 33049) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_ffi_checksum_method_lorodoc_revert_to() != 13908) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -15825,6 +16578,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_ffi_checksum_method_lorolist_push() != 48242) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_ffi_checksum_method_lorolist_subscribe() != 37781) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_ffi_checksum_method_lorolist_to_vec() != 48551) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -15907,6 +16663,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_loromap_len() != 39413) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_loromap_subscribe() != 52134) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_loromap_values() != 59291) {
@@ -16011,10 +16770,16 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_ffi_checksum_method_loromovablelist_set_tree_container() != 10601) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_ffi_checksum_method_loromovablelist_subscribe() != 31212) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_ffi_checksum_method_loromovablelist_to_vec() != 22764) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorotext_apply_delta() != 31013) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_lorotext_char_at() != 49891) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorotext_delete() != 50707) {
@@ -16075,6 +16840,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorotext_splice() != 53391) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_lorotext_subscribe() != 55608) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorotext_to_delta() != 49666) {
@@ -16173,6 +16941,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_ffi_checksum_method_lorotree_roots() != 6925) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_ffi_checksum_method_lorotree_subscribe() != 4481) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_ffi_checksum_method_lorounknown_id() != 45333) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -16218,6 +16989,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_ffi_checksum_method_undomanager_redo() != 52607) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_ffi_checksum_method_undomanager_redo_count() != 12383) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_ffi_checksum_method_undomanager_set_max_undo_steps() != 20261) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -16231,6 +17005,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_undomanager_undo() != 51407) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_undomanager_undo_count() != 43432) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_unsubscriber_on_unsubscribe() != 64065) {
@@ -16270,6 +17047,39 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_valueorcontainer_is_value() != 20846) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_versionrange_clear() != 22575) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_versionrange_contains_id() != 4971) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_versionrange_contains_id_span() != 52504) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_versionrange_contains_ops_between() != 61529) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_versionrange_extends_to_include_id_span() != 16625) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_versionrange_get() != 50783) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_versionrange_get_all_ranges() != 20760) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_versionrange_get_peers() != 40505) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_versionrange_has_overlap_with() != 65383) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_versionrange_insert() != 44262) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_versionrange_is_empty() != 60658) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_versionvector_diff() != 2647) {
@@ -16312,6 +17122,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_constructor_awareness_new() != 18821) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_constructor_cursor_decode() != 31913) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_constructor_cursor_new() != 32460) {
@@ -16369,6 +17182,12 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_constructor_undomanager_new() != 31025) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_constructor_versionrange_from_vv() != 10426) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_constructor_versionrange_new() != 7136) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_constructor_versionvector_decode() != 54438) {
