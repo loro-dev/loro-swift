@@ -9436,6 +9436,26 @@ public protocol UndoManagerProtocol : AnyObject {
     func canUndo()  -> Bool
     
     /**
+     * Ends the current group, calling UndoManager::undo() after this will
+     * undo all changes that occurred during the group.
+     */
+    func groupEnd() 
+    
+    /**
+     * Will start a new group of changes, all subsequent changes will be merged
+     * into a new item on the undo stack. If we receive remote changes, we determine
+     * wether or not they are conflicting. If the remote changes are conflicting
+     * we split the undo item and close the group. If there are no conflict
+     * in changed container ids we continue the group merge.
+     */
+    func groupStart() throws 
+    
+    /**
+     * Get the peer id of the undo manager
+     */
+    func peer()  -> UInt64
+    
+    /**
      * Record a new checkpoint.
      */
     func recordNewCheckpoint() throws 
@@ -9572,6 +9592,39 @@ open func canRedo() -> Bool {
 open func canUndo() -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_loro_ffi_fn_method_undomanager_can_undo(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Ends the current group, calling UndoManager::undo() after this will
+     * undo all changes that occurred during the group.
+     */
+open func groupEnd() {try! rustCall() {
+    uniffi_loro_ffi_fn_method_undomanager_group_end(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+    /**
+     * Will start a new group of changes, all subsequent changes will be merged
+     * into a new item on the undo stack. If we receive remote changes, we determine
+     * wether or not they are conflicting. If the remote changes are conflicting
+     * we split the undo item and close the group. If there are no conflict
+     * in changed container ids we continue the group merge.
+     */
+open func groupStart()throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_ffi_fn_method_undomanager_group_start(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+    /**
+     * Get the peer id of the undo manager
+     */
+open func peer() -> UInt64 {
+    return try!  FfiConverterUInt64.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_undomanager_peer(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -16981,6 +17034,15 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_undomanager_can_undo() != 42348) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_undomanager_group_end() != 37541) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_undomanager_group_start() != 64372) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_undomanager_peer() != 45180) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_undomanager_record_new_checkpoint() != 12209) {
