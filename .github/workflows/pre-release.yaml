@@ -72,8 +72,3 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Delete pre-release tag
-        run: |
-          VERSION=${{ steps.get_version.outputs.version }}
-          git push origin :refs/tags/${VERSION}-pre-release
