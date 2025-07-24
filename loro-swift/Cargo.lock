@@ -749,9 +749,9 @@ dependencies = [
 
 [[package]]
 name = "loro-ffi"
-version = "1.5.10"
+version = "1.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a575d13823924d52a10e9ac6c045149f84e52440b164955eca5d1090242e437"
+checksum = "9b7d666de75cef402bae5a85ec56fb8c12825b0efe34b36b5e828b9ed7736e06"
 dependencies = [
  "loro",
  "serde_json",

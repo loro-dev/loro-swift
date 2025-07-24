@@ -11,7 +11,7 @@ name = "uniffi-bindgen"
 path = "src/uniffi-bindgen.rs"
 
 [dependencies]
-loro-ffi = { version = "1.5.10" }
+loro-ffi = { version = "1.5.11" }
 uniffi = { version = "0.28.3" }
 
 [build-dependencies]
