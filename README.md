@@ -29,7 +29,7 @@ let package = Package(
     products: [......],
     dependencies:[
         ...,
-        .package(url: "https://github.com/loro-dev/loro-swift.git", from: "1.5.5")
+        .package(url: "https://github.com/loro-dev/loro-swift.git", from: "1.6.0")
     ],
     targets:[
         .executableTarget(
