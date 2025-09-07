@@ -1,9 +1,14 @@
-name: Pre-release Build and Publish
+name: Pre-release Build and PR
+run-name: Pre-release ${{ github.ref_name }}
 
 on:
   push:
     tags:
       - '*-pre-release'
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   build-and-release:
@@ -34,6 +39,12 @@ jobs:
           CHECKSUM=$(openssl dgst -sha256 loroFFI.xcframework.zip | awk '{print $2}')
           echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
 
+      - name: Upload XCFramework artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: loroFFI.xcframework.zip
+          path: loroFFI.xcframework.zip
+
       - name: Update Package.swift
         run: |
           VERSION=${{ steps.get_version.outputs.version }}
@@ -50,25 +61,31 @@ jobs:
             -e "s|\"https://github.com/loro-dev/loro-swift.git\", from: \"[0-9.]*\"|\"https://github.com/loro-dev/loro-swift.git\", from: \"${VERSION}\"|" \
             README.md
 
-      - name: Commit and push changes
+      - name: Commit and push changes to pre-release branch
         run: |
           VERSION=${{ steps.get_version.outputs.version }}
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+          # Ensure local pre-release branch points to current commit
+          git fetch origin pre-release:pre-release || true
+          git checkout -B pre-release "$GITHUB_SHA"
           git add Package.swift README.md Sources/*
-          git commit -m "chore: update version to ${VERSION}"
-          git tag -a "${VERSION}" -m "Release version ${VERSION}"
-          git push origin HEAD:main
-          git push origin "${VERSION}"
+          git commit -m "chore: update version to ${VERSION}" || echo "No changes to commit"
+          git push origin pre-release
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.get_version.outputs.version }}
-          name: Release ${{ steps.get_version.outputs.version }}
-          files: loroFFI.xcframework.zip
-          draft: false
-          prerelease: false
-          generate_release_notes: true
+      - name: Create or update Pull Request to main
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          CHECKSUM=${{ steps.sha256.outputs.checksum }}
+          PR_NUMBER=$(gh pr list --base main --head pre-release --state open --json number --jq '.[0].number')
+          if [ -z "$PR_NUMBER" ]; then
+            gh pr create \
+              --base main \
+              --head pre-release \
+              --title "Release ${VERSION}" \
+              --body "This PR updates Package.swift and README.md to version ${VERSION}.\n\nSHA256 checksum: ${CHECKSUM}.\n\nThe XCFramework artifact has been uploaded to this workflow run."
+          else
+            echo "PR #$PR_NUMBER already exists."
+          fi
