@@ -177,7 +177,7 @@ final class EphemeralStoreTests: XCTestCase {
         let encodedData = store1.encodeAll()
         
         // Apply data to store2
-        store2.apply(data: encodedData)
+        try! store2.apply(data: encodedData)
         
         // Verify store2 has the same data
         XCTAssertEqual(store2.get(key: "key1"), LoroValue.string(value: "value1"))
@@ -201,7 +201,7 @@ final class EphemeralStoreTests: XCTestCase {
         
         // Create new store and apply specific key data
         let newStore = EphemeralStore(timeout: 60000)
-        newStore.apply(data: encodedKey1)
+        try! newStore.apply(data: encodedKey1)
         
         // Should only have key1, not key2
         XCTAssertNotNil(newStore.get(key: "key1"))
