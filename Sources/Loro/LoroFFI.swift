@@ -1723,7 +1723,7 @@ public func FfiConverterTypeDiffBatch_lower(_ value: DiffBatch) -> UnsafeMutable
 
 public protocol EphemeralStoreProtocol : AnyObject {
     
-    func apply(data: Data) 
+    func apply(data: Data) throws 
     
     func delete(key: String) 
     
@@ -1805,7 +1805,7 @@ public convenience init(timeout: Int64) {
     
 
     
-open func apply(data: Data) {try! rustCall() {
+open func apply(data: Data)throws  {try rustCallWithError(FfiConverterTypeLoroError.lift) {
     uniffi_loro_ffi_fn_method_ephemeralstore_apply(self.uniffiClonePointer(),
         FfiConverterData.lower(data),$0
     )
@@ -3691,11 +3691,6 @@ public protocol LoroDocProtocol : AnyObject {
     func lenOps()  -> UInt64
     
     /**
-     * Estimate the size of the document states in memory.
-     */
-    func logEstimateSize() 
-    
-    /**
      * Minimize the frontiers by removing the unnecessary entries.
      */
     func minimizeFrontiers(frontiers: Frontiers)  -> FrontiersOrId
@@ -4741,15 +4736,6 @@ open func lenOps() -> UInt64 {
     uniffi_loro_ffi_fn_method_lorodoc_len_ops(self.uniffiClonePointer(),$0
     )
 })
-}
-    
-    /**
-     * Estimate the size of the document states in memory.
-     */
-open func logEstimateSize() {try! rustCall() {
-    uniffi_loro_ffi_fn_method_lorodoc_log_estimate_size(self.uniffiClonePointer(),$0
-    )
-}
 }
     
     /**
@@ -16301,7 +16287,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_ffi_checksum_method_diffbatch_push() != 17472) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_ffi_checksum_method_ephemeralstore_apply() != 28698) {
+    if (uniffi_loro_ffi_checksum_method_ephemeralstore_apply() != 1107) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_ephemeralstore_delete() != 9629) {
@@ -16560,9 +16546,6 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorodoc_len_ops() != 1966) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_loro_ffi_checksum_method_lorodoc_log_estimate_size() != 14588) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorodoc_minimize_frontiers() != 47301) {

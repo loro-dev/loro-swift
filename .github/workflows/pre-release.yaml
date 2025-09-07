@@ -55,7 +55,7 @@ jobs:
           VERSION=${{ steps.get_version.outputs.version }}
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add Package.swift README.md
+          git add Package.swift README.md Sources/*
           git commit -m "chore: update version to ${VERSION}"
           git tag -a "${VERSION}" -m "Release version ${VERSION}"
           git push origin HEAD:main
