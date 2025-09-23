@@ -9497,6 +9497,26 @@ public protocol UndoManagerProtocol : AnyObject {
     func setOnPush(onPush: OnPush?) 
     
     /**
+     * Get the metadata of the top redo stack item, if any.
+     */
+    func topRedoMeta()  -> UndoItemMeta?
+    
+    /**
+     * Get the value associated with the top redo stack item, if any.
+     */
+    func topRedoValue()  -> LoroValue?
+    
+    /**
+     * Get the metadata of the top undo stack item, if any.
+     */
+    func topUndoMeta()  -> UndoItemMeta?
+    
+    /**
+     * Get the value associated with the top undo stack item, if any.
+     */
+    func topUndoValue()  -> LoroValue?
+    
+    /**
      * Undo the last change made by the peer.
      */
     func undo() throws  -> Bool
@@ -9702,6 +9722,46 @@ open func setOnPush(onPush: OnPush?) {try! rustCall() {
         FfiConverterOptionTypeOnPush.lower(onPush),$0
     )
 }
+}
+    
+    /**
+     * Get the metadata of the top redo stack item, if any.
+     */
+open func topRedoMeta() -> UndoItemMeta? {
+    return try!  FfiConverterOptionTypeUndoItemMeta.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_undomanager_top_redo_meta(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the value associated with the top redo stack item, if any.
+     */
+open func topRedoValue() -> LoroValue? {
+    return try!  FfiConverterOptionTypeLoroValue.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_undomanager_top_redo_value(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the metadata of the top undo stack item, if any.
+     */
+open func topUndoMeta() -> UndoItemMeta? {
+    return try!  FfiConverterOptionTypeUndoItemMeta.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_undomanager_top_undo_meta(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Get the value associated with the top undo stack item, if any.
+     */
+open func topUndoValue() -> LoroValue? {
+    return try!  FfiConverterOptionTypeLoroValue.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_undomanager_top_undo_value(self.uniffiClonePointer(),$0
+    )
+})
 }
     
     /**
@@ -15368,6 +15428,30 @@ fileprivate struct FfiConverterOptionTypeStyleConfig: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeUndoItemMeta: FfiConverterRustBuffer {
+    typealias SwiftType = UndoItemMeta?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeUndoItemMeta.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeUndoItemMeta.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeContainerID: FfiConverterRustBuffer {
     typealias SwiftType = ContainerId?
 
@@ -17122,6 +17206,18 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_undomanager_set_on_push() != 23722) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_undomanager_top_redo_meta() != 15306) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_undomanager_top_redo_value() != 57224) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_undomanager_top_undo_meta() != 26343) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_undomanager_top_undo_value() != 42818) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_undomanager_undo() != 51407) {
