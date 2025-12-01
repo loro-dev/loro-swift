@@ -112,6 +112,30 @@ final class LoroTests: XCTestCase {
         XCTAssertEqual(s, "bcdef")
     }
 
+    func testTextUtf16AndPosConversion(){
+        let doc = LoroDoc()
+        let text = doc.getText(id: "text")
+        try! text.insert(pos: 0, s: "A😀C")
+
+        let utf16Pos = text.convertPos(index: 1, from: .unicode, to: .utf16)
+        XCTAssertEqual(utf16Pos, 2)
+
+        try! text.insertUtf16(pos: utf16Pos!, s: "B")
+        XCTAssertEqual(text.toString(), "A😀BC")
+
+        let slice = try! text.sliceUtf16(startIndex: 1, endIndex: 3)
+        XCTAssertEqual(slice, "😀B")
+
+        let delta = try! text.sliceDelta(startIndex: 1, endIndex: 3, posType: .unicode)
+        XCTAssertEqual(delta.count, 2)
+        if case let .insert(insert: first, attributes: attrs) = delta[0] {
+            XCTAssertEqual(first, "😀")
+            XCTAssertEqual(attrs?["bold"] == nil, true)
+        } else {
+            XCTFail("expected insert")
+        }
+    }
+
     func testOrigin(){
         do{
             let localDoc = LoroDoc()
