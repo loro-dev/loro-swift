@@ -8,7 +8,7 @@ let FFIbinaryTarget: PackageDescription.Target
 
 if ProcessInfo.processInfo.environment["LOCAL_BUILD"] != nil {
     FFIbinaryTarget = .binaryTarget(name: "LoroFFI", path: "./loroFFI.xcframework.zip")
-}else {
+} else {
     FFIbinaryTarget = .binaryTarget(
         name: "LoroFFI",
         url: "https://github.com/loro-dev/loro-swift/releases/download/1.8.1/loroFFI.xcframework.zip",
@@ -24,14 +24,11 @@ let package = Package(
         .visionOS(.v1)
     ],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "Loro",
             targets: ["Loro"]),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         FFIbinaryTarget,
         .target(
             name: "Loro",

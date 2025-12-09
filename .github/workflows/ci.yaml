@@ -1,28 +1,71 @@
-name: build-test
+name: swift
+
 on:
+  push:
+    branches: [main, master, develop]
   pull_request:
-    branches: [main]
+    branches: [main, master, develop]
 
 jobs:
-  build-test:
-    runs-on: macos-14
-    env:
-      LOCAL_BUILD: true
-      DEVELOPER_DIR: /Applications/Xcode_15.4.app
+  # macOS build and test (primary platform)
+  build-and-test-macos:
+    name: Swift ${{ matrix.swift }} on macOS
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        swift: ["5.10", "6.0.0"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: actions-rs/toolchain@v1
+
+      - name: Setup Swift
+        uses: SwiftyLab/setup-swift@v1
         with:
-          profile: minimal
-          toolchain: 1.82.0
-          default: true
-      - name: get xcode information
-        run: |
-          xcodebuild -version
-          swift --version
-      - name: build xcframework
+          swift-version: ${{ matrix.swift }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build xcframework
         run: ./scripts/build_macos.sh
-      - name: Swift tests
-        run: LOCAL_BUILD=true swift test
+
+      - name: Build
+        run: swift build -c release
+        env:
+          LOCAL_BUILD: "true"
+
+      - name: Run tests
+        run: swift test
+        env:
+          LOCAL_BUILD: "true"
+
+  # Linux build (experimental - uses system library)
+  build-and-test-linux:
+    name: Swift on Linux (experimental)
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Swift
+        uses: SwiftyLab/setup-swift@v1
+        with:
+          swift-version: "5.10"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust FFI
+        run: |
+          chmod +x ./scripts/build_linux.sh
+          ./scripts/build_linux.sh
+
+      - name: Build
+        run: swift build -c release
+
+      - name: Run tests
+        run: swift test

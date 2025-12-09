@@ -4,7 +4,14 @@
 //
 //  Created by Leon Zhao on 2024/8/6.
 //
+
+#if !hasFeature(Embedded)
+#if canImport(FoundationEssentials)
+import FoundationEssentials
+#elseif canImport(Foundation)
 import Foundation
+#endif
+#endif
 
 extension LoroValue: LoroValueLike {
     public func asLoroValue() -> LoroValue {

@@ -1,11 +1,17 @@
 //
 //  Ephemeral.swift
-//  
+//
 //
 //  Created by Leon Zhao on 2025/6/4.
 //
 
+#if !hasFeature(Embedded)
+#if canImport(FoundationEssentials)
+import FoundationEssentials
+#elseif canImport(Foundation)
 import Foundation
+#endif
+#endif
 
 class ClosureEphemeralSubscriber: EphemeralSubscriber {
     private let closure: (EphemeralStoreEvent) -> Void
