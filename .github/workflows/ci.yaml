@@ -29,8 +29,6 @@ jobs:
       # Rust is needed to build the FFI library on all platforms
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: "1.82.0"
 
       # Build Rust FFI library (Linux)
       - name: Build Rust FFI (Linux)
