@@ -13,18 +13,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: macos-latest
-            swift: "6.0.2"
-          - os: ubuntu-22.04
-            swift: "6.0.2"
+        os: [ubuntu-latest, macos-latest]
+        swift: ["6.2"]
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Setup Swift
-        uses: swift-actions/setup-swift@v2
+        uses: SwiftyLab/setup-swift@v1
         with:
           swift-version: ${{ matrix.swift }}
 
