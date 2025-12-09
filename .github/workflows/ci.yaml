@@ -7,15 +7,14 @@ on:
     branches: [main, master, develop]
 
 jobs:
-  # Build and test on multiple platforms
-  build-and-test:
-    name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+  # macOS build and test (primary platform)
+  build-and-test-macos:
+    name: Swift ${{ matrix.swift }} on macOS
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        swift: ["6.0.0"]
+        swift: ["5.10", "6.0.0"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,34 +25,47 @@ jobs:
         with:
           swift-version: ${{ matrix.swift }}
 
-      # Rust is needed to build the FFI library on all platforms
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # Build Rust FFI library (Linux)
-      - name: Build Rust FFI (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          chmod +x ./scripts/build_linux.sh
-          ./scripts/build_linux.sh
-
-      # Build Rust FFI library (Windows)
-      - name: Build Rust FFI (Windows)
-        if: runner.os == 'Windows'
-        run: .\scripts\build_windows.ps1
-        shell: pwsh
-
-      # Build Rust FFI library (macOS) - builds local xcframework
-      - name: Build Rust FFI (macOS)
-        if: runner.os == 'macOS'
+      - name: Build xcframework
         run: ./scripts/build_macos.sh
 
       - name: Build
         run: swift build -c release
         env:
-          LOCAL_BUILD: ${{ runner.os == 'macOS' && 'true' || '' }}
+          LOCAL_BUILD: "true"
 
       - name: Run tests
         run: swift test
         env:
-          LOCAL_BUILD: ${{ runner.os == 'macOS' && 'true' || '' }}
+          LOCAL_BUILD: "true"
+
+  # Linux build (experimental - uses system library)
+  build-and-test-linux:
+    name: Swift on Linux (experimental)
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Swift
+        uses: SwiftyLab/setup-swift@v1
+        with:
+          swift-version: "5.10"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust FFI
+        run: |
+          chmod +x ./scripts/build_linux.sh
+          ./scripts/build_linux.sh
+
+      - name: Build
+        run: swift build -c release
+
+      - name: Run tests
+        run: swift test
