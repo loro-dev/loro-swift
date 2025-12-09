@@ -1,6 +1,3 @@
-[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Floro-dev%2Floro-swift%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/loro-dev/loro-swift)
-[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Floro-dev%2Floro-swift%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/loro-dev/loro-swift)
-
 <h1 align="center">loro-swift</h1>
 
 <p align="center">
@@ -17,6 +14,14 @@ This repository contains experimental Swift bindings for
 
 If you have any suggestions for API, please feel free to create an issue or join
 our [Discord](https://discord.gg/tUsBSVfqzf) community.
+
+> Requires Swift 6.2 or newer. We rely on SE-0482 cross-platform static library artifact bundles.
+
+Supported platforms (artifact bundle):
+- macOS: arm64, x86_64
+- iOS: arm64 (device), arm64/x86_64 (simulator)
+- Linux: x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu
+- Windows: x86_64-unknown-windows-msvc
 
 
 ## Usage
@@ -93,7 +98,7 @@ The script will run `uniffi` and generate the `loroFFI.xcframework.zip`.
 ## Releases (cross-platform static library)
 
 - We use Swift 6.2+ because SE-0482 enables cross-platform `staticLibrary` artifact bundles for SwiftPM (see the [proposal](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0482-swiftpm-static-library-binary-target-non-apple-platforms.md)).
-- Tag `x.y.z-pre-release` to run the pre-release workflow: it builds macOS/iOS/Linux/Windows static libs, assembles the artifact bundle, computes the checksum, and opens/updates a PR (branch `pre-release`) that updates `Package.swift` and `README.md`.
+- Tag `x.y.z-pre-release` to run the pre-release workflow: it builds macOS/iOS/Linux/Windows static libs, assembles the artifact bundle, computes the checksum, and opens/updates a PR (branch `pre-release`) that updates `Package.swift` and `README.md` (Swift 6.2+ required).
 - Merge the pre-release PR; when it’s merged, the release workflow for the final tag publishes the cross-platform artifact bundle used by `Package.swift`.
 - Use Swift 6.2 locally (e.g., `swiftly use 6.2`) to match the toolchain required by SE-0482.
 
