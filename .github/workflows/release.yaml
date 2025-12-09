@@ -133,7 +133,7 @@ jobs:
           cd loro-swift
           cargo build --release
           mkdir -p ../artifacts/windows
-          cp target/release/loro_swift.lib ../artifacts/windows/
+          cp target/release/loro_swift.lib ../artifacts/windows/libloro_swift.lib
 
       - uses: actions/upload-artifact@v4
         with:
@@ -189,7 +189,7 @@ jobs:
           cp artifacts/macos-artifacts/ios-simulator/libloro_swift.a "$BUNDLE/ios-simulator/"
           cp artifacts/linux-x86_64-artifacts/linux-x86_64/libloro_swift.a "$BUNDLE/linux-x86_64/"
           cp artifacts/linux-arm64-artifacts/linux-arm64/libloro_swift.a "$BUNDLE/linux-arm64/"
-          cp artifacts/windows-artifacts/windows/loro_swift.lib "$BUNDLE/windows/"
+          cp artifacts/windows-artifacts/windows/libloro_swift.lib "$BUNDLE/windows/"
 
           # Create info.json with all variants
           cat > "$BUNDLE/info.json" << EOF
@@ -241,7 +241,7 @@ jobs:
                     }
                   },
                   {
-                    "path": "windows/loro_swift.lib",
+                    "path": "windows/libloro_swift.lib",
                     "supportedTriples": ["x86_64-unknown-windows-msvc"],
                     "staticLibraryMetadata": {
                       "headerPaths": ["include"],

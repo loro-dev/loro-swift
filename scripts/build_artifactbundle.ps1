@@ -59,7 +59,7 @@ Set-Content $LoroFFISwift $Content
 Write-Host "▸ Setting up Windows library"
 $WindowsLibFolder = Join-Path $BundleFolder "loroFFI-windows"
 New-Item -ItemType Directory -Force -Path $WindowsLibFolder | Out-Null
-Copy-Item "$BuildFolder\release\loro_swift.lib" $WindowsLibFolder
+Copy-Item "$BuildFolder\release\loro_swift.lib" (Join-Path $WindowsLibFolder "libloro_swift.lib")
 
 # Determine architecture
 $Arch = if ([Environment]::Is64BitOperatingSystem) { "x86_64" } else { "i686" }
@@ -75,7 +75,7 @@ Write-Host "▸ Create info.json"
       "type": "staticLibrary",
       "variants": [
         {
-          "path": "loroFFI-windows/loro_swift.lib",
+          "path": "loroFFI-windows/libloro_swift.lib",
           "supportedTriples": ["$Triple"],
           "staticLibraryMetadata": {
             "headerPaths": ["include"],
