@@ -8,32 +8,31 @@ on:
 
 jobs:
   build-and-test:
-    name: Swift 6.2 on ${{ matrix.os }}
+    name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        include:
+          - os: macos-latest
+            swift: "6.0.2"
+          - os: ubuntu-22.04
+            swift: "6.0.2"
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install swiftly
-        run: |
-          curl -L https://swiftlang.github.io/swiftly/swiftly-install.sh | bash -s -- -y
-          echo "$HOME/.swiftly/bin" >> $GITHUB_PATH
-
-      - name: Install Swift 6.2
-        run: |
-          swiftly install 6.2
-          swiftly use 6.2
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: ${{ matrix.swift }}
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Swift version
-        run: swiftly run swift --version
+        run: swift --version
 
       - name: Rust version
         run: rustc --version
@@ -44,7 +43,7 @@ jobs:
           ./scripts/build_artifactbundle.sh
 
       - name: Build
-        run: LOCAL_BUILD=1 swiftly run swift build -c release
+        run: LOCAL_BUILD=1 swift build -c release
 
       - name: Run tests
-        run: LOCAL_BUILD=1 swiftly run swift test
+        run: LOCAL_BUILD=1 swift test
