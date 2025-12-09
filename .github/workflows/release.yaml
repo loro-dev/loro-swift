@@ -1,0 +1,279 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.10.3)'
+        required: true
+
+jobs:
+  # Build static libraries for each platform
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Build universal macOS library
+        run: |
+          cd loro-swift
+          cargo build --release --target aarch64-apple-darwin
+          cargo build --release --target x86_64-apple-darwin
+          mkdir -p ../artifacts/macos
+          lipo -create \
+            target/aarch64-apple-darwin/release/libloro_swift.a \
+            target/x86_64-apple-darwin/release/libloro_swift.a \
+            -output ../artifacts/macos/libloro_swift.a
+
+      - name: Generate Swift bindings
+        run: |
+          cd loro-swift
+          cargo build --release --features cli
+          cargo run --release --features=cli --bin uniffi-bindgen generate \
+            --library target/release/libloro_swift.dylib \
+            --language swift \
+            --out-dir ../artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-artifacts
+          path: artifacts/
+
+  build-linux-x86_64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Linux x86_64 library
+        run: |
+          cd loro-swift
+          cargo build --release
+          mkdir -p ../artifacts/linux-x86_64
+          cp target/release/libloro_swift.a ../artifacts/linux-x86_64/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64-artifacts
+          path: artifacts/
+
+  build-linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-gnu
+
+      - name: Install cross-compilation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Build Linux ARM64 library
+        run: |
+          cd loro-swift
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
+            cargo build --release --target aarch64-unknown-linux-gnu
+          mkdir -p ../artifacts/linux-arm64
+          cp target/aarch64-unknown-linux-gnu/release/libloro_swift.a ../artifacts/linux-arm64/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-arm64-artifacts
+          path: artifacts/
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Windows library
+        run: |
+          cd loro-swift
+          cargo build --release
+          mkdir -p ../artifacts/windows
+          cp target/release/loro_swift.lib ../artifacts/windows/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: artifacts/
+
+  # Combine all artifacts into a single artifact bundle
+  create-release:
+    needs: [build-macos, build-linux-x86_64, build-linux-arm64, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create artifact bundle
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BUNDLE="loroFFI.artifactbundle"
+
+          mkdir -p "$BUNDLE/include"
+          mkdir -p "$BUNDLE/macos"
+          mkdir -p "$BUNDLE/linux-x86_64"
+          mkdir -p "$BUNDLE/linux-arm64"
+          mkdir -p "$BUNDLE/windows"
+
+          # Copy header and create module map
+          cp artifacts/macos-artifacts/loroFFI.h "$BUNDLE/include/"
+          cat > "$BUNDLE/include/module.modulemap" << 'EOF'
+          module LoroFFI {
+              header "loroFFI.h"
+              export *
+          }
+          EOF
+
+          # Copy platform libraries
+          cp artifacts/macos-artifacts/macos/libloro_swift.a "$BUNDLE/macos/"
+          cp artifacts/linux-x86_64-artifacts/linux-x86_64/libloro_swift.a "$BUNDLE/linux-x86_64/"
+          cp artifacts/linux-arm64-artifacts/linux-arm64/libloro_swift.a "$BUNDLE/linux-arm64/"
+          cp artifacts/windows-artifacts/windows/loro_swift.lib "$BUNDLE/windows/"
+
+          # Create info.json with all variants
+          cat > "$BUNDLE/info.json" << EOF
+          {
+            "schemaVersion": "1.0",
+            "artifacts": {
+              "LoroFFI": {
+                "version": "$VERSION",
+                "type": "staticLibrary",
+                "variants": [
+                  {
+                    "path": "macos/libloro_swift.a",
+                    "supportedTriples": ["arm64-apple-macosx", "x86_64-apple-macosx"],
+                    "staticLibraryMetadata": {
+                      "headerPaths": ["include"],
+                      "moduleMapPath": "include/module.modulemap"
+                    }
+                  },
+                  {
+                    "path": "linux-x86_64/libloro_swift.a",
+                    "supportedTriples": ["x86_64-unknown-linux-gnu"],
+                    "staticLibraryMetadata": {
+                      "headerPaths": ["include"],
+                      "moduleMapPath": "include/module.modulemap"
+                    }
+                  },
+                  {
+                    "path": "linux-arm64/libloro_swift.a",
+                    "supportedTriples": ["aarch64-unknown-linux-gnu"],
+                    "staticLibraryMetadata": {
+                      "headerPaths": ["include"],
+                      "moduleMapPath": "include/module.modulemap"
+                    }
+                  },
+                  {
+                    "path": "windows/loro_swift.lib",
+                    "supportedTriples": ["x86_64-unknown-windows-msvc"],
+                    "staticLibraryMetadata": {
+                      "headerPaths": ["include"],
+                      "moduleMapPath": "include/module.modulemap"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+          EOF
+
+          # Create zip
+          zip -r "loroFFI.artifactbundle.zip" "$BUNDLE"
+
+          # Calculate checksum
+          sha256sum "loroFFI.artifactbundle.zip" > checksum.txt
+          cat checksum.txt
+
+      - name: Update LoroFFI.swift with fixes
+        run: |
+          SWIFT_FILE="artifacts/macos-artifacts/loro.swift"
+
+          # Apply Swift 6 compatibility fixes
+          perl -i -pe 's/canImport\(loroFFI\)/canImport(LoroFFI)/g' "$SWIFT_FILE"
+          perl -i -pe 's/import loroFFI/import LoroFFI/g' "$SWIFT_FILE"
+          perl -i -pe 's/static var vtable:/nonisolated(unsafe) static var vtable:/g' "$SWIFT_FILE"
+          perl -i -pe 's/fileprivate static var handleMap/nonisolated(unsafe) fileprivate static var handleMap/g' "$SWIFT_FILE"
+          perl -i -pe 's/private var initializationResult/nonisolated(unsafe) private var initializationResult/g' "$SWIFT_FILE"
+          perl -i -pe 's/protocol LoroValueLike\s*:\s*AnyObject/protocol LoroValueLike/g' "$SWIFT_FILE"
+          perl -i -pe 's/protocol ContainerIdLike\s*:\s*AnyObject/protocol ContainerIdLike/g' "$SWIFT_FILE"
+
+          cp "$SWIFT_FILE" LoroFFI.swift
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            loroFFI.artifactbundle.zip
+            checksum.txt
+            LoroFFI.swift
+          body: |
+            ## Cross-Platform Artifact Bundle
+
+            This release includes a cross-platform artifact bundle (SE-0482) with support for:
+            - macOS (arm64, x86_64)
+            - Linux (x86_64, arm64)
+            - Windows (x86_64)
+
+            ### Checksum
+            ```
+            $(cat checksum.txt)
+            ```
+
+            ### Usage
+            Update your `Package.swift`:
+            ```swift
+            .binaryTarget(
+                name: "LoroFFI",
+                url: "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/loroFFI.artifactbundle.zip",
+                checksum: "$(cut -d' ' -f1 checksum.txt)"
+            )
+            ```
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-bundle
+          path: |
+            loroFFI.artifactbundle.zip
+            checksum.txt
+            LoroFFI.swift
