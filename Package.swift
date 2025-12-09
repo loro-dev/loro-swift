@@ -38,7 +38,10 @@ let package = Package(
         FFIbinaryTarget,
         .target(
             name: "Loro",
-            dependencies: ["LoroFFI"]
+            dependencies: ["LoroFFI"],
+            linkerSettings: [
+                .linkedLibrary("ntdll", .when(platforms: [.windows]))
+            ]
         ),
         .testTarget(
             name: "LoroTests",
