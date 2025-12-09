@@ -6,11 +6,15 @@ import PackageDescription
 
 let FFIbinaryTarget: PackageDescription.Target
 
+// SE-0482: Cross-platform static library support via artifact bundles
+// The artifact bundle is built from Rust source and supports macOS, Linux, and Windows
 if ProcessInfo.processInfo.environment["LOCAL_BUILD"] != nil {
-    // Use artifact bundle for local development (cross-platform support via SE-0482)
+    // Local development: use locally built artifact bundle
     FFIbinaryTarget = .binaryTarget(name: "LoroFFI", path: "./loroFFI.artifactbundle")
 } else {
-    // Use xcframework for release (Apple platforms only for now)
+    // Release: use artifact bundle from GitHub releases
+    // TODO: Update URL when cross-platform artifact bundle is published
+    // For now, falls back to xcframework (Apple platforms only)
     FFIbinaryTarget = .binaryTarget(
         name: "LoroFFI",
         url: "https://github.com/loro-dev/loro-swift/releases/download/1.8.1/loroFFI.xcframework.zip",
