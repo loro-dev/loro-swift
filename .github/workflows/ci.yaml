@@ -52,9 +52,20 @@ jobs:
           LOCAL_BUILD: "1"
 
       - name: Run tests
+        if: runner.os != 'Windows'
         run: swift test
         env:
           LOCAL_BUILD: "1"
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          LOCAL_BUILD: "1"
+        run: |
+          $libPath = (Resolve-Path ".\loroFFI.artifactbundle\loroFFI-windows").Path
+          swift test `
+            -Xlinker "/LIBPATH:$libPath"
 
       - name: Audit undefined symbols (informational)
         if: runner.os != 'Windows'
