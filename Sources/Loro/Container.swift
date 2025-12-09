@@ -201,6 +201,10 @@ extension LoroText{
     public func mark(from: UInt32, to: UInt32, key: String, value: LoroValueLike?) throws {
         try self.mark(from: from, to: to, key: key, value: value?.asLoroValue() ?? .null)
     }
+
+    public func toString() -> String {
+        return self.description
+    }
 }
 
 extension Awareness{

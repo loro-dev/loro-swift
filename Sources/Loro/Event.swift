@@ -24,6 +24,18 @@ class ClosureLocalUpdate: LocalUpdateCallback{
     }
 }
 
+class ClosureJsonPathSubscriber: JsonPathSubscriber{
+    private let closure: () -> Void
+
+    public init(closure: @escaping () -> Void) {
+        self.closure = closure
+    }
+
+    public func onJsonpathChanged() {
+        closure()
+    }
+}
+
 extension LoroDoc{
     /** Subscribe all the events.
      *
@@ -57,6 +69,14 @@ extension LoroDoc{
     public func subscribeLocalUpdate(callback: @escaping (Data)->Void)->Subscription{
         let closureLocalUpdate = ClosureLocalUpdate(closure: callback)
         return self.subscribeLocalUpdate(callback: closureLocalUpdate)
+    }
+
+    /**
+     * Subscribe to JSONPath changes (may emit false positives).
+     */
+    public func subscribeJsonpath(path: String, callback: @escaping () -> Void) throws -> Subscription {
+        let closureSubscriber = ClosureJsonPathSubscriber(closure: callback)
+        return try self.subscribeJsonpath(path: path, callback: closureSubscriber)
     }
 }
 

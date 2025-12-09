@@ -2281,11 +2281,10 @@ public func FfiConverterTypeFirstCommitFromPeerCallback_lower(_ value: FirstComm
 
 public protocol FractionalIndexProtocol : AnyObject {
     
-    func toString()  -> String
-    
 }
 
 open class FractionalIndex:
+    CustomStringConvertible,
     FractionalIndexProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
@@ -2351,13 +2350,14 @@ public static func fromHexString(str: String) -> FractionalIndex {
     
 
     
-open func toString() -> String {
-    return try!  FfiConverterString.lift(try! rustCall() {
-    uniffi_loro_ffi_fn_method_fractionalindex_to_string(self.uniffiClonePointer(),$0
+    open var description: String {
+        return try!  FfiConverterString.lift(
+            try! rustCall() {
+    uniffi_loro_ffi_fn_method_fractionalindex_uniffi_trait_display(self.uniffiClonePointer(),$0
     )
-})
 }
-    
+        )
+    }
 
 }
 
@@ -2589,6 +2589,177 @@ public func FfiConverterTypeFrontiers_lift(_ pointer: UnsafeMutableRawPointer) t
 #endif
 public func FfiConverterTypeFrontiers_lower(_ value: Frontiers) -> UnsafeMutableRawPointer {
     return FfiConverterTypeFrontiers.lower(value)
+}
+
+
+
+
+public protocol JsonPathSubscriber : AnyObject {
+    
+    /**
+     * Called when a change may affect the subscribed JSONPath query.
+     */
+    func onJsonpathChanged() 
+    
+}
+
+open class JsonPathSubscriberImpl:
+    JsonPathSubscriber {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_loro_ffi_fn_clone_jsonpathsubscriber(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_loro_ffi_fn_free_jsonpathsubscriber(pointer, $0) }
+    }
+
+    
+
+    
+    /**
+     * Called when a change may affect the subscribed JSONPath query.
+     */
+open func onJsonpathChanged() {try! rustCall() {
+    uniffi_loro_ffi_fn_method_jsonpathsubscriber_on_jsonpath_changed(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+
+}
+
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfaceJsonPathSubscriber {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfaceJsonPathSubscriber = UniffiVTableCallbackInterfaceJsonPathSubscriber(
+        onJsonpathChanged: { (
+            uniffiHandle: UInt64,
+            uniffiOutReturn: UnsafeMutableRawPointer,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> () in
+                guard let uniffiObj = try? FfiConverterTypeJsonPathSubscriber.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.onJsonpathChanged(
+                )
+            }
+
+            
+            let writeReturn = { () }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            let result = try? FfiConverterTypeJsonPathSubscriber.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface JsonPathSubscriber: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitJsonPathSubscriber() {
+    uniffi_loro_ffi_fn_init_callback_vtable_jsonpathsubscriber(&UniffiCallbackInterfaceJsonPathSubscriber.vtable)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeJsonPathSubscriber: FfiConverter {
+    fileprivate static var handleMap = UniffiHandleMap<JsonPathSubscriber>()
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = JsonPathSubscriber
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> JsonPathSubscriber {
+        return JsonPathSubscriberImpl(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: JsonPathSubscriber) -> UnsafeMutableRawPointer {
+        guard let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: handleMap.insert(obj: value))) else {
+            fatalError("Cast to UnsafeMutableRawPointer failed")
+        }
+        return ptr
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> JsonPathSubscriber {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: JsonPathSubscriber, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeJsonPathSubscriber_lift(_ pointer: UnsafeMutableRawPointer) throws -> JsonPathSubscriber {
+    return try FfiConverterTypeJsonPathSubscriber.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeJsonPathSubscriber_lower(_ value: JsonPathSubscriber) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeJsonPathSubscriber.lower(value)
 }
 
 
@@ -3850,6 +4021,14 @@ public protocol LoroDocProtocol : AnyObject {
     func subscribeFirstCommitFromPeer(callback: FirstCommitFromPeerCallback)  -> Subscription
     
     /**
+     * Subscribe to updates that might affect the given JSONPath query.
+     *
+     * The callback may fire false positives; it is intended as a lightweight notification so
+     * callers can debounce or throttle before re-running JSONPath themselves.
+     */
+    func subscribeJsonpath(path: String, callback: JsonPathSubscriber) throws  -> Subscription
+    
+    /**
      * Subscribe the local update of the document.
      */
     func subscribeLocalUpdate(callback: LocalUpdateCallback)  -> Subscription
@@ -5005,6 +5184,21 @@ open func subscribeFirstCommitFromPeer(callback: FirstCommitFromPeerCallback) ->
     return try!  FfiConverterTypeSubscription.lift(try! rustCall() {
     uniffi_loro_ffi_fn_method_lorodoc_subscribe_first_commit_from_peer(self.uniffiClonePointer(),
         FfiConverterTypeFirstCommitFromPeerCallback.lower(callback),$0
+    )
+})
+}
+    
+    /**
+     * Subscribe to updates that might affect the given JSONPath query.
+     *
+     * The callback may fire false positives; it is intended as a lightweight notification so
+     * callers can debounce or throttle before re-running JSONPath themselves.
+     */
+open func subscribeJsonpath(path: String, callback: JsonPathSubscriber)throws  -> Subscription {
+    return try  FfiConverterTypeSubscription.lift(try rustCallWithError(FfiConverterTypeLoroError.lift) {
+    uniffi_loro_ffi_fn_method_lorodoc_subscribe_jsonpath(self.uniffiClonePointer(),
+        FfiConverterString.lower(path),
+        FfiConverterTypeJsonPathSubscriber.lower(callback),$0
     )
 })
 }
@@ -7026,11 +7220,6 @@ public protocol LoroTextProtocol : AnyObject {
     func toDelta()  -> [TextDelta]
     
     /**
-     * Get the text content of the text container.
-     */
-    func toString()  -> String
-    
-    /**
      * Unmark a range of text with a key and a value.
      *
      * You can use it to remove highlights, bolds or links
@@ -7076,6 +7265,7 @@ public protocol LoroTextProtocol : AnyObject {
 }
 
 open class LoroText:
+    CustomStringConvertible,
     LoroTextProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
@@ -7532,16 +7722,6 @@ open func toDelta() -> [TextDelta] {
 }
     
     /**
-     * Get the text content of the text container.
-     */
-open func toString() -> String {
-    return try!  FfiConverterString.lift(try! rustCall() {
-    uniffi_loro_ffi_fn_method_lorotext_to_string(self.uniffiClonePointer(),$0
-    )
-})
-}
-    
-    /**
      * Unmark a range of text with a key and a value.
      *
      * You can use it to remove highlights, bolds or links
@@ -7610,6 +7790,14 @@ open func updateByLine(s: String, options: UpdateOptions)throws  {try rustCallWi
 }
 }
     
+    open var description: String {
+        return try!  FfiConverterString.lift(
+            try! rustCall() {
+    uniffi_loro_ffi_fn_method_lorotext_uniffi_trait_display(self.uniffiClonePointer(),$0
+    )
+}
+        )
+    }
 
 }
 
@@ -16674,9 +16862,6 @@ private var initializationResult: InitializationResult = {
     if (uniffi_loro_ffi_checksum_method_firstcommitfrompeercallback_on_first_commit_from_peer() != 54327) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_loro_ffi_checksum_method_fractionalindex_to_string() != 5688) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_loro_ffi_checksum_method_frontiers_encode() != 14564) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -16687,6 +16872,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_frontiers_to_vec() != 15210) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_jsonpathsubscriber_on_jsonpath_changed() != 36440) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_localephemerallistener_on_ephemeral_update() != 58755) {
@@ -16954,6 +17142,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorodoc_subscribe_first_commit_from_peer() != 65444) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_lorodoc_subscribe_jsonpath() != 58559) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorodoc_subscribe_local_update() != 46483) {
@@ -17332,9 +17523,6 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorotext_to_delta() != 49666) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_loro_ffi_checksum_method_lorotext_to_string() != 28280) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorotext_unmark() != 47537) {
@@ -17717,6 +17905,7 @@ private var initializationResult: InitializationResult = {
     uniffiCallbackInitContainerIdLike()
     uniffiCallbackInitEphemeralSubscriber()
     uniffiCallbackInitFirstCommitFromPeerCallback()
+    uniffiCallbackInitJsonPathSubscriber()
     uniffiCallbackInitLocalEphemeralListener()
     uniffiCallbackInitLocalUpdateCallback()
     uniffiCallbackInitLoroValueLike()
