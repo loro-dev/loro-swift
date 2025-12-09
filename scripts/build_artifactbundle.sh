@@ -9,7 +9,7 @@ RUST_FOLDER="$THIS_SCRIPT_DIR/../loro-swift"
 SWIFT_FOLDER="$THIS_SCRIPT_DIR/../gen-swift"
 BUILD_FOLDER="$RUST_FOLDER/target"
 BUNDLE_FOLDER="$THIS_SCRIPT_DIR/../loroFFI.artifactbundle"
-VERSION="1.10.3"
+VERSION="${VERSION:-1.10.3}"
 
 cargo_build="cargo build --manifest-path $RUST_FOLDER/Cargo.toml --features cli"
 

@@ -22,7 +22,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-darwin,x86_64-apple-darwin
+          targets: aarch64-apple-darwin,x86_64-apple-darwin,aarch64-apple-ios,x86_64-apple-ios-sim,aarch64-apple-ios-sim
 
       - name: Build universal macOS library
         run: |
@@ -34,6 +34,23 @@ jobs:
             target/aarch64-apple-darwin/release/libloro_swift.a \
             target/x86_64-apple-darwin/release/libloro_swift.a \
             -output ../artifacts/macos/libloro_swift.a
+
+      - name: Build iOS libraries
+        run: |
+          cd loro-swift
+          cargo build --release --target aarch64-apple-ios
+          cargo build --release --target x86_64-apple-ios-sim
+          cargo build --release --target aarch64-apple-ios-sim
+
+          mkdir -p ../artifacts/ios
+          mkdir -p ../artifacts/ios-simulator
+
+          cp target/aarch64-apple-ios/release/libloro_swift.a ../artifacts/ios/
+
+          lipo -create \
+            target/x86_64-apple-ios-sim/release/libloro_swift.a \
+            target/aarch64-apple-ios-sim/release/libloro_swift.a \
+            -output ../artifacts/ios-simulator/libloro_swift.a
 
       - name: Generate Swift bindings
         run: |
@@ -151,6 +168,8 @@ jobs:
 
           mkdir -p "$BUNDLE/include"
           mkdir -p "$BUNDLE/macos"
+          mkdir -p "$BUNDLE/ios"
+          mkdir -p "$BUNDLE/ios-simulator"
           mkdir -p "$BUNDLE/linux-x86_64"
           mkdir -p "$BUNDLE/linux-arm64"
           mkdir -p "$BUNDLE/windows"
@@ -166,6 +185,8 @@ jobs:
 
           # Copy platform libraries
           cp artifacts/macos-artifacts/macos/libloro_swift.a "$BUNDLE/macos/"
+          cp artifacts/macos-artifacts/ios/libloro_swift.a "$BUNDLE/ios/"
+          cp artifacts/macos-artifacts/ios-simulator/libloro_swift.a "$BUNDLE/ios-simulator/"
           cp artifacts/linux-x86_64-artifacts/linux-x86_64/libloro_swift.a "$BUNDLE/linux-x86_64/"
           cp artifacts/linux-arm64-artifacts/linux-arm64/libloro_swift.a "$BUNDLE/linux-arm64/"
           cp artifacts/windows-artifacts/windows/loro_swift.lib "$BUNDLE/windows/"
@@ -182,6 +203,22 @@ jobs:
                   {
                     "path": "macos/libloro_swift.a",
                     "supportedTriples": ["arm64-apple-macosx", "x86_64-apple-macosx"],
+                    "staticLibraryMetadata": {
+                      "headerPaths": ["include"],
+                      "moduleMapPath": "include/module.modulemap"
+                    }
+                  },
+                  {
+                    "path": "ios/libloro_swift.a",
+                    "supportedTriples": ["arm64-apple-ios"],
+                    "staticLibraryMetadata": {
+                      "headerPaths": ["include"],
+                      "moduleMapPath": "include/module.modulemap"
+                    }
+                  },
+                  {
+                    "path": "ios-simulator/libloro_swift.a",
+                    "supportedTriples": ["arm64-apple-ios-simulator", "x86_64-apple-ios-simulator"],
                     "staticLibraryMetadata": {
                       "headerPaths": ["include"],
                       "moduleMapPath": "include/module.modulemap"
@@ -216,6 +253,21 @@ jobs:
             }
           }
           EOF
+
+      - name: Audit undefined symbols (informational)
+        run: |
+          shopt -s nullglob
+          for lib in loroFFI.artifactbundle/**/*.a loroFFI.artifactbundle/**/*.lib; do
+            echo "== $lib =="
+            if command -v llvm-nm >/dev/null 2>&1; then
+              llvm-nm -u "$lib" || true
+            elif command -v nm >/dev/null 2>&1; then
+              nm -u "$lib" || true
+            else
+              echo "No nm available to audit $lib" >&2
+              exit 1
+            fi
+          done
 
           # Create zip
           zip -r "loroFFI.artifactbundle.zip" "$BUNDLE"
@@ -252,6 +304,7 @@ jobs:
 
             This release includes a cross-platform artifact bundle (SE-0482) with support for:
             - macOS (arm64, x86_64)
+            - iOS (arm64 device, arm64/x86_64 simulator)
             - Linux (x86_64, arm64)
             - Windows (x86_64)
 

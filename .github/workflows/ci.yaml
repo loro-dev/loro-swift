@@ -54,3 +54,19 @@ jobs:
         run: swift test
         env:
           LOCAL_BUILD: "1"
+
+      - name: Audit undefined symbols (informational)
+        if: runner.os != 'Windows'
+        run: |
+          shopt -s nullglob
+          for lib in loroFFI.artifactbundle/**/*.a; do
+            echo "== $lib =="
+            if command -v llvm-nm >/dev/null 2>&1; then
+              llvm-nm -u "$lib" || true
+            elif command -v nm >/dev/null 2>&1; then
+              nm -u "$lib" || true
+            else
+              echo "No nm available to audit $lib" >&2
+              exit 1
+            fi
+          done

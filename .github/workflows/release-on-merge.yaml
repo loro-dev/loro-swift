@@ -28,7 +28,7 @@ jobs:
         id: get_version
         shell: bash
         run: |
-          VERSION=$(grep -o 'releases/download/[^/]*/loroFFI\.xcframework\.zip' Package.swift | sed 's|releases/download/||' | sed 's|/loroFFI\.xcframework\.zip||' | head -n1)
+          VERSION=$(grep -o 'releases/download/[^/]*/loroFFI\.artifactbundle\.zip' Package.swift | sed 's|releases/download/||' | sed 's|/loroFFI\.artifactbundle\.zip||' | head -n1)
           if [ -z "$VERSION" ]; then
             echo "Failed to determine version from Package.swift" >&2
             exit 1
@@ -46,70 +46,6 @@ jobs:
           fi
           echo "sha=$SHA" >> $GITHUB_OUTPUT
 
-      - name: Find pre-release workflow run and download artifact
-        shell: bash
-        run: |
-          VERSION=${{ steps.get_version.outputs.version }}
-          TAG_NAME="${VERSION}-pre-release"
-          
-          echo "Looking for workflow run for tag: $TAG_NAME"
-          
-          # Get the commit SHA of the tag
-          TAG_SHA=""
-          if git rev-parse --verify "$TAG_NAME" >/dev/null 2>&1; then
-            TAG_SHA=$(git rev-parse "$TAG_NAME")
-            echo "Tag $TAG_NAME points to commit: $TAG_SHA"
-          fi
-          
-          # Find workflow runs and check multiple criteria
-          RUNS_JSON=$(gh run list \
-            --workflow "Pre-release Build and PR" \
-            --status success \
-            --limit 20 \
-            --json databaseId,headSha,displayTitle,createdAt)
-          
-          RUN_ID=""
-          
-          # Method 1: Try to match by tag SHA
-          if [ -n "$TAG_SHA" ]; then
-            RUN_ID=$(echo "$RUNS_JSON" | jq -r ".[] | select(.headSha == \"$TAG_SHA\") | .databaseId" | head -n1)
-            if [ -n "$RUN_ID" ]; then
-              echo "Found run by SHA match: $RUN_ID"
-            fi
-          fi
-          
-          # Method 2: Try to match by displayTitle
-          if [ -z "$RUN_ID" ]; then
-            RUN_ID=$(echo "$RUNS_JSON" | jq -r ".[] | select(.displayTitle == \"Pre-release $TAG_NAME\") | .databaseId" | head -n1)
-            if [ -n "$RUN_ID" ]; then
-              echo "Found run by displayTitle match: $RUN_ID"
-            fi
-          fi
-          
-          # Method 3: Use the most recent successful run as fallback
-          if [ -z "$RUN_ID" ]; then
-            RUN_ID=$(echo "$RUNS_JSON" | jq -r '.[0].databaseId')
-            if [ -n "$RUN_ID" ]; then
-              echo "Using most recent successful run as fallback: $RUN_ID"
-            fi
-          fi
-          
-          if [ -z "$RUN_ID" ]; then
-            echo "Could not find any suitable workflow run" >&2
-            exit 1
-          fi
-          
-          gh run download "$RUN_ID" --name loroFFI.xcframework.zip --dir .
-          # Normalize location if downloaded into a directory
-          if [ -d loroFFI.xcframework.zip ] && [ -f loroFFI.xcframework.zip/loroFFI.xcframework.zip ]; then
-            mv loroFFI.xcframework.zip/loroFFI.xcframework.zip .
-            rm -rf loroFFI.xcframework.zip
-          fi
-          if [ ! -f loroFFI.xcframework.zip ]; then
-            echo "Artifact loroFFI.xcframework.zip not found after download" >&2
-            exit 1
-          fi
-
       - name: Create tag on merge commit
         shell: bash
         run: |
@@ -123,12 +59,3 @@ jobs:
           fi
           git tag -a "$VERSION" -m "Release version $VERSION" "$SHA"
           git push --force origin "$VERSION"
-
-      - name: Create GitHub Release
-        shell: bash
-        run: |
-          VERSION=${{ steps.get_version.outputs.version }}
-          gh release create "$VERSION" loroFFI.xcframework.zip \
-            --title "Release $VERSION" \
-            --notes "Automated release for version $VERSION. Includes pre-built loroFFI.xcframework.zip."
-

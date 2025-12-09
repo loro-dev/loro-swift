@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import Foundation
@@ -7,7 +7,7 @@ import PackageDescription
 let FFIbinaryTarget: PackageDescription.Target
 
 // SE-0482: Cross-platform static library support via artifact bundles
-// Supports macOS (arm64/x86_64), Linux (x86_64/arm64), and Windows (x86_64)
+// Supports macOS (arm64/x86_64), iOS (device + simulator), Linux (x86_64/arm64), and Windows (x86_64)
 //
 // For local development or CI, set LOCAL_BUILD=1 and run ./scripts/build_artifactbundle.sh first
 // For releases, the artifact bundle is published to GitHub releases

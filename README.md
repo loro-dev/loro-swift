@@ -90,6 +90,13 @@ LOCAL_BUILD=1 swift test
 
 The script will run `uniffi` and generate the `loroFFI.xcframework.zip`.
 
+## Releases (cross-platform static library)
+
+- We use Swift 6.2+ because SE-0482 enables cross-platform `staticLibrary` artifact bundles for SwiftPM (see the [proposal](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0482-swiftpm-static-library-binary-target-non-apple-platforms.md)).
+- Tag `x.y.z-pre-release` to run the pre-release workflow: it builds macOS/iOS/Linux/Windows static libs, assembles the artifact bundle, computes the checksum, and opens/updates a PR (branch `pre-release`) that updates `Package.swift` and `README.md`.
+- Merge the pre-release PR; when it’s merged, the release workflow for the final tag publishes the cross-platform artifact bundle used by `Package.swift`.
+- Use Swift 6.2 locally (e.g., `swiftly use 6.2`) to match the toolchain required by SE-0482.
+
 # Credits
 - [uniffi-rs](https://github.com/mozilla/uniffi-rs): a multi-language bindings generator for rust
 - [Automerge-swift](https://github.com/automerge/automerge-swift): `loro-swift`
