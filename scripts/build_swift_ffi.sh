@@ -20,7 +20,7 @@ XCFRAMEWORK_FOLDER="$THIS_SCRIPT_DIR/../${FRAMEWORK_NAME}.xcframework"
 # (as of 10/10/23), but leaving it open to float seems less useful than
 # moving the pinning forward, since Catalyst support (target macabi) still
 # requires an active, nightly toolchain.
-RUST_NIGHTLY="nightly-2024-10-09"
+RUST_NIGHTLY="nightly-2025-09-06"
 
 echo "Install nightly and rust-src for Catalyst"
 rustup toolchain install ${RUST_NIGHTLY}
