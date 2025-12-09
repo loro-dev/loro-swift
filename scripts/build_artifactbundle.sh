@@ -86,8 +86,9 @@ if [[ "$UNAME_S" == "Darwin" ]]; then
     # Fix initializationResult global var
     sed -i '' 's/private var initializationResult/nonisolated(unsafe) private var initializationResult/g' "$LORO_FFI_SWIFT"
     # Fix protocols to allow struct conformance (remove AnyObject constraint)
-    sed -i '' 's/protocol LoroValueLike : AnyObject/protocol LoroValueLike/g' "$LORO_FFI_SWIFT"
-    sed -i '' 's/protocol ContainerIdLike : AnyObject/protocol ContainerIdLike/g' "$LORO_FFI_SWIFT"
+    # Use perl for more reliable cross-platform regex
+    perl -i -pe 's/protocol LoroValueLike\s*:\s*AnyObject/protocol LoroValueLike/g' "$LORO_FFI_SWIFT"
+    perl -i -pe 's/protocol ContainerIdLike\s*:\s*AnyObject/protocol ContainerIdLike/g' "$LORO_FFI_SWIFT"
 else
     sed -i 's/canImport(loroFFI)/canImport(LoroFFI)/g' "$LORO_FFI_SWIFT"
     sed -i 's/import loroFFI/import LoroFFI/g' "$LORO_FFI_SWIFT"
@@ -97,8 +98,9 @@ else
     # Fix initializationResult global var
     sed -i 's/private var initializationResult/nonisolated(unsafe) private var initializationResult/g' "$LORO_FFI_SWIFT"
     # Fix protocols to allow struct conformance (remove AnyObject constraint)
-    sed -i 's/protocol LoroValueLike : AnyObject/protocol LoroValueLike/g' "$LORO_FFI_SWIFT"
-    sed -i 's/protocol ContainerIdLike : AnyObject/protocol ContainerIdLike/g' "$LORO_FFI_SWIFT"
+    # Use perl for more reliable cross-platform regex
+    perl -i -pe 's/protocol LoroValueLike\s*:\s*AnyObject/protocol LoroValueLike/g' "$LORO_FFI_SWIFT"
+    perl -i -pe 's/protocol ContainerIdLike\s*:\s*AnyObject/protocol ContainerIdLike/g' "$LORO_FFI_SWIFT"
 fi
 
 # Platform-specific library setup
