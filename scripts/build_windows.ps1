@@ -42,10 +42,11 @@ module LoroFFI {
 "@
 Set-Content -Path "$IncludeDir\module.modulemap" -Value $ModuleMap
 
-# Copy the static library with SwiftPM-required lib* prefix
+# Copy the static library for local builds; provide both names (SwiftPM validation prefers lib*, linker may look for original)
 $LibDir = Join-Path $ThisScriptDir "..\Sources\LoroFFI\lib"
 New-Item -ItemType Directory -Force -Path $LibDir | Out-Null
 Copy-Item "$BuildFolder\release\$LibName" (Join-Path $LibDir "libloro_swift.lib")
+Copy-Item "$BuildFolder\release\$LibName" (Join-Path $LibDir "loro_swift.lib")
 
 Write-Host "▸ Update LoroFFI.swift if needed"
 $LoroSwift = Join-Path $SwiftFolder "loro.swift"

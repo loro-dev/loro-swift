@@ -59,7 +59,9 @@ Set-Content $LoroFFISwift $Content
 Write-Host "▸ Setting up Windows library"
 $WindowsLibFolder = Join-Path $BundleFolder "loroFFI-windows"
 New-Item -ItemType Directory -Force -Path $WindowsLibFolder | Out-Null
+# SwiftPM validation wants lib* prefix, but the linker still looks for the original name; ship both.
 Copy-Item "$BuildFolder\release\loro_swift.lib" (Join-Path $WindowsLibFolder "libloro_swift.lib")
+Copy-Item "$BuildFolder\release\loro_swift.lib" (Join-Path $WindowsLibFolder "loro_swift.lib")
 
 # Determine architecture
 $Arch = if ([Environment]::Is64BitOperatingSystem) { "x86_64" } else { "i686" }
