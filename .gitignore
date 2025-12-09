@@ -9,4 +9,5 @@ DerivedData/
 /gen-swift
 loroFFI.xcframework
 loroFFI.xcframework.zip
+loroFFI.artifactbundle/
 target/

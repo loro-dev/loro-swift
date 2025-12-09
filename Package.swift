@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import Foundation
@@ -7,8 +7,10 @@ import PackageDescription
 let FFIbinaryTarget: PackageDescription.Target
 
 if ProcessInfo.processInfo.environment["LOCAL_BUILD"] != nil {
-    FFIbinaryTarget = .binaryTarget(name: "LoroFFI", path: "./loroFFI.xcframework.zip")
+    // Use artifact bundle for local development (cross-platform support via SE-0482)
+    FFIbinaryTarget = .binaryTarget(name: "LoroFFI", path: "./loroFFI.artifactbundle")
 } else {
+    // Use xcframework for release (Apple platforms only for now)
     FFIbinaryTarget = .binaryTarget(
         name: "LoroFFI",
         url: "https://github.com/loro-dev/loro-swift/releases/download/1.8.1/loroFFI.xcframework.zip",

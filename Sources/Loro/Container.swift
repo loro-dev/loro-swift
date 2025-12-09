@@ -208,3 +208,22 @@ extension Awareness{
         self.setLocalState(value: value?.asLoroValue() ?? .null)
     }
 }
+
+// MARK: - toString() convenience methods
+// These provide backward compatibility after loro-ffi 1.10 removed toString() in favor of CustomStringConvertible
+
+extension LoroText {
+    /// Returns the text content as a String.
+    /// This is an alias for `description` to maintain API compatibility.
+    public func toString() -> String {
+        return self.description
+    }
+}
+
+extension FractionalIndex {
+    /// Returns the fractional index as a String.
+    /// This is an alias for `description` to maintain API compatibility.
+    public func toString() -> String {
+        return self.description
+    }
+}

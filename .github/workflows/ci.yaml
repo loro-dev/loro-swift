@@ -7,65 +7,44 @@ on:
     branches: [main, master, develop]
 
 jobs:
-  # macOS build and test (primary platform)
-  build-and-test-macos:
-    name: Swift ${{ matrix.swift }} on macOS
-    runs-on: macos-latest
+  build-and-test:
+    name: Swift 6.2 on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        swift: ["5.10", "6.0.0"]
+        os: [macos-latest, ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Setup Swift
-        uses: SwiftyLab/setup-swift@v1
-        with:
-          swift-version: ${{ matrix.swift }}
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Build xcframework
-        run: ./scripts/build_macos.sh
-
-      - name: Build
-        run: swift build -c release
-        env:
-          LOCAL_BUILD: "true"
-
-      - name: Run tests
-        run: swift test
-        env:
-          LOCAL_BUILD: "true"
-
-  # Linux build (experimental - uses system library)
-  build-and-test-linux:
-    name: Swift on Linux (experimental)
-    runs-on: ubuntu-22.04
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Setup Swift
-        uses: SwiftyLab/setup-swift@v1
-        with:
-          swift-version: "5.10"
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Build Rust FFI
+      - name: Install swiftly
         run: |
-          chmod +x ./scripts/build_linux.sh
-          ./scripts/build_linux.sh
+          curl -L https://swiftlang.github.io/swiftly/swiftly-install.sh | bash -s -- -y
+          echo "$HOME/.swiftly/bin" >> $GITHUB_PATH
+
+      - name: Install Swift 6.2
+        run: |
+          swiftly install 6.2
+          swiftly use 6.2
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Swift version
+        run: swiftly run swift --version
+
+      - name: Rust version
+        run: rustc --version
+
+      - name: Build artifact bundle
+        run: |
+          chmod +x ./scripts/build_artifactbundle.sh
+          ./scripts/build_artifactbundle.sh
 
       - name: Build
-        run: swift build -c release
+        run: LOCAL_BUILD=1 swiftly run swift build -c release
 
       - name: Run tests
-        run: swift test
+        run: LOCAL_BUILD=1 swiftly run swift test
