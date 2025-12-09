@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         swift: ["6.2"]
     steps:
       - uses: actions/checkout@v4
@@ -34,13 +34,23 @@ jobs:
       - name: Rust version
         run: rustc --version
 
-      - name: Build artifact bundle
+      - name: Build artifact bundle (Unix)
+        if: runner.os != 'Windows'
         run: |
           chmod +x ./scripts/build_artifactbundle.sh
           ./scripts/build_artifactbundle.sh
 
+      - name: Build artifact bundle (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/build_artifactbundle.ps1
+
       - name: Build
-        run: LOCAL_BUILD=1 swift build -c release
+        run: swift build -c release
+        env:
+          LOCAL_BUILD: "1"
 
       - name: Run tests
-        run: LOCAL_BUILD=1 swift test
+        run: swift test
+        env:
+          LOCAL_BUILD: "1"
