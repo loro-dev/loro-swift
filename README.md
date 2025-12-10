@@ -20,6 +20,9 @@ our [Discord](https://discord.gg/tUsBSVfqzf) community.
 Supported platforms (artifact bundle):
 - macOS: arm64, x86_64
 - iOS: arm64 (device), arm64/x86_64 (simulator)
+- tvOS: arm64 (device), arm64/x86_64 (simulator)
+- watchOS: arm64 (device), arm64/x86_64 (simulator)
+- visionOS: arm64 (device), arm64 (simulator)
 - Linux: x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu
 - Windows: x86_64-unknown-windows-msvc
 

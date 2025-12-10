@@ -24,9 +24,20 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-darwin,x86_64-apple-darwin,aarch64-apple-ios,x86_64-apple-ios-sim,aarch64-apple-ios-sim
+          targets: >
+            aarch64-apple-darwin,
+            x86_64-apple-darwin,
+            aarch64-apple-ios,
+            x86_64-apple-ios-sim,
+            aarch64-apple-ios-sim,
+            aarch64-apple-tvos,
+            x86_64-apple-tvos,
+            aarch64-apple-watchos,
+            x86_64-apple-watchos-sim,
+            aarch64-apple-visionos,
+            aarch64-apple-visionos-sim
 
-      - name: Build macOS/iOS static libs and Swift bindings
+      - name: Build macOS/iOS/tvOS/watchOS/visionOS static libs and Swift bindings
         run: |
           cd loro-swift
 
@@ -35,6 +46,15 @@ jobs:
           cargo build --release --target aarch64-apple-ios
           cargo build --release --target x86_64-apple-ios-sim
           cargo build --release --target aarch64-apple-ios-sim
+          cargo build --release --target aarch64-apple-tvos
+          cargo build --release --target x86_64-apple-tvos
+          cargo build --release --target aarch64-apple-tvos-sim || true
+          cargo build --release --target aarch64-apple-watchos
+          cargo build --release --target x86_64-apple-watchos-sim
+          cargo build --release --target aarch64-apple-watchos-sim || true
+          rustup toolchain install nightly --component rust-std --target aarch64-apple-visionos aarch64-apple-visionos-sim || true
+          cargo +nightly build --release --target aarch64-apple-visionos || cargo build --release --target aarch64-apple-visionos
+          cargo +nightly build --release --target aarch64-apple-visionos-sim || cargo build --release --target aarch64-apple-visionos-sim
 
           cargo build --release --features cli
           cargo run --release --features=cli --bin uniffi-bindgen generate \
@@ -49,13 +69,49 @@ jobs:
             -output ../artifacts/macos/libloro_swift.a
 
           mkdir -p ../artifacts/ios
+          mkdir -p ../artifacts/tvos
+          mkdir -p ../artifacts/watchos
+          mkdir -p ../artifacts/visionos
           cp target/aarch64-apple-ios/release/libloro_swift.a ../artifacts/ios/
+          cp target/aarch64-apple-tvos/release/libloro_swift.a ../artifacts/tvos/
+          cp target/aarch64-apple-watchos/release/libloro_swift.a ../artifacts/watchos/
+          cp target/aarch64-apple-visionos/release/libloro_swift.a ../artifacts/visionos/
 
           mkdir -p ../artifacts/ios-simulator
+          mkdir -p ../artifacts/tvos-simulator
+          mkdir -p ../artifacts/watchos-simulator
+          mkdir -p ../artifacts/visionos-simulator
+
           lipo -create \
             target/x86_64-apple-ios-sim/release/libloro_swift.a \
             target/aarch64-apple-ios-sim/release/libloro_swift.a \
             -output ../artifacts/ios-simulator/libloro_swift.a
+
+          if [ -f target/aarch64-apple-tvos-sim/release/libloro_swift.a ]; then
+            lipo -create \
+              target/x86_64-apple-tvos/release/libloro_swift.a \
+              target/aarch64-apple-tvos-sim/release/libloro_swift.a \
+              -output ../artifacts/tvos-simulator/libloro_swift.a
+          else
+            lipo -create \
+              target/x86_64-apple-tvos/release/libloro_swift.a \
+              -output ../artifacts/tvos-simulator/libloro_swift.a
+          fi
+
+          if [ -f target/aarch64-apple-watchos-sim/release/libloro_swift.a ]; then
+            lipo -create \
+              target/x86_64-apple-watchos-sim/release/libloro_swift.a \
+              target/aarch64-apple-watchos-sim/release/libloro_swift.a \
+              -output ../artifacts/watchos-simulator/libloro_swift.a
+          else
+            lipo -create \
+              target/x86_64-apple-watchos-sim/release/libloro_swift.a \
+              -output ../artifacts/watchos-simulator/libloro_swift.a
+          fi
+
+          lipo -create \
+            target/aarch64-apple-visionos-sim/release/libloro_swift.a \
+            -output ../artifacts/visionos-simulator/libloro_swift.a
 
       - name: Upload macOS/iOS artifacts
         uses: actions/upload-artifact@v4
@@ -184,6 +240,12 @@ jobs:
           mkdir -p "$BUNDLE/macos"
           mkdir -p "$BUNDLE/ios"
           mkdir -p "$BUNDLE/ios-simulator"
+          mkdir -p "$BUNDLE/tvos"
+          mkdir -p "$BUNDLE/tvos-simulator"
+          mkdir -p "$BUNDLE/watchos"
+          mkdir -p "$BUNDLE/watchos-simulator"
+          mkdir -p "$BUNDLE/visionos"
+          mkdir -p "$BUNDLE/visionos-simulator"
           mkdir -p "$BUNDLE/linux-x86_64"
           mkdir -p "$BUNDLE/linux-arm64"
           mkdir -p "$BUNDLE/windows"
@@ -201,6 +263,12 @@ jobs:
           cp artifacts/macos-artifacts/macos/libloro_swift.a "$BUNDLE/macos/"
           cp artifacts/macos-artifacts/ios/libloro_swift.a "$BUNDLE/ios/"
           cp artifacts/macos-artifacts/ios-simulator/libloro_swift.a "$BUNDLE/ios-simulator/"
+          cp artifacts/macos-artifacts/tvos/libloro_swift.a "$BUNDLE/tvos/"
+          cp artifacts/macos-artifacts/tvos-simulator/libloro_swift.a "$BUNDLE/tvos-simulator/"
+          cp artifacts/macos-artifacts/watchos/libloro_swift.a "$BUNDLE/watchos/"
+          cp artifacts/macos-artifacts/watchos-simulator/libloro_swift.a "$BUNDLE/watchos-simulator/"
+          cp artifacts/macos-artifacts/visionos/libloro_swift.a "$BUNDLE/visionos/"
+          cp artifacts/macos-artifacts/visionos-simulator/libloro_swift.a "$BUNDLE/visionos-simulator/"
           cp artifacts/linux-x86_64-artifacts/linux-x86_64/libloro_swift.a "$BUNDLE/linux-x86_64/"
           cp artifacts/linux-arm64-artifacts/linux-arm64/libloro_swift.a "$BUNDLE/linux-arm64/"
           cp artifacts/windows-artifacts/windows/libloro_swift.lib "$BUNDLE/windows/"
@@ -234,6 +302,54 @@ jobs:
                   {
                     "path": "ios-simulator/libloro_swift.a",
                     "supportedTriples": ["arm64-apple-ios-simulator", "x86_64-apple-ios-simulator"],
+                    "staticLibraryMetadata": {
+                      "headerPaths": ["include"],
+                      "moduleMapPath": "include/module.modulemap"
+                    }
+                  },
+                  {
+                    "path": "tvos/libloro_swift.a",
+                    "supportedTriples": ["arm64-apple-tvos"],
+                    "staticLibraryMetadata": {
+                      "headerPaths": ["include"],
+                      "moduleMapPath": "include/module.modulemap"
+                    }
+                  },
+                  {
+                    "path": "tvos-simulator/libloro_swift.a",
+                    "supportedTriples": ["arm64-apple-tvos-simulator", "x86_64-apple-tvos"],
+                    "staticLibraryMetadata": {
+                      "headerPaths": ["include"],
+                      "moduleMapPath": "include/module.modulemap"
+                    }
+                  },
+                  {
+                    "path": "watchos/libloro_swift.a",
+                    "supportedTriples": ["arm64-apple-watchos"],
+                    "staticLibraryMetadata": {
+                      "headerPaths": ["include"],
+                      "moduleMapPath": "include/module.modulemap"
+                    }
+                  },
+                  {
+                    "path": "watchos-simulator/libloro_swift.a",
+                    "supportedTriples": ["arm64-apple-watchos-simulator", "x86_64-apple-watchos-sim"],
+                    "staticLibraryMetadata": {
+                      "headerPaths": ["include"],
+                      "moduleMapPath": "include/module.modulemap"
+                    }
+                  },
+                  {
+                    "path": "visionos/libloro_swift.a",
+                    "supportedTriples": ["arm64-apple-visionos"],
+                    "staticLibraryMetadata": {
+                      "headerPaths": ["include"],
+                      "moduleMapPath": "include/module.modulemap"
+                    }
+                  },
+                  {
+                    "path": "visionos-simulator/libloro_swift.a",
+                    "supportedTriples": ["arm64-apple-visionos-simulator"],
                     "staticLibraryMetadata": {
                       "headerPaths": ["include"],
                       "moduleMapPath": "include/module.modulemap"
