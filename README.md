@@ -1,6 +1,11 @@
 <h1 align="center">loro-swift</h1>
 
 <p align="center">
+  <img alt="Swift 6.2+" src="https://img.shields.io/badge/Swift-6.2%2B-orange?logo=swift&logoColor=white">
+  <img alt="Platforms" src="https://img.shields.io/badge/platforms-macOS%20%7C%20iOS%20%7C%20tvOS%20%7C%20watchOS%20%7C%20visionOS%20%7C%20Linux%20%7C%20Windows-blue">
+</p>
+
+<p align="center">
   <a aria-label="X" href="https://x.com/loro_dev" target="_blank">
     <img alt="" src="https://img.shields.io/badge/Twitter-black?style=for-the-badge&logo=Twitter">
   </a>
