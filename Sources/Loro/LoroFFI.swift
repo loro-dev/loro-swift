@@ -4262,6 +4262,48 @@ public protocol LoroDocProtocol: AnyObject, Sendable {
     func travelChangeAncestors(ids: [Id], f: ChangeAncestorsTraveler) throws 
     
     /**
+     * Try to get a [LoroCounter] by container id.
+     *
+     * Returns null if the container does not exist.
+     */
+    func tryGetCounter(id: ContainerIdLike)  -> LoroCounter?
+    
+    /**
+     * Try to get a [LoroList] by container id.
+     *
+     * Returns null if the container does not exist.
+     */
+    func tryGetList(id: ContainerIdLike)  -> LoroList?
+    
+    /**
+     * Try to get a [LoroMap] by container id.
+     *
+     * Returns null if the container does not exist.
+     */
+    func tryGetMap(id: ContainerIdLike)  -> LoroMap?
+    
+    /**
+     * Try to get a [LoroMovableList] by container id.
+     *
+     * Returns null if the container does not exist.
+     */
+    func tryGetMovableList(id: ContainerIdLike)  -> LoroMovableList?
+    
+    /**
+     * Try to get a [LoroText] by container id.
+     *
+     * Returns null if the container does not exist.
+     */
+    func tryGetText(id: ContainerIdLike)  -> LoroText?
+    
+    /**
+     * Try to get a [LoroTree] by container id.
+     *
+     * Returns null if the container does not exist.
+     */
+    func tryGetTree(id: ContainerIdLike)  -> LoroTree?
+    
+    /**
      * Convert `VersionVector` into `Frontiers`
      */
     func vvToFrontiers(vv: VersionVector)  -> Frontiers
@@ -5558,6 +5600,90 @@ open func travelChangeAncestors(ids: [Id], f: ChangeAncestorsTraveler)throws   {
 }
     
     /**
+     * Try to get a [LoroCounter] by container id.
+     *
+     * Returns null if the container does not exist.
+     */
+open func tryGetCounter(id: ContainerIdLike) -> LoroCounter?  {
+    return try!  FfiConverterOptionTypeLoroCounter.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_lorodoc_try_get_counter(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeContainerIdLike_lower(id),$0
+    )
+})
+}
+    
+    /**
+     * Try to get a [LoroList] by container id.
+     *
+     * Returns null if the container does not exist.
+     */
+open func tryGetList(id: ContainerIdLike) -> LoroList?  {
+    return try!  FfiConverterOptionTypeLoroList.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_lorodoc_try_get_list(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeContainerIdLike_lower(id),$0
+    )
+})
+}
+    
+    /**
+     * Try to get a [LoroMap] by container id.
+     *
+     * Returns null if the container does not exist.
+     */
+open func tryGetMap(id: ContainerIdLike) -> LoroMap?  {
+    return try!  FfiConverterOptionTypeLoroMap.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_lorodoc_try_get_map(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeContainerIdLike_lower(id),$0
+    )
+})
+}
+    
+    /**
+     * Try to get a [LoroMovableList] by container id.
+     *
+     * Returns null if the container does not exist.
+     */
+open func tryGetMovableList(id: ContainerIdLike) -> LoroMovableList?  {
+    return try!  FfiConverterOptionTypeLoroMovableList.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_lorodoc_try_get_movable_list(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeContainerIdLike_lower(id),$0
+    )
+})
+}
+    
+    /**
+     * Try to get a [LoroText] by container id.
+     *
+     * Returns null if the container does not exist.
+     */
+open func tryGetText(id: ContainerIdLike) -> LoroText?  {
+    return try!  FfiConverterOptionTypeLoroText.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_lorodoc_try_get_text(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeContainerIdLike_lower(id),$0
+    )
+})
+}
+    
+    /**
+     * Try to get a [LoroTree] by container id.
+     *
+     * Returns null if the container does not exist.
+     */
+open func tryGetTree(id: ContainerIdLike) -> LoroTree?  {
+    return try!  FfiConverterOptionTypeLoroTree.lift(try! rustCall() {
+    uniffi_loro_ffi_fn_method_lorodoc_try_get_tree(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeContainerIdLike_lower(id),$0
+    )
+})
+}
+    
+    /**
      * Convert `VersionVector` into `Frontiers`
      */
 open func vvToFrontiers(vv: VersionVector) -> Frontiers  {
@@ -6149,6 +6275,18 @@ public protocol LoroMapProtocol: AnyObject, Sendable {
      */
     func doc()  -> LoroDoc?
     
+    func ensureMergeableCounter(key: String) throws  -> LoroCounter
+    
+    func ensureMergeableList(key: String) throws  -> LoroList
+    
+    func ensureMergeableMap(key: String) throws  -> LoroMap
+    
+    func ensureMergeableMovableList(key: String) throws  -> LoroMovableList
+    
+    func ensureMergeableText(key: String) throws  -> LoroText
+    
+    func ensureMergeableTree(key: String) throws  -> LoroTree
+    
     /**
      * Get the value of the map with the given key.
      */
@@ -6355,6 +6493,60 @@ open func doc() -> LoroDoc?  {
     return try!  FfiConverterOptionTypeLoroDoc.lift(try! rustCall() {
     uniffi_loro_ffi_fn_method_loromap_doc(
             self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func ensureMergeableCounter(key: String)throws  -> LoroCounter  {
+    return try  FfiConverterTypeLoroCounter_lift(try rustCallWithError(FfiConverterTypeLoroError_lift) {
+    uniffi_loro_ffi_fn_method_loromap_ensure_mergeable_counter(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(key),$0
+    )
+})
+}
+    
+open func ensureMergeableList(key: String)throws  -> LoroList  {
+    return try  FfiConverterTypeLoroList_lift(try rustCallWithError(FfiConverterTypeLoroError_lift) {
+    uniffi_loro_ffi_fn_method_loromap_ensure_mergeable_list(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(key),$0
+    )
+})
+}
+    
+open func ensureMergeableMap(key: String)throws  -> LoroMap  {
+    return try  FfiConverterTypeLoroMap_lift(try rustCallWithError(FfiConverterTypeLoroError_lift) {
+    uniffi_loro_ffi_fn_method_loromap_ensure_mergeable_map(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(key),$0
+    )
+})
+}
+    
+open func ensureMergeableMovableList(key: String)throws  -> LoroMovableList  {
+    return try  FfiConverterTypeLoroMovableList_lift(try rustCallWithError(FfiConverterTypeLoroError_lift) {
+    uniffi_loro_ffi_fn_method_loromap_ensure_mergeable_movable_list(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(key),$0
+    )
+})
+}
+    
+open func ensureMergeableText(key: String)throws  -> LoroText  {
+    return try  FfiConverterTypeLoroText_lift(try rustCallWithError(FfiConverterTypeLoroError_lift) {
+    uniffi_loro_ffi_fn_method_loromap_ensure_mergeable_text(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(key),$0
+    )
+})
+}
+    
+open func ensureMergeableTree(key: String)throws  -> LoroTree  {
+    return try  FfiConverterTypeLoroTree_lift(try rustCallWithError(FfiConverterTypeLoroError_lift) {
+    uniffi_loro_ffi_fn_method_loromap_ensure_mergeable_tree(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(key),$0
     )
 })
 }
@@ -17850,6 +18042,24 @@ private let initializationResult: InitializationResult = {
     if (uniffi_loro_ffi_checksum_method_lorodoc_travel_change_ancestors() != 32967) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_ffi_checksum_method_lorodoc_try_get_counter() != 9399) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_lorodoc_try_get_list() != 6950) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_lorodoc_try_get_map() != 3034) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_lorodoc_try_get_movable_list() != 10796) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_lorodoc_try_get_text() != 31311) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_lorodoc_try_get_tree() != 13197) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_ffi_checksum_method_lorodoc_vv_to_frontiers() != 18612) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -17935,6 +18145,24 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_loromap_doc() != 18081) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_loromap_ensure_mergeable_counter() != 45050) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_loromap_ensure_mergeable_list() != 52705) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_loromap_ensure_mergeable_map() != 9978) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_loromap_ensure_mergeable_movable_list() != 54435) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_loromap_ensure_mergeable_text() != 48183) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_loromap_ensure_mergeable_tree() != 32019) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_loromap_get() != 28557) {
