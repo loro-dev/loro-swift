@@ -54,6 +54,42 @@ final class LoroTests: XCTestCase {
         XCTAssertEqual(map.get(key: "key")!.asValue()!, LoroValue.string(value:"value"))
     }
 
+    func testEnsureMergeableMap(){
+        let docA = LoroDoc()
+        try! docA.setPeerId(peer: 1)
+        let profileA = try! docA.getMap(id: "root").ensureMergeableMap(key: "profile")
+        try! profileA.insert(key: "name", v: "Ada")
+        docA.commit()
+
+        let docB = LoroDoc()
+        try! docB.setPeerId(peer: 2)
+        let profileB = try! docB.getMap(id: "root").ensureMergeableMap(key: "profile")
+        try! profileB.insert(key: "age", v: 37)
+        docB.commit()
+
+        let _ = try! docA.import(bytes: docB.export(mode: .snapshot))
+        let _ = try! docB.import(bytes: docA.export(mode: .snapshot))
+
+        let expected = LoroValue.map(value: [
+            "root": .map(value: [
+                "profile": .map(value: [
+                    "name": .string(value: "Ada"),
+                    "age": .i64(value: 37),
+                ])
+            ])
+        ])
+        XCTAssertEqual(docA.getDeepValue(), expected)
+        XCTAssertEqual(docB.getDeepValue(), expected)
+    }
+
+    func testEnsureMergeableRejectsOccupiedKey(){
+        let doc = LoroDoc()
+        let root = doc.getMap(id: "root")
+        try! root.insert(key: "profile", v: "occupied")
+
+        XCTAssertThrowsError(try root.ensureMergeableMap(key: "profile"))
+    }
+
     func testSync(){
         let doc = LoroDoc()
         try! doc.setPeerId(peer: 0)
