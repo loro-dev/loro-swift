@@ -11,8 +11,8 @@ if ProcessInfo.processInfo.environment["LOCAL_BUILD"] != nil {
 }else {
     FFIbinaryTarget = .binaryTarget(
         name: "LoroFFI",
-        url: "https://github.com/loro-dev/loro-swift/releases/download/1.13.1/loroFFI.xcframework.zip",
-        checksum: "a8ec46143168039d3dbbb305cd1b01d8ba3f1d076c04855ec051b2c48f5c7f07"
+        url: "https://github.com/loro-dev/loro-swift/releases/download/1.13.2/loroFFI.xcframework.zip",
+        checksum: "c417314ce8650eab373adbd6ea401723c9b2eb309a72fcbb7a4323dd1a5e3db9"
     )
 }
 

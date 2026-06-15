@@ -86,16 +86,8 @@ jobs:
             fi
           fi
           
-          # Method 3: Use the most recent successful run as fallback
           if [ -z "$RUN_ID" ]; then
-            RUN_ID=$(echo "$RUNS_JSON" | jq -r '.[0].databaseId')
-            if [ -n "$RUN_ID" ]; then
-              echo "Using most recent successful run as fallback: $RUN_ID"
-            fi
-          fi
-          
-          if [ -z "$RUN_ID" ]; then
-            echo "Could not find any suitable workflow run" >&2
+            echo "Could not find a successful pre-release workflow run for $TAG_NAME" >&2
             exit 1
           fi
           
