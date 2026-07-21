@@ -1,6 +1,6 @@
 [package]
 name = "loro-swift"
-version = "1.13.2"
+version = "1.13.3"
 edition = "2021"
 
 [lib]
@@ -11,7 +11,7 @@ name = "uniffi-bindgen"
 path = "src/uniffi-bindgen.rs"
 
 [dependencies]
-loro-ffi = { version = "1.13.1" }
+loro-ffi = { version = "1.13.7" }
 uniffi = { version = "0.31.1" }
 
 [build-dependencies]
