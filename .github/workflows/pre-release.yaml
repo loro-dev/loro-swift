@@ -6,6 +6,10 @@ on:
     tags:
       - '*-pre-release'
 
+concurrency:
+  group: swift-pre-release
+  cancel-in-progress: true
+
 permissions:
   contents: write
   pull-requests: write
@@ -26,7 +30,10 @@ jobs:
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
           VERSION=${TAG_NAME%-pre-release}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          VERSION=${VERSION%%-build.*}
+          PACKAGE_VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("loro-swift/Cargo.toml", "rb"))["package"]["version"])')
+          test "$VERSION" = "$PACKAGE_VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Build Swift FFI
         run: |
@@ -47,6 +54,22 @@ jobs:
         with:
           name: loroFFI.xcframework.zip
           path: loroFFI.xcframework.zip
+
+      - name: Record exact release artifact
+        env:
+          RELEASE_VERSION: ${{ steps.get_version.outputs.version }}
+          RELEASE_CHECKSUM: ${{ steps.sha256.outputs.checksum }}
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          from pathlib import Path
+          Path("release-artifact.json").write_text(json.dumps({
+              "version": os.environ["RELEASE_VERSION"],
+              "run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "source_sha": os.environ["GITHUB_SHA"],
+              "sha256": os.environ["RELEASE_CHECKSUM"],
+          }, indent=2) + "\n")
+          PYTHON
 
       - name: Update Package.swift
         run: |
@@ -72,7 +95,7 @@ jobs:
           # Ensure local pre-release branch points to current commit
           git fetch origin pre-release:pre-release || true
           git checkout -B pre-release "$GITHUB_SHA"
-          git add Package.swift README.md Sources/*
+          git add Package.swift README.md Sources/* release-artifact.json
           git commit -m "chore: update version to ${VERSION}" || echo "No changes to commit"
           git push -f origin pre-release
 

@@ -25,8 +25,13 @@ Uses Loro core and FFI 1.17.1. `exportPendingUpdates()` returns optional `Data`
 for received updates waiting for missing dependencies. Save it with a consistent
 snapshot; restore the snapshot first, then import the pending bytes. When it
 returns `nil`, clear any older pending bytes as part of replacing the checkpoint.
+`undo()` and `redo()` consume at most one history item per call. A remote edit
+can make an item a no-op, returning `false` while `canUndo()` remains `true`.
+
 The release build regenerates the Swift bindings and runs the Swift tests against
 the new XCFramework before publishing its checksum and download URL.
+`release-artifact.json` records the exact successful build and checksum used by
+the release workflow, including retries.
 
 ## Usage
 

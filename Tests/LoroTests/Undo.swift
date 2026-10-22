@@ -440,13 +440,20 @@ final class UndoTests: XCTestCase {
         try docA.getText(id: "text").insert(pos: 0, s: "123!")
         try undo.recordNewCheckpoint()
         
-        for _ in 0..<3 {
+        for iteration in 0..<3 {
             XCTAssertEqual(docA.getText(id: "text").toString(), "123!A jumped")
             let _ = try undo.undo()
             XCTAssertEqual(docA.getText(id: "text").toString(), "A jumped")
             let _ = try undo.undo()
             XCTAssertEqual(docA.getText(id: "text").toString(), "A ")
-            let _ = try undo.undo()
+            if iteration == 0 {
+                // The remote deletion makes the original "fox " insertion a
+                // no-op. It still consumes its own history item, without redo.
+                XCTAssertFalse(try undo.undo())
+                XCTAssertEqual(docA.getText(id: "text").toString(), "A ")
+                XCTAssertTrue(undo.canUndo())
+            }
+            XCTAssertTrue(try undo.undo())
             XCTAssertEqual(docA.getText(id: "text").toString(), "")
             let _ = try undo.redo()
             XCTAssertEqual(docA.getText(id: "text").toString(), "A ")
@@ -969,14 +976,15 @@ final class UndoTests: XCTestCase {
             XCTAssertEqual(richValue.count, 1)
         }
         
-        let _ = try undoA.undo()
-        if case .list(let value1) = textA.getRichtextValue() {
-            XCTAssertEqual(value1.count, 1)
-        }
-        
-        let _ = try undoA.undo()
-        if case .list(let value2) = textA.getRichtextValue() {
-            XCTAssertEqual(value2.count, 0)
-        }
+        // "Hello " was already deleted remotely. Consuming that item must
+        // leave the older bold mark and initial "B" insertion for later calls.
+        XCTAssertFalse(try undoA.undo())
+        XCTAssertEqual(textA.toString(), "B")
+        XCTAssertTrue(undoA.canUndo())
+        XCTAssertTrue(try undoA.undo())
+        XCTAssertEqual(textA.toString(), "B")
+        XCTAssertTrue(try undoA.undo())
+        XCTAssertEqual(textA.toString(), "")
+        XCTAssertFalse(undoA.canUndo())
     }
 }
