@@ -3752,10 +3752,39 @@ public protocol LoroDocProtocol: AnyObject, Sendable {
      */
     func exportJsonUpdatesWithoutPeerCompression(startVv: VersionVector, endVv: VersionVector)  -> String
     
+    /**
+     * Export imported remote updates waiting for missing causal dependencies.
+     *
+     * These are received remote operations, not uncommitted local transactions.
+     * Returns native nil/None when none remain pending, not empty bytes, or bytes
+     * in the ordinary updates format. The bytes preserve the pending operations,
+     * not necessarily the original blob.
+     *
+     * This is read-only: it does not consume pending updates, commit local edits,
+     * emit events, or advance the applied version vector/frontiers. Ordinary
+     * snapshot/update exports exclude these updates; snapshot export still
+     * commits local edits as usual.
+     *
+     * Prevent mutations/imports between exporting a snapshot and these bytes:
+     * the calls are not an atomic pair. Save or replace both as one consistent
+     * checkpoint, only after both exports succeed. nil/None must clear any older
+     * pending record; an export error must not replace the previous checkpoint.
+     * Encoding failures, including `LoroEncodeError.InternalError`, are thrown
+     * with the core's error message rather than returned as absent bytes.
+     *
+     * Restore the snapshot first, then pass any pending bytes to ordinary `import`.
+     * They remain pending until the real missing dependencies arrive. This API
+     * does not fetch or invent those dependencies, establish that the document
+     * is synced, or make advancing a transport cursor or compaction safe.
+     */
+    func exportPendingUpdates() throws  -> Data?
+    
     func exportShallowSnapshot(frontiers: Frontiers) throws  -> Data
     
     /**
      * Export the current state and history of the document.
+     * Remote updates waiting for missing dependencies are excluded; save them
+     * separately with `export_pending_updates`. This export commits local edits.
      */
     func exportSnapshot() throws  -> Data
     
@@ -3764,7 +3793,9 @@ public protocol LoroDocProtocol: AnyObject, Sendable {
     func exportStateOnly(frontiers: Frontiers?) throws  -> Data
     
     /**
-     * Export all the ops not included in the given `VersionVector`
+     * Export all applied ops not included in the given `VersionVector`.
+     * Remote updates waiting for missing dependencies are excluded; save them
+     * separately with `export_pending_updates`.
      */
     func exportUpdates(vv: VersionVector) throws  -> Data
     
@@ -3990,7 +4021,8 @@ public protocol LoroDocProtocol: AnyObject, Sendable {
     func hasHistoryCache()  -> Bool
     
     /**
-     * Import updates/snapshot exported by [`LoroDoc::export_snapshot`] or [`LoroDoc::export_from`].
+     * Import a snapshot, ordinary updates, or bytes from `export_pending_updates`.
+     * Pending updates still wait for their actual missing causal dependencies.
      */
     func `import`(bytes: Data) throws  -> ImportStatus
     
@@ -4004,7 +4036,8 @@ public protocol LoroDocProtocol: AnyObject, Sendable {
     func importJsonUpdates(json: String) throws  -> ImportStatus
     
     /**
-     * Import updates/snapshot exported by [`LoroDoc::export_snapshot`] or [`LoroDoc::export_from`].
+     * Import a snapshot, ordinary updates, or bytes from `export_pending_updates`.
+     * Pending updates still wait for their actual missing causal dependencies.
      *
      * It marks the import with a custom `origin` string. It can be used to track the import source
      * in the generated events.
@@ -4260,6 +4293,16 @@ public protocol LoroDocProtocol: AnyObject, Sendable {
      * * `f` - A mutable function that is called for each ancestor. It can return `ControlFlow::Break(())` to stop the traversal.
      */
     func travelChangeAncestors(ids: [Id], f: ChangeAncestorsTraveler) throws 
+    
+    /**
+     * Export JSON updates, reporting unreadable history as LoroError.
+     */
+    func tryExportJsonUpdates(startVv: VersionVector, endVv: VersionVector) throws  -> String
+    
+    /**
+     * Export JSON updates without peer compression, reporting unreadable history as LoroError.
+     */
+    func tryExportJsonUpdatesWithoutPeerCompression(startVv: VersionVector, endVv: VersionVector) throws  -> String
     
     /**
      * Try to get a [LoroCounter] by container id.
@@ -4666,6 +4709,39 @@ open func exportJsonUpdatesWithoutPeerCompression(startVv: VersionVector, endVv:
 })
 }
     
+    /**
+     * Export imported remote updates waiting for missing causal dependencies.
+     *
+     * These are received remote operations, not uncommitted local transactions.
+     * Returns native nil/None when none remain pending, not empty bytes, or bytes
+     * in the ordinary updates format. The bytes preserve the pending operations,
+     * not necessarily the original blob.
+     *
+     * This is read-only: it does not consume pending updates, commit local edits,
+     * emit events, or advance the applied version vector/frontiers. Ordinary
+     * snapshot/update exports exclude these updates; snapshot export still
+     * commits local edits as usual.
+     *
+     * Prevent mutations/imports between exporting a snapshot and these bytes:
+     * the calls are not an atomic pair. Save or replace both as one consistent
+     * checkpoint, only after both exports succeed. nil/None must clear any older
+     * pending record; an export error must not replace the previous checkpoint.
+     * Encoding failures, including `LoroEncodeError.InternalError`, are thrown
+     * with the core's error message rather than returned as absent bytes.
+     *
+     * Restore the snapshot first, then pass any pending bytes to ordinary `import`.
+     * They remain pending until the real missing dependencies arrive. This API
+     * does not fetch or invent those dependencies, establish that the document
+     * is synced, or make advancing a transport cursor or compaction safe.
+     */
+open func exportPendingUpdates()throws  -> Data?  {
+    return try  FfiConverterOptionData.lift(try rustCallWithError(FfiConverterTypeLoroEncodeError_lift) {
+    uniffi_loro_ffi_fn_method_lorodoc_export_pending_updates(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
 open func exportShallowSnapshot(frontiers: Frontiers)throws  -> Data  {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoroEncodeError_lift) {
     uniffi_loro_ffi_fn_method_lorodoc_export_shallow_snapshot(
@@ -4677,6 +4753,8 @@ open func exportShallowSnapshot(frontiers: Frontiers)throws  -> Data  {
     
     /**
      * Export the current state and history of the document.
+     * Remote updates waiting for missing dependencies are excluded; save them
+     * separately with `export_pending_updates`. This export commits local edits.
      */
 open func exportSnapshot()throws  -> Data  {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoroEncodeError_lift) {
@@ -4705,7 +4783,9 @@ open func exportStateOnly(frontiers: Frontiers?)throws  -> Data  {
 }
     
     /**
-     * Export all the ops not included in the given `VersionVector`
+     * Export all applied ops not included in the given `VersionVector`.
+     * Remote updates waiting for missing dependencies are excluded; save them
+     * separately with `export_pending_updates`.
      */
 open func exportUpdates(vv: VersionVector)throws  -> Data  {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoroEncodeError_lift) {
@@ -5112,7 +5192,8 @@ open func hasHistoryCache() -> Bool  {
 }
     
     /**
-     * Import updates/snapshot exported by [`LoroDoc::export_snapshot`] or [`LoroDoc::export_from`].
+     * Import a snapshot, ordinary updates, or bytes from `export_pending_updates`.
+     * Pending updates still wait for their actual missing causal dependencies.
      */
 open func `import`(bytes: Data)throws  -> ImportStatus  {
     return try  FfiConverterTypeImportStatus_lift(try rustCallWithError(FfiConverterTypeLoroError_lift) {
@@ -5147,7 +5228,8 @@ open func importJsonUpdates(json: String)throws  -> ImportStatus  {
 }
     
     /**
-     * Import updates/snapshot exported by [`LoroDoc::export_snapshot`] or [`LoroDoc::export_from`].
+     * Import a snapshot, ordinary updates, or bytes from `export_pending_updates`.
+     * Pending updates still wait for their actual missing causal dependencies.
      *
      * It marks the import with a custom `origin` string. It can be used to track the import source
      * in the generated events.
@@ -5597,6 +5679,32 @@ open func travelChangeAncestors(ids: [Id], f: ChangeAncestorsTraveler)throws   {
         FfiConverterTypeChangeAncestorsTraveler_lower(f),$0
     )
 }
+}
+    
+    /**
+     * Export JSON updates, reporting unreadable history as LoroError.
+     */
+open func tryExportJsonUpdates(startVv: VersionVector, endVv: VersionVector)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLoroError_lift) {
+    uniffi_loro_ffi_fn_method_lorodoc_try_export_json_updates(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeVersionVector_lower(startVv),
+        FfiConverterTypeVersionVector_lower(endVv),$0
+    )
+})
+}
+    
+    /**
+     * Export JSON updates without peer compression, reporting unreadable history as LoroError.
+     */
+open func tryExportJsonUpdatesWithoutPeerCompression(startVv: VersionVector, endVv: VersionVector)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLoroError_lift) {
+    uniffi_loro_ffi_fn_method_lorodoc_try_export_json_updates_without_peer_compression(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeVersionVector_lower(startVv),
+        FfiConverterTypeVersionVector_lower(endVv),$0
+    )
+})
 }
     
     /**
@@ -13826,6 +13934,8 @@ public enum CannotFindRelativePosition: Swift.Error, Equatable, Hashable, Founda
     
     case IdNotFound(message: String)
     
+    case HistoryUnreadable(message: String)
+    
 
     
 
@@ -13867,6 +13977,10 @@ public struct FfiConverterTypeCannotFindRelativePosition: FfiConverterRustBuffer
             message: try FfiConverterString.read(from: &buf)
         )
         
+        case 4: return .HistoryUnreadable(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -13884,6 +13998,8 @@ public struct FfiConverterTypeCannotFindRelativePosition: FfiConverterRustBuffer
             writeInt(&buf, Int32(2))
         case .IdNotFound(_ /* message is ignored*/):
             writeInt(&buf, Int32(3))
+        case .HistoryUnreadable(_ /* message is ignored*/):
+            writeInt(&buf, Int32(4))
 
         
         }
@@ -13913,6 +14029,8 @@ public enum ChangeTravelError: Swift.Error, Equatable, Hashable, Foundation.Loca
     case TargetIdNotFound(message: String)
     
     case TargetVersionNotIncluded(message: String)
+    
+    case HistoryUnreadable(message: String)
     
 
     
@@ -13951,6 +14069,10 @@ public struct FfiConverterTypeChangeTravelError: FfiConverterRustBuffer {
             message: try FfiConverterString.read(from: &buf)
         )
         
+        case 3: return .HistoryUnreadable(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -13966,6 +14088,8 @@ public struct FfiConverterTypeChangeTravelError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(1))
         case .TargetVersionNotIncluded(_ /* message is ignored*/):
             writeInt(&buf, Int32(2))
+        case .HistoryUnreadable(_ /* message is ignored*/):
+            writeInt(&buf, Int32(3))
 
         
         }
@@ -14900,6 +15024,10 @@ public enum LoroEncodeError: Swift.Error, Equatable, Hashable, Foundation.Locali
     
     case UnknownContainer(message: String)
     
+    case InternalError(message: String)
+    
+    case DecodeError(message: String)
+    
 
     
 
@@ -14941,6 +15069,14 @@ public struct FfiConverterTypeLoroEncodeError: FfiConverterRustBuffer {
             message: try FfiConverterString.read(from: &buf)
         )
         
+        case 4: return .InternalError(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 5: return .DecodeError(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -14958,6 +15094,10 @@ public struct FfiConverterTypeLoroEncodeError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(2))
         case .UnknownContainer(_ /* message is ignored*/):
             writeInt(&buf, Int32(3))
+        case .InternalError(_ /* message is ignored*/):
+            writeInt(&buf, Int32(4))
+        case .DecodeError(_ /* message is ignored*/):
+            writeInt(&buf, Int32(5))
 
         
         }
@@ -16272,6 +16412,30 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterString.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionData: FfiConverterRustBuffer {
+    typealias SwiftType = Data?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterData.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterData.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -17850,6 +18014,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_loro_ffi_checksum_method_lorodoc_export_json_updates_without_peer_compression() != 31488) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_loro_ffi_checksum_method_lorodoc_export_pending_updates() != 11778) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_loro_ffi_checksum_method_lorodoc_export_shallow_snapshot() != 39593) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -18040,6 +18207,12 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorodoc_travel_change_ancestors() != 32967) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_lorodoc_try_export_json_updates() != 16562) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_loro_ffi_checksum_method_lorodoc_try_export_json_updates_without_peer_compression() != 7325) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_loro_ffi_checksum_method_lorodoc_try_get_counter() != 9399) {
