@@ -19,6 +19,15 @@ If you have any suggestions for API, please feel free to create an issue or join
 our [Discord](https://discord.gg/tUsBSVfqzf) community.
 
 
+## 1.17.1
+
+Uses Loro core and FFI 1.17.1. `exportPendingUpdates()` returns optional `Data`
+for received updates waiting for missing dependencies. Save it with a consistent
+snapshot; restore the snapshot first, then import the pending bytes. When it
+returns `nil`, clear any older pending bytes as part of replacing the checkpoint.
+The release build regenerates the Swift bindings and runs the Swift tests against
+the new XCFramework before publishing its checksum and download URL.
+
 ## Usage
 
 Add the dependency in your `Package.swift`.
