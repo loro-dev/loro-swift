@@ -39,6 +39,9 @@ jobs:
           CHECKSUM=$(openssl dgst -sha256 loroFFI.xcframework.zip | awk '{print $2}')
           echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
 
+      - name: Test generated Swift bindings
+        run: LOCAL_BUILD=1 swift test
+
       - name: Upload XCFramework artifact
         uses: actions/upload-artifact@v4
         with:
