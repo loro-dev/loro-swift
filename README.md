@@ -19,6 +19,10 @@ If you have any suggestions for API, please feel free to create an issue or join
 our [Discord](https://discord.gg/tUsBSVfqzf) community.
 
 
+## 1.18.0
+
+Uses Loro core and FFI 1.18.0. Generated bindings expose `UpdateTimeoutError.Loro(message:)` for rejected text updates, preserving the existing timeout error.
+
 ## 1.17.1
 
 Uses Loro core and FFI 1.17.1. `exportPendingUpdates()` returns optional `Data`
