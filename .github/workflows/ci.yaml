@@ -5,10 +5,9 @@ on:
 
 jobs:
   build-test:
-    runs-on: macos-14
+    runs-on: macos-15
     env:
       LOCAL_BUILD: true
-      DEVELOPER_DIR: /Applications/Xcode_15.4.app
     steps:
       - uses: actions/checkout@v3
         with:
