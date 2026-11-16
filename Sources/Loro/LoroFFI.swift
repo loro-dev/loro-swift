@@ -16206,6 +16206,8 @@ public enum UpdateTimeoutError: Swift.Error, Equatable, Hashable, Foundation.Loc
     
     case Timeout(message: String)
     
+    case Loro(message: String)
+    
 
     
 
@@ -16239,6 +16241,10 @@ public struct FfiConverterTypeUpdateTimeoutError: FfiConverterRustBuffer {
             message: try FfiConverterString.read(from: &buf)
         )
         
+        case 2: return .Loro(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -16252,6 +16258,8 @@ public struct FfiConverterTypeUpdateTimeoutError: FfiConverterRustBuffer {
         
         case .Timeout(_ /* message is ignored*/):
             writeInt(&buf, Int32(1))
+        case .Loro(_ /* message is ignored*/):
+            writeInt(&buf, Int32(2))
 
         
         }
