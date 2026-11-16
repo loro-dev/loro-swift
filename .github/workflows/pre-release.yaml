@@ -97,7 +97,7 @@ jobs:
           git checkout -B pre-release "$GITHUB_SHA"
           git add Package.swift README.md Sources/* release-artifact.json
           git commit -m "chore: update version to ${VERSION}" || echo "No changes to commit"
-          git push -f origin pre-release
+          git push origin pre-release
 
       - name: Create or update Pull Request to main
         env:
