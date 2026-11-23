@@ -736,9 +736,9 @@ dependencies = [
 
 [[package]]
 name = "loro"
-version = "1.18.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f310fb0c57a01a6de7e233926dbf19b25d49630b4f33b4ea55f47cfad825389c"
+checksum = "61d8ab291aa3eee5713c84bca9fd13b8e8f843c06a90f95dcfd6a816d2c1f8cb"
 dependencies = [
  "bytes",
  "enum-as-inner 0.6.1",
@@ -753,9 +753,9 @@ dependencies = [
 
 [[package]]
 name = "loro-common"
-version = "1.18.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bc76e378b98f08fd308eeff42461d60566053076f4884a881d3429a29081e0e"
+checksum = "059f7fe8069d29b4b490fa707769ffb7ff6c6bb4fcfb124a9e7c28f1abf99629"
 dependencies = [
  "arbitrary",
  "enum-as-inner 0.6.1",
@@ -772,9 +772,9 @@ dependencies = [
 
 [[package]]
 name = "loro-delta"
-version = "1.18.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c36a724d99ddb1ec26036545db181c2b623c78d356385016a73f93e98c8d38d"
+checksum = "6145e8f26d6b3d8ff2f35799daca72645bff643abd13144fdd28990b75a61c1e"
 dependencies = [
  "arrayvec",
  "enum-as-inner 0.5.1",
@@ -784,9 +784,9 @@ dependencies = [
 
 [[package]]
 name = "loro-ffi"
-version = "1.18.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ccb2a8ef1b59909cfd4e9a5ccb648dc93f02bdb87fca38adbb03fb9a0cf79b0"
+checksum = "d1f915230ac5af2749c8d5006818be4734261a31a3547cbd7fc2681f6cb7216b"
 dependencies = [
  "loro",
  "serde_json",
@@ -795,9 +795,9 @@ dependencies = [
 
 [[package]]
 name = "loro-internal"
-version = "1.18.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d55e9581255de97cf6e66fafff019f79fa0fb005fdb5197195bc6f5048381b74"
+checksum = "66abfaa8d4620852ddbc0c6ca52bfc34938132f926a0778d6a49e4a053d9d9e1"
 dependencies = [
  "append-only-bytes",
  "arref",
@@ -842,9 +842,9 @@ dependencies = [
 
 [[package]]
 name = "loro-kv-store"
-version = "1.18.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a169f32c2d2d6ffe67d03603b61bd17d8d90b1a7f8c2f2585304f3181be8089"
+checksum = "82c6eaa3523d48088fbf0538b0258b9e54671b24559e306c56b7654ad83b6759"
 dependencies = [
  "bytes",
  "ensure-cov",
@@ -870,7 +870,7 @@ dependencies = [
 
 [[package]]
 name = "loro-swift"
-version = "1.18.0"
+version = "1.19.0"
 dependencies = [
  "loro-ffi",
  "uniffi",
